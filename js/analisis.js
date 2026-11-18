@@ -173,10 +173,14 @@ export function segmentosDeBanda(cfg, banda, region) {
   const clave = region === 'eu' ? 'R1' : region === 'us' ? 'US' : (banda.region.includes('R1') || banda.region.includes('global') ? 'R1' : 'US');
   const lista = (datos[clave] ?? []).map(s => ({ ...s }));
   const dig = cfg.digitales?.[banda.nombre] ?? {}, ancho = cfg.ancho_senal_digital_MHz ?? 0.003;
-  const nombres = { ft8: 'FT8', ft4: 'FT4', wspr: 'WSPR' };
-  for (const [id, dial] of Object.entries(dig)) {
-    // la señal ocupa unos 3 kHz por encima de la frecuencia de dial
-    lista.push({ id, nombre: nombres[id] ?? id.toUpperCase(), f_min: dial, f_max: +(dial + ancho).toFixed(6), puntual: true, nota: `Dial de WSJT-X ${dial.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} MHz` });
+  const nombres = { ft8: 'FT8', ft4: 'FT4', wspr: 'WSPR', msk144: 'MSK144' };
+  for (const [id, v] of Object.entries(dig)) {
+    // v = dial (MHz) o { dial, nota }; la señal ocupa unos 3 kHz por encima de la frecuencia de dial
+    const dial = typeof v === 'number' ? v : v.dial;
+    lista.push({
+      id, nombre: nombres[id] ?? id.toUpperCase(), f_min: dial, f_max: +(dial + ancho).toFixed(6), puntual: true,
+      nota: typeof v === 'object' && v.nota ? v.nota : `Dial de WSJT-X ${dial.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} MHz`,
+    });
   }
   return lista;
 }

@@ -1,8 +1,10 @@
 {
   "_aviso": "Segmentos por modo de las bandas de HF, ORIENTATIVOS: recomendaciones de los planes de banda IARU Región 1 (clave R1) y ARRL (clave US), no una norma legal. Los privilegios dependen de tu país y de tu licencia (sobre todo en fonía en EE. UU.). Comprueba el plan de tu país antes de usarlos. Frecuencias en MHz.",
-  "_verificado": "18-11-2026. FT8, FT4 y WSPR: frecuencias de dial por defecto de WSJT-X (models/FrequencyList.cpp del espejo saitohirga/WSJT-X); en 80, 40, 30, 17 y 12 m el FT4 figura como provisional en esa fuente. Segmentos de EE. UU.: contrastados solo en parte con la página de plan de banda de la ARRL. Segmentos IARU R1: de memoria (el PDF oficial es una imagen escaneada que no se pudo leer): SIN contrastar.",
+  "_verificado": "18-11-2026. FT8, FT4 y WSPR: frecuencias de dial por defecto de WSJT-X (models/FrequencyList.cpp del espejo saitohirga/WSJT-X); en 80, 40, 30, 17 y 12 m el FT4 figura como provisional en esa fuente. Segmentos de EE. UU.: contrastados solo en parte con la página de plan de banda de la ARRL. 60 m y 4 m (18-11): 60 m con los límites de segmento del plan provisional IARU R1 de 2016 según una fuente secundaria y los canales de EE. UU. según resultados de búsqueda (la FCC publicó reglas nuevas el 13-02-2026: comprobar); 4 m: llamada SSB 70,200 y AM/FM 70,260 según Wikipedia, y FT8 70,154, WSPR 70,091 y MSK144 70,230 de WSJT-X. Segmentos IARU R1: de memoria (el PDF oficial es una imagen escaneada que no se pudo leer): SIN contrastar.",
   "ancho_senal_digital_MHz": 0.003,
   "digitales": {
+    "60 m": { "ft8": { "dial": 5.357, "nota": "Dial de uso habitual para FT8 en 60 m (no figura en la lista por defecto de WSJT-X)" } },
+    "4 m": { "ft8": 70.154, "wspr": 70.091, "msk144": 70.230 },
     "160 m": { "ft8": 1.840, "wspr": 1.8366 },
     "80 m": { "ft8": 3.573, "ft4": 3.575, "wspr": 3.5686 },
     "40 m": { "ft8": 7.074, "ft4": 7.0475, "wspr": 7.0386 },
@@ -14,6 +16,25 @@
     "10 m": { "ft8": 28.074, "ft4": 28.180, "wspr": 28.1246 }
   },
   "bandas": {
+    "60 m": {
+      "R1": [
+        { "id": "cw_digital", "nombre": "CW y digitales de banda estrecha", "f_min": 5.3515, "f_max": 5.3540, "nota": "Plan provisional IARU R1 (2016): los límites de segmento publicados son 5351,5 / 5354 / 5357 / 5360 / 5363 / 5366 kHz; el reparto por modos está sin contrastar" },
+        { "id": "todos", "nombre": "Resto de la banda (USB y otros modos)", "f_min": 5.3540, "f_max": 5.3665 }
+      ],
+      "US": [
+        { "id": "banda_nueva", "nombre": "Banda de 5351,5–5366,5 kHz (secundaria, 9,15 W ERP)", "f_min": 5.3515, "f_max": 5.3665 },
+        { "id": "canal_5332", "nombre": "Canal 5,332 MHz (100 W ERP, dial USB 5,3305)", "f_min": 5.3306, "f_max": 5.3334, "puntual": true, "fuera_de_banda": true },
+        { "id": "canal_5348", "nombre": "Canal 5,348 MHz (100 W ERP, dial USB 5,3465)", "f_min": 5.3466, "f_max": 5.3494, "puntual": true, "fuera_de_banda": true },
+        { "id": "canal_5373", "nombre": "Canal 5,373 MHz (100 W ERP, dial USB 5,3715)", "f_min": 5.3716, "f_max": 5.3744, "puntual": true, "fuera_de_banda": true },
+        { "id": "canal_5405", "nombre": "Canal 5,405 MHz (100 W ERP, dial USB 5,4035)", "f_min": 5.4036, "f_max": 5.4064, "puntual": true, "fuera_de_banda": true }
+      ]
+    },
+    "4 m": {
+      "R1": [
+        { "id": "ssb", "nombre": "Fonía SSB (frecuencia de llamada 70,200)", "f_min": 70.200, "f_max": 70.203, "puntual": true },
+        { "id": "fm", "nombre": "AM/FM (actividad en 70,260)", "f_min": 70.255, "f_max": 70.265, "puntual": true }
+      ]
+    },
     "160 m": {
       "R1": [
         { "id": "cw", "nombre": "CW", "f_min": 1.810, "f_max": 1.838 },

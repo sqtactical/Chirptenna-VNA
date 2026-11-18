@@ -1,5 +1,5 @@
 {
-  "_verificado": "18-11-2026. Contrastado con fuentes: Meshtastic (docs de la región LoRa), ARRL (asignaciones FCC) y IARU R1 (70 cm, 23 cm y 13 cm). Corregido: 9 cm EE.UU. 3300-3450. SIN contrastar: 9 cm y 5 cm de R1, 4 m, 6 m de R1, 60 m por país, 630 m, 2200 m y las sub-bandas WiFi/U-NII.",
+  "_verificado": "18-11-2026. Contrastado con fuentes: Meshtastic (docs de la región LoRa), ARRL (asignaciones FCC) y IARU R1 (70 cm, 23 cm y 13 cm). Corregido: 9 cm EE.UU. 3300-3450. Añadidas (18-11, Wikipedia y ARRL): 4 m con rangos por país y 8 m (40 MHz) como autorización experimental/temporal. SIN contrastar: 9 cm y 5 cm de R1, 4 m, 6 m de R1, 60 m por país, 630 m, 2200 m y las sub-bandas WiFi/U-NII.",
   "_aviso": "Borrador. Bordes de banda segun planes IARU R1/R2 y reglamentos tipo FCC/ETSI; varian por pais y licencia. Verificar contra el plan de bandas nacional antes de dar un veredicto 'apta para transmitir'. Frecuencias en MHz. Rango medible: depende del dispositivo (ver 'dispositivos'); la web debe marcar como 'no medible' las bandas fuera del f_max de la unidad conectada.",
   "criterio_por_defecto": { "metrica": "perdida_retorno_dB", "umbral": 10, "equivalente_vswr": 1.92 },
   "regiones": {
@@ -15,7 +15,7 @@
     { "servicio": "ham", "nombre": "160 m", "region": ["R1", "R2"], "f_min": 1.8, "f_max": 2.0, "nota": "R1: 1.810-2.000 en muchos paises" },
     { "servicio": "ham", "nombre": "80 m", "region": ["R1"], "f_min": 3.5, "f_max": 3.8 },
     { "servicio": "ham", "nombre": "80 m", "region": ["R2"], "f_min": 3.5, "f_max": 4.0 },
-    { "servicio": "ham", "nombre": "60 m", "region": ["R1", "R2"], "f_min": 5.3515, "f_max": 5.3665, "nota": "Secundaria. EE.UU. historicamente por canales (5.332, 5.348, 5.3585, 5.373, 5.405)" },
+    { "servicio": "ham", "nombre": "60 m", "region": ["R1", "R2"], "f_min": 5.3515, "f_max": 5.3665, "nota": "Secundaria (WRC-15: 5351,5-5366,5 kHz) y solo en los países que la han autorizado. EE. UU.: además cuatro canales de 100 W ERP centrados en 5,332, 5,348, 5,373 y 5,405 MHz. Comprueba tu país" },
     { "servicio": "ham", "nombre": "40 m", "region": ["R1"], "f_min": 7.0, "f_max": 7.2 },
     { "servicio": "ham", "nombre": "40 m", "region": ["R2"], "f_min": 7.0, "f_max": 7.3 },
     { "servicio": "ham", "nombre": "30 m", "region": ["global"], "f_min": 10.1, "f_max": 10.15 },
@@ -26,7 +26,8 @@
     { "servicio": "ham", "nombre": "10 m", "region": ["global"], "f_min": 28.0, "f_max": 29.7 },
     { "servicio": "ham", "nombre": "6 m", "region": ["R1"], "f_min": 50.0, "f_max": 52.0, "nota": "Varia mucho por pais" },
     { "servicio": "ham", "nombre": "6 m", "region": ["R2"], "f_min": 50.0, "f_max": 54.0 },
-    { "servicio": "ham", "nombre": "4 m", "region": ["R1"], "f_min": 70.0, "f_max": 70.5, "nota": "Solo algunos paises" },
+    { "servicio": "ham", "nombre": "4 m", "region": ["R1"], "f_min": 70.0, "f_max": 70.5, "nota": "Solo algunos países (ITU 70,000-70,500 MHz; CEPT permite 69,9-70,5). Ejemplos: Reino Unido 70,0-70,5; España 70,150-70,250; Alemania 70,150-70,210. En EE. UU. no hay asignación" },
+    { "servicio": "ham", "nombre": "8 m (experimental)", "region": ["R1"], "f_min": 40.65, "f_max": 40.75, "nota": "Banda de 40 MHz, SOLO con autorización experimental o temporal en algunos países (Wikipedia 8-meter band, 2025): España 40,650-40,750 (temporal); Eslovenia, Croacia, Italia, Islas Caimán 40,660-40,700; Bélgica 40,660-40,690; Irlanda 40,0-45,0. Sin plan de banda por modos. Comprueba tu autorización" },
     { "servicio": "ham", "nombre": "2 m", "region": ["R1"], "f_min": 144.0, "f_max": 146.0 },
     { "servicio": "ham", "nombre": "2 m", "region": ["R2"], "f_min": 144.0, "f_max": 148.0 },
     { "servicio": "ham", "nombre": "1.25 m", "region": ["R2"], "f_min": 222.0, "f_max": 225.0, "nota": "Solo R2 (EE.UU.)" },

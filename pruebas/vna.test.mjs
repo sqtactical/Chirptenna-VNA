@@ -749,12 +749,12 @@ test('segmentos_hf.json: cada segmento cae dentro de su banda (R1 y EE. UU.), no
       const orden = [...lista].sort((a, b) => a.f_min - b.f_min);
       orden.forEach((s, i) => {
         assert.ok(s.f_min < s.f_max, `${nombre} ${reg} ${s.id}`);
-        assert.ok(s.f_min >= banda.f_min - 1e-9 && s.f_max <= banda.f_max + 1e-9, `${nombre} ${reg} ${s.id} fuera de la banda ${banda.f_min}-${banda.f_max}`);
+        if (!s.fuera_de_banda) assert.ok(s.f_min >= banda.f_min - 1e-9 && s.f_max <= banda.f_max + 1e-9, `${nombre} ${reg} ${s.id} fuera de la banda ${banda.f_min}-${banda.f_max}`);
         if (i) assert.ok(s.f_min >= orden[i - 1].f_max - 1e-9, `${nombre} ${reg}: ${s.id} se solapa con ${orden[i - 1].id}`);
       });
     }
-    for (const [modo, dial] of Object.entries(segCfg.digitales[nombre] ?? {})) {
-      const banda = bandaHF(nombre, 'R1');
+    for (const [modo, v] of Object.entries(segCfg.digitales[nombre] ?? {})) {
+      const dial = typeof v === 'number' ? v : v.dial, banda = bandaHF(nombre, 'R1');
       assert.ok(dial >= banda.f_min && dial + segCfg.ancho_senal_digital_MHz <= banda.f_max, `${nombre} ${modo} ${dial}`);
     }
   }
@@ -811,4 +811,28 @@ test('recomendacion: una banda ancha (80 m) avisa de que no se cubre entera y su
   const ft8 = A.recomendacion(m, picos, { fMin: 3.573e6, fMax: 3.576e6 }, U_SIMPLE, 'roe');
   assert.ok(!ft8.lineas.some(l => /Esta banda es ancha/.test(l)));
   assert.ok(A.coberturaSegmentos(m, [{ id: 'ft8', nombre: 'FT8', f_min: 3.573, f_max: 3.576, puntual: true }], U_SIMPLE)[0].nivel.id === 'mejorable'); // ROE ~2,1 a 3,575 MHz: el segmento de FT8 queda un poco fuera
+});
+test('60 m, 4 m y 8 m: segmentos por region, canales de EE. UU. y banda experimental de 40 MHz', () => {
+  // 60 m: R1 por segmentos del plan provisional; EE. UU. con sus canales de 100 W ERP fuera de la banda secundaria
+  const b60 = bandaHF('60 m', 'R1');
+  const r1 = A.segmentosDeBanda(segCfg, b60, 'eu'), us = A.segmentosDeBanda(segCfg, bandaHF('60 m', 'R2'), 'us');
+  assert.deepEqual(r1.filter(s => !s.puntual).map(s => s.id), ['cw_digital', 'todos']);
+  assert.deepEqual(us.filter(s => /^canal_/.test(s.id)).map(s => s.id), ['canal_5332', 'canal_5348', 'canal_5373', 'canal_5405']);
+  const ft8 = r1.find(s => s.id === 'ft8');
+  cercano(ft8.f_min, 5.357, 1e-9);
+  assert.match(ft8.nota, /no figura en la lista por defecto de WSJT-X/, 'el FT8 de 60 m no es de WSJT-X y no debe decirlo');
+  assert.match(A.segmentosDeBanda(segCfg, bandaHF('40 m', 'R1'), 'eu').find(s => s.id === 'ft8').nota, /Dial de WSJT-X 7\.074 MHz/);
+  // 4 m: llamada SSB, FM y los dial de WSJT-X (FT8, WSPR, MSK144); solo existe en R1
+  const b4 = bandaHF('4 m', 'R1');
+  const s4 = A.segmentosDeBanda(segCfg, b4, 'eu');
+  assert.deepEqual(s4.map(s => s.id).sort(), ['fm', 'ft8', 'msk144', 'ssb', 'wspr']);
+  cercano(s4.find(s => s.id === 'ft8').f_min, 70.154, 1e-9);
+  assert.ok(s4.every(s => s.puntual));
+  assert.deepEqual(A.bandasDeRegion(cfg.bandas, 'us').filter(b => b.nombre === '4 m'), [], 'sin 4 m en EE. UU.');
+  // 8 m: banda de 40 MHz marcada como experimental, solo en R1 y sin segmentos por modo
+  const b8 = cfg.bandas.find(b => /^8 m/.test(b.nombre));
+  assert.ok(b8 && /experimental/.test(b8.nombre) && /autorización experimental o temporal/.test(b8.nota));
+  assert.deepEqual([b8.f_min, b8.f_max], [40.65, 40.75]);
+  assert.ok(A.bandasDeRegion(cfg.bandas, 'eu').includes(b8) && !A.bandasDeRegion(cfg.bandas, 'us').includes(b8));
+  assert.deepEqual(A.segmentosDeBanda(segCfg, b8, 'eu'), []);
 });

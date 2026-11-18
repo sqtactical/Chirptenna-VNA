@@ -143,8 +143,11 @@ function poblarSegmentos() {
   if (!segActuales.length) return;
   sel.add(new Option(`Toda la banda (${b.f_min}–${b.f_max} MHz)`, ''));
   for (const s of segActuales) {
-    const rango = s.puntual ? `${s.f_min.toFixed(3)} MHz` : `${s.f_min}–${s.f_max} MHz`;
-    sel.add(new Option(`${s.nombre} (${rango})${s.nota && !s.puntual ? ' ·  ' + s.nota : ''}`, s.id));
+    const rango = s.puntual ? `${+s.f_min.toFixed(4)} MHz` : `${s.f_min}–${s.f_max} MHz`;
+    const corta = s.nota && !s.puntual && s.nota.length <= 70; // las notas largas van en el tooltip
+    const op = new Option(`${s.nombre} (${rango})${corta ? ' · ' + s.nota : ''}`, s.id);
+    if (s.nota) op.title = s.nota;
+    sel.add(op);
   }
   sel.value = [...sel.options].some(o => o.value === previo) ? previo : '';
 }
@@ -311,7 +314,7 @@ function mostrarModos() {
   const tb = $('modos');
   tb.innerHTML = '<tr><th>Parte de la banda</th><th>Rango</th><th>ROE (mejor a peor)</th><th>Resultado</th><th>Qué hacer</th></tr>';
   for (const f of filas) {
-    const s = f.segmento, rango = s.puntual ? `${s.f_min.toFixed(3)} MHz` : `${s.f_min} – ${s.f_max} MHz`;
+    const s = f.segmento, rango = s.puntual ? `${+s.f_min.toFixed(4)} MHz` : `${s.f_min} – ${s.f_max} MHz`;
     if (!f.medido) { tb.innerHTML += `<tr><td>${s.nombre}</td><td>${rango}</td><td colspan="3">fuera de lo medido</td></tr>`; continue; }
     const roe = f.est.sinPuntos || s.puntual ? f.est.roeMin.toFixed(2) : `${f.est.roeMin.toFixed(2)} a ${f.est.roeMax.toFixed(2)}`;
     tb.innerHTML += `<tr class="${s.id === sel ? 'fila-elegida' : ''}"><td>${s.nombre}${s.id === sel ? ' ◀ ajustando' : ''}</td><td>${rango}</td><td>${roe}</td>` +
