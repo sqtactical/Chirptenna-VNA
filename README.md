@@ -10,6 +10,8 @@ de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirpten
 > **Estado: alpha.** Probado con un emulador del shell del equipo y con datos reales de un NanoVNA-H, **pero el driver aún
 > no se ha ejecutado contra el equipo conectado**. Hasta entonces, trátalo como experimental.
 
+**Úsalo ahora: <https://sqtactical.github.io/Chirptenna-VNA/>** (Chrome o Edge de escritorio; tiene un modo simulado para probar sin equipo).
+
 [English summary at the end.]
 
 ## Qué hace
