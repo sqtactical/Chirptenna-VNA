@@ -293,7 +293,7 @@ async function medir() {
     pitido(1320, 250);
     estado(`Listo: ${crudo.freq.length} puntos en ${((performance.now() - t0) / 1000).toFixed(1)} s${afinado ? ' (con afinado)' : ''}`);
     mostrar();
-    if (ultimo.reco) cricky('resultado', { reco: ultimo.reco });
+    if (ultimo.reco) cricky('resultado', { reco: ultimo.reco, cobertura: ultimo.cobertura, segmento: ultimo.obj?.segmento });
   } catch (e) {
     if (e instanceof ErrorCalibracion && e.faltan.length) cricky('falta-cal');
     if (e.codigo === 'desconectado') perderConexion(e.message);

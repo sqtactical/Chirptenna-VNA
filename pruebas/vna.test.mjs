@@ -890,7 +890,23 @@ test('grillo: multibanda y X=0 aparecen como frases extra y el objetivo puntual 
   assert.match(normal.texto, /Acorta la antena un 2\.1 %\./);
   assert.match(normal.texto, /^Mejorable\. ROE entre 1\.40 y 2\.50: transmitir poco y a potencia reducida\./);
   const x0 = mensajeResultado({ reco: { ...base, rx: { tipo: 'serie', desv: -0.1 } } });
-  assert.match(x0.texto, /no coinciden/);
+  assert.match(x0.texto, /X = 0\) cae un 10\.0 % por debajo del mínimo de ROE/);
+  assert.match(x0.id, /-x$/);
   const puntual = mensajeResultado({ reco: { accion: 'ok', est: { n: 2, roeMin: 2.18, roeMax: 2.2 } } });
   assert.match(puntual.texto, /^Mejorable\. ROE 2\.18:/);
+});
+
+test('grillo: en HF resume los modos medidos y comenta el tramo elegido', () => {
+  const base = { accion: 'cortar', titulo: 'Acorta la antena un 1 %', est: { n: 40, roeMin: 1.3, roeMax: 1.8 } };
+  const fila = (id, nombre, nivel) => ({ segmento: { id, nombre }, medido: true, nivel: { id: nivel, consejo: nivel === 'mal' ? 'No transmitir salvo emergencias' : 'Se puede usar con normalidad' } });
+  const cob = [fila('cw', 'CW', 'muy_bien'), fila('ssb', 'Fonía', 'mal'), fila('ft8', 'FT8', 'aceptable'), { segmento: { id: 'x', nombre: 'No medido' }, medido: false }];
+  const m = mensajeResultado({ reco: base, cobertura: cob, segmento: { id: 'cw' } });
+  assert.match(m.texto, /Para CW \(el tramo que has elegido\) va bien/);
+  assert.match(m.texto, /En HF va bien en FT8, pero no en Fonía\./);
+  assert.ok(!/No medido/.test(m.texto));
+  assert.match(m.id, /-hf/);
+  const malElegido = mensajeResultado({ reco: base, cobertura: cob, segmento: { id: 'ssb' } });
+  assert.match(malElegido.texto, /Para Fonía \(el tramo que has elegido\) no llega: no transmitir/);
+  assert.match(mensajeResultado({ reco: base, cobertura: [fila('cw', 'CW', 'aceptable')] }).texto, /sirve para todos los modos medidos \(CW\)/);
+  assert.ok(!/HF/.test(mensajeResultado({ reco: base, cobertura: [] }).texto), 'sin segmentos no habla de HF');
 });

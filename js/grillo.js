@@ -31,7 +31,30 @@ export function elegirMensaje(evento, d = {}) {
 }
 
 // d = { reco, nombre }: reco es lo que devuelve recomendacion() en modo 'roe'
-export function mensajeResultado({ reco }) {
+// Frase sobre los modos de HF (CW, SSB, FT8...) a partir de coberturaSegmentos(); '' si no hay segmentos medidos.
+// segmento: el tramo elegido por el usuario (si lo hay) se comenta aparte.
+export function resumenHF(cobertura, segmento) {
+  const filas = (cobertura ?? []).filter(f => f.medido);
+  if (!filas.length) return '';
+  const ok = f => ['muy_bien', 'aceptable'].includes(f.nivel.id);
+  const lista = fs => fs.map(f => f.segmento.nombre).join(', ');
+  const partes = [];
+  const sel = segmento && filas.find(f => f.segmento.id === segmento.id);
+  if (sel) {
+    partes.push(ok(sel)
+      ? `Para ${sel.segmento.nombre} (el tramo que has elegido) va bien: ${sel.nivel.consejo.toLowerCase()}.`
+      : `Para ${sel.segmento.nombre} (el tramo que has elegido) no llega: ${sel.nivel.consejo.toLowerCase()}.`);
+  }
+  const otros = filas.filter(f => f !== sel);
+  const bien = otros.filter(ok), mal = otros.filter(f => !ok(f));
+  if (!otros.length) return partes.join(' ');
+  if (!mal.length) partes.push(`En HF sirve para todos los modos medidos (${lista(bien)}).`);
+  else if (!bien.length) partes.push(`En HF no queda bien en ningún modo medido (${lista(mal)}): mira la tabla por modos.`);
+  else partes.push(`En HF va bien en ${lista(bien)}, pero no en ${lista(mal)}.`);
+  return partes.join(' ');
+}
+
+export function mensajeResultado({ reco, cobertura, segmento }) {
   if (!reco) return null;
   if (reco.accion === 'sin_resonancia') {
     return { id: 'sin-resonancia', img: 'estado-sin-resonancia', texto: 'No veo ninguna resonancia en lo medido. Sube el margen lateral o mide en barrido general, y revisa el cable y la calibración.' };
@@ -47,7 +70,13 @@ export function mensajeResultado({ reco }) {
   const extra = [];
   if (reco.multibanda) extra.push('Parece una multibanda: ajusta una banda cada vez y vuelve a medir las demás.');
   else if (reco.accion === 'cortar' || reco.accion === 'alargar') extra.push(`${reco.titulo}.`);
-  if (reco.rx && reco.rx.tipo === 'serie' && Math.abs(reco.rx.desv) > 0.025) extra.push('Ojo: el mínimo de ROE y la resonancia eléctrica no coinciden, el porcentaje de longitud puede fallar.');
+  const rx = reco.rx;
+  const xFuera = rx && rx.tipo === 'serie' && Math.abs(rx.desv) > 0.025;
+  if (xFuera) {
+    extra.push(`Ojo: la resonancia eléctrica (X = 0) cae un ${(Math.abs(rx.desv) * 100).toFixed(1)} % ${rx.desv > 0 ? 'por encima' : 'por debajo'} del mínimo de ROE. Activa «Mostrar la resonancia eléctrica» para verla; el porcentaje de longitud puede fallar, así que ajusta poco a poco.`);
+  }
+  const hf = resumenHF(cobertura, segmento);
+  if (hf) extra.push(hf);
   const cabecera = {
     muy_bien: '¡Música para mis antenas!',
     aceptable: 'Aceptable.',
@@ -55,7 +84,7 @@ export function mensajeResultado({ reco }) {
     mal: 'Mal acoplada.',
   }[nivel.id];
   const img = reco.multibanda ? 'tipo-multibanda' : `roe-${nivel.id.replace('_', '-')}`;
-  return { id: `resultado-${nivel.id}${reco.multibanda ? '-mb' : ''}`, img, texto: [`${cabecera} ${rango}: ${nivel.consejo.toLowerCase()}.`, ...extra].join(' '), nivel: nivel.id };
+  return { id: `resultado-${nivel.id}${reco.multibanda ? '-mb' : ''}${hf ? '-hf' : ''}${xFuera ? '-x' : ''}`, img, texto: [`${cabecera} ${rango}: ${nivel.consejo.toLowerCase()}.`, ...extra].join(' '), nivel: nivel.id };
 }
 
 // ---------- DOM ----------
