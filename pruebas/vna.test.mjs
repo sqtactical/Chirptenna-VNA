@@ -498,33 +498,105 @@ test('modo Simple: el criterio es ROE 2 (9,54 dB) y se explica con el porcentaje
   assert.ok(a2.fHi - a2.fLo >= a10.fHi - a10.fLo);
 });
 
-test('modo Simple: niveles de ROE (1-1,5 muy bien, 1,5-2 aceptable, 2-3 mejorable, mas de 3 mal)', async () => {
+
+
+// ---------- Modo Simple con curvas complejas: se juzga la BANDA objetivo, no la mejor resonancia del rango ----------
+const U_SIMPLE = 20 * Math.log10(3);
+const BANDA_868 = { servicio: 'ism', nombre: '868 MHz SRD', region: ['EU'], f_min: 863, f_max: 870 };
+const OBJ_868 = { fMin: 863e6, fMax: 870e6, banda: BANDA_868 };
+const curva = g => {
+  const n = 601, f0 = 776.7e6, f1 = 957e6;
+  const freq = Float64Array.from({ length: n }, (_, i) => f0 * (f1 / f0) ** (i / (n - 1)));
+  const re = new Float64Array(n), im = new Float64Array(n);
+  freq.forEach((f, i) => { const [a, b] = g(f / 1e6); re[i] = a; im[i] = b; });
+  return A.calcular({ freq, re, im });
+};
+const dipo = (f, f0, q, gmin) => 1 - (1 - gmin ** 2) / (1 + (2 * q * (f - f0) / f0) ** 2);
+const polar = (m, f) => [m * Math.cos(f / 9), m * Math.sin(f / 9)];
+const analizar = med => {
+  const picos = A.resonancias(med, U_SIMPLE), ev = A.evaluarBandas(med, [BANDA_868], U_SIMPLE, 2.7e9);
+  return { picos, ev, reco: A.recomendacion(med, picos, OBJ_868, U_SIMPLE, 'roe'), ver: A.veredicto(picos, ev, U_SIMPLE, 'roe', { medida: med, obj: OBJ_868 }) };
+};
+const texto = r => [r.reco.titulo, ...r.reco.lineas, r.ver.titulo, ...r.ver.lineas].join('\n');
+
+test('modo Simple, curva ondulada: el consejo sale de la banda (mal acoplada), no de un valle bueno en otro sitio', () => {
+  const r = analizar(curva(f => polar(0.45 + 0.25 * Math.cos(2 * Math.PI * f / 28), f)));
+  assert.equal(r.reco.accion, 'irregular');
+  assert.match(r.ver.titulo, /mal acoplada en el peor punto/);
+  assert.ok(r.ver.lineas.includes('No transmitir salvo emergencias.'), r.ver.lineas.join('\n'));
+  assert.ok(!texto(r).includes('Se puede usar con normalidad'), texto(r));
+  assert.ok(!/Acorta|Alarga/.test(r.reco.titulo));
+  assert.match(r.ver.lineas.join('\n'), /fuera de esta banda/);
+});
+
+test('modo Simple, dos valles hondos a cada lado del objetivo: curva irregular y banda mala', () => {
+  const r = analizar(curva(f => polar(Math.sqrt(Math.min(dipo(f, 850, 40, 0.05), dipo(f, 885, 40, 0.05))), f)));
+  assert.equal(r.reco.accion, 'irregular');
+  assert.match(r.reco.lineas.join('\n'), /2 mínimos de ROE a ambos lados/);
+  assert.match(r.ver.titulo, /mal acoplada/);
+  assert.ok(!texto(r).includes('Se puede usar con normalidad'));
+});
+
+test('modo Simple, rizado alrededor de ROE 2 dentro de la banda: mejorable, con la parte buena indicada', () => {
+  const r = analizar(curva(f => polar(0.33 + 0.07 * Math.cos(2 * Math.PI * f / 5), f)));
+  assert.equal(r.reco.accion, 'irregular');
+  assert.match(r.ver.titulo, /mejorable en el peor punto/);
+  assert.ok(r.ver.lineas.includes('Transmitir poco y a potencia reducida.'));
+  assert.match(r.ver.lineas.join('\n'), /Solo el \d+ % de la banda llega a ROE de 2 o mejor/);
+});
+
+test('modo Simple, antena normal bien centrada: no se marca como irregular y el consejo es de uso normal', async () => {
+  const med = await barrido(776.7e6, 957e6, 601);
+  const r = analizar(med);
+  assert.notEqual(r.reco.accion, 'irregular');
+  assert.match(r.ver.titulo, /ISM 868 MHz SRD: ROE entre 1\.\d\d y 1\.\d\d/);
+  assert.ok(r.ver.lineas.includes('Se puede usar con normalidad.'), r.ver.lineas.join('\n'));
+  assert.match(r.reco.lineas[0], /^En la banda \(863\.00 MHz a 870\.00 MHz\): ROE entre/);
+});
+
+test('modo Simple: el ruido sobre un unico valle no se toma por curva irregular', async () => {
+  for (let it = 0; it < 12; it++) {
+    const med = await barrido(776.7e6, 957e6, 601); // el simulador pone ruido aleatorio en cada barrido
+    const picos = A.resonancias(med, U_SIMPLE);
+    assert.equal(A.curvaIrregular(med, picos, OBJ_868, U_SIMPLE), null, `iteracion ${it}`);
+  }
+});
+
+test('modo Simple: una unica resonancia mal centrada sigue dando alargar/acortar, con el nivel de la banda', () => {
+  // un valle ancho a 905 MHz (la banda objetivo esta a 866 MHz): hay que acortar, y la banda no es utilizable
+  const r = analizar(curva(f => polar(Math.sqrt(dipo(f, 905, 12, 0.1)), f)));
+  assert.ok(['alargar', 'cortar'].includes(r.reco.accion), r.reco.accion);
+  assert.match(r.ver.titulo, /acoplada|mejorable|aceptable/);
+  assert.ok(r.reco.est.roeMax > 1);
+});
+
+test('modo Simple, frecuencia exacta: se juzga ese punto', async () => {
+  const med = await barrido(776.7e6, 957e6, 601);
+  const f = 871e6, obj = { fMin: f, fMax: f, banda: { servicio: 'objetivo', nombre: '871.000 MHz', region: [], f_min: 871, f_max: 871 } };
+  const picos = A.resonancias(med, U_SIMPLE);
+  const v = A.veredicto(picos, A.evaluarBandas(med, [obj.banda], U_SIMPLE, 2.7e9), U_SIMPLE, 'roe', { medida: med, obj });
+  assert.match(v.titulo, /^871\.00\d? MHz: ROE 1\.\d\d \(muy bien acoplada\)\.$/);
+  assert.equal(v.lineas[0], 'Se puede usar con normalidad.');
+});
+
+test('modo Simple, barrido general: sin consejo global, remite a la tabla de bandas (que da el rango de ROE de cada una)', async () => {
+  const med = await barrido(776.7e6, 957e6, 601);
+  const ev = A.evaluarBandas(med, [BANDA_868], U_SIMPLE, 2.7e9);
+  const picos = A.resonancias(med, U_SIMPLE);
+  const v = A.veredicto(picos, ev, U_SIMPLE, 'roe');
+  assert.ok(!v.lineas.some(l => /Se puede usar|Transmitir poco|No transmitir/.test(l)));
+  assert.ok(v.lineas.some(l => /tabla de bandas/.test(l)));
+  assert.ok(ev[0].peorVswr >= ev[0].vMejor);
+});
+
+test('modo Simple: niveles de ROE y consejos (1-1,5 muy bien, 1,5-2 aceptable, 2-3 mejorable, mas de 3 mal)', () => {
   const n = r => A.nivelROE(r).id;
   assert.equal(n(1), 'muy_bien'); assert.equal(n(1.5), 'muy_bien');
   assert.equal(n(1.51), 'aceptable'); assert.equal(n(2), 'aceptable');
   assert.equal(n(2.01), 'mejorable'); assert.equal(n(3), 'mejorable');
   assert.equal(n(3.01), 'mal'); assert.equal(n(50), 'mal');
   assert.deepEqual(A.NIVELES_ROE.map(x => x.etiqueta), ['Muy bien acoplada', 'Aceptable', 'Mejorable', 'Mal acoplada']);
-  // el limite de "Aceptable" es el criterio del modo Simple (ROE 2)
-  cercano(A.NIVELES_ROE[1].max, A.roeDeRl(20 * Math.log10(3)), 1e-9);
-  // el nivel sale en el texto del veredicto y de la recomendacion
-  const med = await barrido(776.7e6, 957e6, 601), picos = A.resonancias(med, 20 * Math.log10(3));
-  assert.match(A.veredicto(picos, [], 20 * Math.log10(3), 'roe').titulo, /ROE 1\.\d\d: muy bien acoplada/);
-  assert.match(A.recomendacion(med, picos, { fMin: 863e6, fMax: 870e6 }, 20 * Math.log10(3), 'roe').lineas[0], /muy bien acoplada/);
-  // en modo avanzado no aparecen los niveles
-  assert.ok(!/acoplada/.test(A.veredicto(picos, [], 10).titulo));
-});
-
-test('modo Simple: cada nivel de ROE trae su consejo de uso y sale en el veredicto y la recomendacion', async () => {
   assert.equal(A.nivelROE(2.5).consejo, 'Transmitir poco y a potencia reducida');
   assert.equal(A.nivelROE(4).consejo, 'No transmitir salvo emergencias');
-  const u = 20 * Math.log10(3), med = await barrido(776.7e6, 957e6, 601), picos = A.resonancias(med, u);
-  const v = A.veredicto(picos, [], u, 'roe');
-  assert.equal(v.lineas[0], 'Se puede usar con normalidad.');
-  assert.equal(A.recomendacion(med, picos, { fMin: 863e6, fMax: 870e6 }, u, 'roe').lineas[1], 'Se puede usar con normalidad.');
-  // una antena mal adaptada: ROE de ~4 a la resonancia (la simulada de 2,44 GHz, gmin 0,22, da ROE ~1,6; se fuerza con otro umbral)
-  const mala = { vswr: 4.2, rl: 4.4 };
-  assert.match(A.textoAdaptacion(mala, 'roe'), /mal acoplada/);
-  // en Avanzado no hay consejos de uso
-  assert.ok(!A.veredicto(picos, [], 10).lineas.some(l => /transmitir|usar con normalidad/i.test(l)));
+  cercano(A.NIVELES_ROE[1].max, A.roeDeRl(U_SIMPLE), 1e-9); // el limite de "Aceptable" es el criterio del modo Simple (ROE 2)
 });

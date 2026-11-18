@@ -1,7 +1,7 @@
 import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado } from './drivers/simulado.js';
 import {
-  calcular, resonancias, resonanciasDudosas, textoAdaptacion, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
+  calcular, resonancias, resonanciasDudosas, nivelROE, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
@@ -264,7 +264,7 @@ function mostrar() {
   }
 
   // Resumen (avanzado)
-  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad());
+  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj });
   $('titulo-grafico').textContent = unidad() === 'roe' ? 'ROE (relación de onda estacionaria)' : 'Pérdida de retorno';
   const ve = $('veredicto');
   ve.replaceChildren(Object.assign(document.createElement('b'), { textContent: v.titulo }));
@@ -296,7 +296,7 @@ function tablas() {
   const filas = [...ultimo.evaluacion].sort((a, b) => orden[a.estado] - orden[b.estado] || a.banda.f_min - b.banda.f_min);
   for (const e of filas) {
     const b = e.banda;
-    const mejor = e.fMejor ? `${unidad() === 'roe' ? textoAdaptacion({ vswr: e.vMejor }, 'roe') :`${e.mejorRl.toFixed(1)} dB · VSWR ${e.vMejor.toFixed(2)}`} @ ${fmtF(e.fMejor)}` : '';
+    const mejor = e.fMejor ? `${unidad() === 'roe' ? `ROE ${e.vMejor.toFixed(2)} a ${e.peorVswr.toFixed(2)} (peor punto: ${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` : `${e.mejorRl.toFixed(1)} dB · VSWR ${e.vMejor.toFixed(2)}`} @ ${fmtF(e.fMejor)}` : '';
     tb.innerHTML += `<tr class="${e.estado}"><td>${ICONO[e.estado]}</td><td>${b.servicio.toUpperCase()} ${b.nombre} <small>[${b.region.join('/')}]</small></td><td>${b.f_min} – ${b.f_max} MHz</td><td>${ETIQUETA[e.estado]}</td><td>${mejor}</td></tr>`;
   }
 }

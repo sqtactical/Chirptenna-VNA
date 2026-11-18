@@ -1,6 +1,6 @@
 // Informe PDF generado en el navegador con jsPDF (se carga bajo demanda desde cdnjs).
 import { dibujar, dibujarROE } from './grafico.js';
-import { veredicto, roeDeRl, textoAdaptacion } from './analisis.js';
+import { veredicto, roeDeRl, nivelROE } from './analisis.js';
 
 async function cargarJsPDF() {
   if (window.jspdf) return window.jspdf.jsPDF;
@@ -46,7 +46,7 @@ export async function generarPDF(ultimo, meta) {
     y += 3;
   }
   const roe = meta.unidad === 'roe';
-  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, meta.unidad);
+  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, meta.unidad, { medida: ultimo.medida, obj: ultimo.obj });
   texto(v.titulo, { size: 13, bold: true, gap: 2 });
   for (const l of v.lineas) texto('- ' + l, { size: 10, gap: 1 });
   y += 2;
@@ -100,7 +100,7 @@ export async function generarPDF(ultimo, meta) {
     doc.setTextColor(31, 42, 48); doc.setFont('helvetica', 'normal');
     doc.text(`${b.servicio.toUpperCase()} ${b.nombre} [${b.region.join('/')}]`, M + 28, y + 4);
     doc.text(`${b.f_min} - ${b.f_max} MHz`, M + 100, y + 4);
-    if (e.fMejor) doc.text(roe ? textoAdaptacion({ vswr: e.vMejor }, 'roe') : `${e.mejorRl.toFixed(1)} dB, VSWR ${e.vMejor.toFixed(2)}`, M + 140, y + 4);
+    if (e.fMejor) doc.text(roe ? `ROE ${e.vMejor.toFixed(2)} a ${e.peorVswr.toFixed(2)} (${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` :`${e.mejorRl.toFixed(1)} dB, VSWR ${e.vMejor.toFixed(2)}`, M + 140, y + 4);
     y += 5;
   }
   y += 4;

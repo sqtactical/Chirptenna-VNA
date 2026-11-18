@@ -36,7 +36,11 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    el límite de «aceptable» es el criterio (ROE 2) y no hay línea de umbral en el gráfico. Cada nivel tiene su `consejo`, que sale en
    el veredicto y la recomendación. Si se cambian, tocar también la leyenda de `index.html` y el texto del PDF. La banda medida se
    marca con borde sólido, ▼ y su nombre en el margen superior (`MARGEN.t` = 30; el nombre solo si hay ≤ 3 bandas).
-7. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
+7. **Curvas complejas en Simple (fractales, multibanda, rizado)**: el nivel y el consejo de uso salen del PEOR punto de ROE dentro de la
+   banda objetivo (`estadisticaBanda`, `lineasBanda`), nunca de la mejor resonancia del rango (que puede estar en otra banda). Si hay ≥ 2
+   mínimos a ambos lados del objetivo o la ROE oscila dentro de la banda (`curvaIrregular`; los mínimos solo cuentan si entre ellos la ROE
+   sube un 10 %, para que el ruido no cuente) no se da «alarga/acorta un X %» (acción `irregular`). Probado con curvas sintéticas.
+8. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 
 ## Pendiente

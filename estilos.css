@@ -93,6 +93,7 @@ canvas.cuadrado { height: auto; aspect-ratio: 1 / 1; max-height: 420px; margin: 
 .reco.alargar, .reco.cortar { border-left: 6px solid var(--aviso); }
 .reco.ok { border-left: 6px solid var(--ok); }
 .reco.estrecha, .reco.adaptacion, .reco.sin_resonancia { border-left: 6px solid var(--error); }
+.reco.irregular { border-left: 6px solid var(--aviso); }
 .reco ul { margin: .3rem 0 0; padding-left: 1.2rem; }
 .reco li { margin: .25rem 0; }
 
