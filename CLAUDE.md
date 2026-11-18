@@ -44,6 +44,9 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    resonancia eléctrica es donde X cruza por cero (`reactanciaCero`). En antenas cargadas, fractales, con adaptador o medidas a través de
    un cable no coinciden. Si se separan más de un 2,5 % (`DESV_REACTANCIA`) y la banda no está ya bien cubierta, la recomendación (Simple
    y Avanzado) avisa de que el porcentaje de longitud puede no ser fiable; la tabla de Avanzado y el PDF muestran X = 0 al lado de cada mínimo.
+   En Simple hay un interruptor «Mostrar la resonancia eléctrica (X = 0)» (apagado por defecto, se recuerda en `localStorage` como
+   `ver-x`): dibuja una línea violeta discontinua con su frecuencia en el gráfico de ROE (`marcasReactancia`, `opts.marcasX` de
+   `dibujarSerie`) y también en el PDF.
 9. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 

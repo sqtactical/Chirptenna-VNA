@@ -107,6 +107,15 @@ export function reactanciaCero({ freq, zx }, f, rango = 0.12) {
   }
   return mejor && { fX: mejor.fX, tipo: mejor.tipo, desv: mejor.fX / f - 1 };
 }
+// Cruces de X = 0 (resonancia en serie) junto a los `n` mejores mínimos de ROE, para marcarlos en el gráfico. Sin duplicados.
+export function marcasReactancia(medida, picos, n = 3) {
+  const out = [];
+  for (const p of picos.slice(0, n)) {
+    const rx = reactanciaCero(medida, p.f);
+    if (rx && rx.tipo === 'serie' && !out.some(o => Math.abs(Math.log(o.fX / rx.fX)) < 0.002)) out.push({ ...rx, fMin: p.f });
+  }
+  return out;
+}
 export const DESV_REACTANCIA = 0.025; // por encima de un 2,5 % se avisa de que mínimo de ROE y X = 0 no coinciden
 
 // ¿La curva es demasiado irregular para decir «alarga/acorta un X %»? Sí si hay varios mínimos visibles a ambos lados del

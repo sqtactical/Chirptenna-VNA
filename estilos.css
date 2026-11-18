@@ -116,3 +116,5 @@ progress { width: 100%; }
 .niveles { list-style: none; display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; padding: 0; margin: .5rem 0 .2rem; font-size: .88rem; }
 .niveles li { display: flex; align-items: center; gap: .4rem; }
 .niveles i { width: .9rem; height: .9rem; border-radius: 3px; display: inline-block; opacity: .85; flex: none; }
+
+.fila-toggle { display: flex; flex-direction: row; align-items: center; gap: .5rem; margin: .4rem 0 .2rem; font-size: .9rem; }

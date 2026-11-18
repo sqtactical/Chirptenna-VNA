@@ -1,7 +1,7 @@
 import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado } from './drivers/simulado.js';
 import {
-  calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
+  calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
@@ -309,10 +309,16 @@ function tablas() {
   }
 }
 
+// Resonancia eléctrica (X = 0) en el gráfico de ROE del modo Simple, si el usuario lo ha activado.
+function marcasXActivas() {
+  if (unidad() !== 'roe' || !$('ver-x').checked || !ultimo) return [];
+  return marcasReactancia(ultimo.medida, ultimo.picos).map(r => ({ f: r.fX, etiqueta: `X = 0 · ${fmtF(r.fX)}` }));
+}
+
 function redibujar() {
   if (!ultimo) return;
   const { medida, idx } = ultimo, fm = medida.freq[idx];
-  (unidad() === 'roe' ? dibujarROE : dibujar)($('grafico'), medida, ultimo.evaluacion, ultimo.umbral, { marcadorF: fm });
+  (unidad() === 'roe' ? dibujarROE : dibujar)($('grafico'), medida, ultimo.evaluacion, ultimo.umbral, { marcadorF: fm, marcasX: marcasXActivas() });
   if (modo !== 'avanzado') return;
   dibujarSmith($('smith'), medida, { marcadorIdx: idx });
   dibujarSerie($('g-z'), medida.freq, [{ y: medida.zr, nombre: 'R' }, { y: medida.zx, nombre: 'X', color: '#ef6c00' }], { unidad: 'Ω', marcadorF: fm });
@@ -401,6 +407,13 @@ async function iniciar() {
   } catch (e) {
     return estado('No se pudo cargar bandas.json (¿abierto sin servidor web?)', true);
   }
+  try { $('ver-x').checked = localStorage.getItem('ver-x') === '1'; } catch {}
+  $('ayuda-x').hidden = !$('ver-x').checked;
+  $('ver-x').onchange = () => {
+    try { localStorage.setItem('ver-x', $('ver-x').checked ? '1' : '0'); } catch {}
+    $('ayuda-x').hidden = !$('ver-x').checked;
+    redibujar();
+  };
   let guardado = 'simple';
   try { guardado = localStorage.getItem('modo') || 'simple'; } catch {}
   aplicarModo(guardado === 'avanzado' ? 'avanzado' : 'simple');
@@ -441,6 +454,7 @@ async function iniciar() {
         espaciado: modo === 'simple' || $('espaciado').value === 'log' ? 'logaritmico' : 'lineal',
         region: $('region').selectedOptions[0].textContent,
         unidad: unidad(),
+        marcasX: marcasXActivas(),
       });
       estado(`Informe guardado: ${nombre}`);
     } catch (e) { estado(e.message, true); }

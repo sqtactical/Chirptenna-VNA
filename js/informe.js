@@ -53,13 +53,13 @@ export async function generarPDF(ultimo, meta) {
 
   // Grafico (siempre en colores claros para imprimir)
   const cv = document.createElement('canvas');
-  (roe ? dibujarROE : dibujar)(cv, ultimo.medida, ultimo.evaluacion, ultimo.umbral, { claro: true, ancho: 900, alto: 380, dpr: 2 });
+  (roe ? dibujarROE : dibujar)(cv, ultimo.medida, ultimo.evaluacion, ultimo.umbral, { claro: true, ancho: 900, alto: 380, dpr: 2, marcasX: roe ? meta.marcasX : undefined });
   const alto = (W * 380) / 900;
   salto(alto + 6);
   doc.addImage(cv.toDataURL('image/png'), 'PNG', M, y, W, alto);
   y += alto + 2;
   texto(roe
-    ? 'Zonas horizontales: ROE 1-1,5 muy bien acoplada; 1,5-2 aceptable; 2-3 mejorable (transmitir poco y a potencia reducida); mas de 3 mal acoplada (no transmitir salvo emergencias). Franjas verticales con borde: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos.'
+    ? 'Zonas horizontales: ROE 1-1,5 muy bien acoplada; 1,5-2 aceptable; 2-3 mejorable (transmitir poco y a potencia reducida); mas de 3 mal acoplada (no transmitir salvo emergencias). Franjas verticales con borde: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos.' + (meta.marcasX?.length ? ' Linea violeta discontinua: resonancia electrica (reactancia cero); si no coincide con el punto mas bajo de la curva, el porcentaje de longitud puede no ser fiable.' : '')
     : 'Franjas: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea roja discontinua = minimo exigido.', { size: 8, color: [93, 106, 115], gap: 4 });
 
   // Datos de la medida

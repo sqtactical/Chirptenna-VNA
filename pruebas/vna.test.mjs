@@ -654,3 +654,16 @@ test('X = 0: sin cruce de reactancia cerca no hay aviso ni error', () => {
   const med = curvaZ(866e6, () => 50, 1.5, 1.8); // lejos de la resonancia: X nunca cruza cerca
   assert.equal(A.reactanciaCero(med, 1.6 * 866e6, 0.03), null);
 });
+
+test('marcasReactancia: devuelve los cruces X = 0 junto a los minimos de ROE, sin duplicados ni resonancias en paralelo', () => {
+  const f0 = 866e6, med = curvaZ(f0, f => 20 * (f / f0) ** 8);
+  const picos = A.resonancias(med, 5, 0.5);
+  const marcas = A.marcasReactancia(med, picos);
+  assert.equal(marcas.length, 1);
+  cercano(marcas[0].fX, f0, f0 * 0.002);
+  assert.ok(marcas[0].fMin > f0 * 1.05);
+  assert.deepEqual(A.marcasReactancia(med, []), []);
+  // dos picos que apuntan al mismo cruce dan una sola marca
+  const doble = [picos[0], { ...picos[0], f: picos[0].f * 1.01 }];
+  assert.equal(A.marcasReactancia(med, doble).length, 1);
+});

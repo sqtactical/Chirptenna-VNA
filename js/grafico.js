@@ -120,6 +120,16 @@ export function dibujarSerie(canvas, freq, series, opts = {}) {
       c.fillStyle = s.color ?? t.linea; c.fillText('— ' + s.nombre, m.l + 8 + k * 90, m.t + 24);
     }
   });
+  // resonancia eléctrica (X = 0): línea violeta discontinua con su etiqueta abajo
+  for (const mk of opts.marcasX ?? []) {
+    if (mk.f < fmin || mk.f > fmax) continue;
+    const x = X(mk.f), derecha = x > w * 0.7;
+    c.strokeStyle = '#9b5de5'; c.lineWidth = 1.6; c.setLineDash([6, 4]);
+    c.beginPath(); c.moveTo(x, m.t); c.lineTo(x, h - m.b); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#9b5de5'; c.font = 'bold 11px system-ui, sans-serif'; c.textAlign = derecha ? 'right' : 'left';
+    c.fillText(mk.etiqueta, x + (derecha ? -5 : 5), h - m.b - 6);
+    c.textAlign = 'left'; c.font = '11px system-ui, sans-serif'; c.lineWidth = 1;
+  }
   // cursor
   if (opts.marcadorF != null && opts.marcadorF >= fmin && opts.marcadorF <= fmax) {
     c.strokeStyle = t.texto; c.lineWidth = 1; c.globalAlpha = 0.6;
