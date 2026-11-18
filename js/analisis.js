@@ -228,6 +228,13 @@ export function infoMultibanda(picos, fc, indicado = false) {
   return { otras, indicado: !otras.length, posicion: arriba && abajo ? 'media' : arriba ? 'baja' : abajo ? 'alta' : null };
 }
 
+// Cuántos milímetros mover para un cambio de longitud de pct % (positivo = alargar). Cortar es irreversible: el primer paso es el 70 %.
+export function calculoMm(largoMm, pct) {
+  if (!(largoMm > 0) || !Number.isFinite(pct) || pct === 0) return null;
+  const mm = (largoMm * Math.abs(pct)) / 100;
+  return { accion: pct > 0 ? 'alargar' : 'cortar', mm, primerPaso: pct < 0 ? mm * 0.7 : null };
+}
+
 // Indica si hay que alargar o cortar la antena para centrar su resonancia en la banda objetivo (Hz).
 // En modo 'roe' (Simple) juzga la banda objetivo (peor punto) y avisa si la curva es irregular.
 // opts.multibanda: el usuario ha dicho que la antena es multibanda (trampas, abanico...): no se da un factor global de dimensiones.

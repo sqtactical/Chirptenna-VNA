@@ -3,13 +3,14 @@ import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
 import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
-  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO,
+  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO, calculoMm,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
 import { generarPDF } from './informe.js';
 import { corregir, faltante, juegoAJSON, juegoDeJSON, ErrorCalibracion } from './calibracion.js';
 import { almacen, crearAsistente, barraCobertura } from './asistente.js';
 import { crearGrillo, elegirMensaje } from './grillo.js';
+import { REGIONES, PRESETS, calcularCanal } from './meshtastic.js';
 
 const $ = id => document.getElementById(id);
 const ETIQUETA = { ok: T('Cubre la banda'), parcial: T('Cubre parte'), no: T('No resuena aquí'), sin_datos: T('Sin puntos (ver resolución)'), fuera: T('Fuera del rango del equipo') };
@@ -99,6 +100,7 @@ function poblarObjetivo() {
     .sort((a, b) => a.f_min - b.f_min);
   sel.innerHTML = '';
   listaObj.forEach((b, i) => sel.add(new Option(`${b.servicio.toUpperCase()} ${b.nombre} (${b.f_min}-${b.f_max} MHz)`, String(i))));
+  sel.add(new Option(T('Mi nodo Meshtastic…'), 'meshtastic'));
   sel.add(new Option(T('Otra frecuencia…'), 'custom'));
   const igual = [...sel.options].find(o => o.textContent === previo);
   if (igual) sel.value = igual.value;
@@ -107,7 +109,30 @@ function poblarObjetivo() {
     sel.value = String(i >= 0 ? i : 0);
   }
   $('campo-fobj').hidden = sel.value !== 'custom';
+  $('campo-mesh').hidden = sel.value !== 'meshtastic';
+  actualizarMesh();
   poblarSegmentos();
+}
+
+// ---------- Mi nodo Meshtastic: el canal se calcula como el firmware ----------
+function canalMesh() {
+  return calcularCanal({ region: $('mesh-region').value, preset: $('mesh-preset').value, nombre: $('mesh-nombre').value, slot: $('mesh-slot').value });
+}
+
+function actualizarMesh() {
+  const c = canalMesh();
+  $('mesh-info').textContent = c
+    ? T('Frecuencia de tu canal: {0} MHz (canal {1} de {2}, ancho {3} kHz). Se juzga la antena en ese canal.', c.fMHz, c.slot, c.numCanales, c.anchoKHz)
+    : '';
+  try { localStorage.setItem('mesh', JSON.stringify({ r: $('mesh-region').value, p: $('mesh-preset').value, n: $('mesh-nombre').value, s: $('mesh-slot').value })); } catch {}
+}
+
+function iniciarMesh() {
+  for (const [id, r] of Object.entries(REGIONES)) $('mesh-region').add(new Option(T(r.nombre), id));
+  for (const id of Object.keys(PRESETS)) $('mesh-preset').add(new Option(id, id));
+  try { const g = JSON.parse(localStorage.getItem('mesh') || 'null'); if (g) { $('mesh-region').value = g.r; $('mesh-preset').value = g.p; $('mesh-nombre').value = g.n ?? ''; $('mesh-slot').value = g.s ?? ''; } } catch {}
+  if (!$('mesh-region').value) $('mesh-region').value = $('region').value === 'us' ? 'US' : 'EU_868';
+  for (const id of ['mesh-region', 'mesh-preset', 'mesh-nombre', 'mesh-slot']) $(id).onchange = () => { actualizarMesh(); resumenCal(); reanalizar(); };
 }
 
 function objetivoActual() {
@@ -117,6 +142,12 @@ function objetivoActual() {
     const f = +$('fobj').value * 1e6;
     if (!(f > 0)) return null;
     return { fMin: f, fMax: f, banda: { servicio: 'objetivo', nombre: `${(f / 1e6).toFixed(3)} MHz`, region: [], f_min: f / 1e6, f_max: f / 1e6 } };
+  }
+  if (v === 'meshtastic') {
+    const c = canalMesh();
+    if (!c) return null;
+    const f0 = c.fMHz - c.anchoKHz / 2000, f1 = c.fMHz + c.anchoKHz / 2000;
+    return { fMin: f0 * 1e6, fMax: f1 * 1e6, banda: { servicio: 'meshtastic', nombre: `${$('mesh-region').value} ${$('mesh-preset').value} ${c.fMHz} MHz`, region: [], f_min: f0, f_max: f1 } };
   }
   const b = listaObj[+v];
   if (!b) return null;
@@ -142,7 +173,7 @@ function segmentoElegido(banda) {
 
 function poblarSegmentos() {
   const sel = $('segmento'), v = $('objetivo').value;
-  const b = v === 'custom' || v === '' ? null : listaObj[+v];
+  const b = v === 'custom' || v === 'meshtastic' || v === '' ? null : listaObj[+v];
   segActuales = b && segCfg ? segmentosDeBanda(segCfg, b, $('region').value) : [];
   const previo = sel.value;
   sel.innerHTML = '';
@@ -338,6 +369,19 @@ function mostrarModos() {
     `${mal.length ? ` <b>${T('Con cuidado o mejor no:')}</b> ${mal.join(', ')}.` : ''}</p>`;
 }
 
+// Calculadora de corte: el porcentaje de la recomendación pasado a milímetros del radiador (solo antenas de una banda)
+function calculadoraMm() {
+  const r = ultimo?.reco;
+  const aplica = r && !r.multibanda && (r.accion === 'alargar' || r.accion === 'cortar') && Number.isFinite(r.pct);
+  $('calc-mm').hidden = !aplica;
+  if (!aplica) return;
+  const c = calculoMm(+$('largo-mm').value, r.pct);
+  $('res-mm').textContent = !c ? '' : c.accion === 'cortar'
+    ? T('Corta {0} mm en total. Hazlo en pasos: corta primero {1} mm, vuelve a medir y repite: cortar no se puede deshacer.', c.mm.toFixed(1), c.primerPaso.toFixed(1))
+    : T('Añade {0} mm al radiador. Después vuelve a medir para comprobarlo.', c.mm.toFixed(1));
+  try { localStorage.setItem('largo-mm', $('largo-mm').value); } catch {}
+}
+
 function mostrar() {
   if (!ultimo) return;
   $('resultados').hidden = false;
@@ -359,6 +403,7 @@ function mostrar() {
     r.appendChild(ul);
   }
   mostrarModos();
+  calculadoraMm();
 
   // Resumen (avanzado)
   const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj });
@@ -499,6 +544,9 @@ function enlazarCursor() {
 
 async function iniciar() {
   iniciarTema();
+  iniciarMesh();
+  try { $('largo-mm').value = localStorage.getItem('largo-mm') ?? ''; } catch {}
+  $('largo-mm').oninput = calculadoraMm;
   grillo = crearGrillo({
     raiz: $('grillo'), img: $('grillo-img'), burbuja: $('grillo-burbuja'), texto: $('grillo-texto'), vale: $('grillo-vale'), no: $('grillo-no'),
     alCambiar: activo => { $('ver-grillo').checked = activo; },
@@ -543,7 +591,7 @@ async function iniciar() {
   $('campo-antena-sim').hidden = !$('simulado').checked;
   $('medir').onclick = medir;
   $('region').onchange = () => { poblarObjetivo(); reanalizar(); };
-  $('objetivo').onchange = () => { $('campo-fobj').hidden = $('objetivo').value !== 'custom'; poblarSegmentos(); reanalizar(); };
+  $('objetivo').onchange = () => { $('campo-fobj').hidden = $('objetivo').value !== 'custom'; $('campo-mesh').hidden = $('objetivo').value !== 'meshtastic'; actualizarMesh(); poblarSegmentos(); reanalizar(); };
   $('segmento').onchange = reanalizar; // se mide la banda entera, así que cambiar de segmento no obliga a medir otra vez
   $('fobj').onchange = reanalizar;
   $('umbral').onchange = () => { if (ultimo) ultimo.umbral = +$('umbral').value; reanalizar(); };

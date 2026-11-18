@@ -144,3 +144,6 @@ body[data-modo="simple"] #grillo[data-activo="1"] { display: flex; }
 @media (max-width: 560px) { #grillo-img { width: 64px; height: 64px; } }
 
 .selector-idioma { height: 32px; border-radius: 8px; border: 1px solid var(--borde); background: transparent; color: var(--texto); font-size: .85rem; padding: 0 .4rem; cursor: pointer; }
+.subcampos { grid-column: 1 / -1; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); padding: .6rem; border: 1px dashed var(--borde); border-radius: 10px; }
+.subcampos[hidden] { display: none; }
+.subcampos .leyenda { grid-column: 1 / -1; }

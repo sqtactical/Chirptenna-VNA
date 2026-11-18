@@ -42,3 +42,39 @@ test('i18n: el idioma sale de ?idioma=, luego del navegador, y solo entre los di
 test('i18n: las claves extraidas incluyen textos del HTML, del JS y de los JSON de datos', () => {
   for (const k of ['Pasos', 'Conectar', 'Cubre la banda', 'Fonía (SSB)', 'Mal acoplada']) assert.ok(claves.includes(k), `falta la clave «${k}»`);
 });
+
+// ---------- Mi nodo Meshtastic ----------
+import { calcularCanal, hashCanal, REGIONES, PRESETS } from '../js/meshtastic.js';
+
+test('Meshtastic: el canal por defecto de LongFast sale como en el firmware (EE. UU. 906,875; EU_433 433,875; EU_868 869,525)', () => {
+  const f = r => calcularCanal({ region: r, preset: 'LongFast' });
+  assert.equal(f('US').fMHz, 906.875);
+  assert.equal(f('US').numCanales, 104);
+  assert.equal(f('EU_433').fMHz, 433.875);
+  assert.equal(f('EU_868').fMHz, 869.525);
+  assert.equal(f('EU_868').numCanales, 1, 'EU_868 solo tiene un canal de 250 kHz');
+  assert.equal(f('ANZ').fMHz, 919.875);
+});
+
+test('Meshtastic: slot manual, nombre de canal propio, anchos de preset y entradas no válidas', () => {
+  assert.equal(calcularCanal({ region: 'US', preset: 'LongFast', slot: 1 }).fMHz, 902.125);
+  assert.equal(calcularCanal({ region: 'US', preset: 'LongFast', slot: 104 }).fMHz, 927.875);
+  assert.equal(calcularCanal({ region: 'US', preset: 'LongFast', slot: 999 }).slot, 20, 'slot fuera de rango: vuelve al calculado');
+  const otro = calcularCanal({ region: 'US', preset: 'LongFast', nombre: 'MiRed' });
+  assert.equal(otro.nombre, 'MiRed');
+  assert.equal(otro.slot, (hashCanal('MiRed') % 104) + 1);
+  assert.equal(calcularCanal({ region: 'US', preset: 'ShortTurbo' }).numCanales, 52, 'ancho de 500 kHz: la mitad de canales');
+  assert.equal(calcularCanal({ region: 'XX', preset: 'LongFast' }), null);
+  assert.equal(calcularCanal({ region: 'US', preset: 'Nada' }), null);
+  for (const r of Object.values(REGIONES)) assert.ok(r.inicio < r.fin);
+  for (const p of Object.values(PRESETS)) assert.ok([62.5, 125, 250, 500].includes(p.ancho));
+});
+
+import { calculoMm } from '../js/analisis.js';
+test('calculadora de corte: porcentaje a milimetros, cortar en pasos y datos no validos', () => {
+  const c = calculoMm(160, -2.5);
+  assert.equal(c.accion, 'cortar'); assert.equal(c.mm, 4); assert.ok(Math.abs(c.primerPaso - 2.8) < 1e-9, 'primer paso = 70 %');
+  const a = calculoMm(160, 1.25);
+  assert.equal(a.accion, 'alargar'); assert.equal(a.mm, 2); assert.equal(a.primerPaso, null);
+  assert.equal(calculoMm(0, 3), null); assert.equal(calculoMm(100, 0), null); assert.equal(calculoMm(NaN, 3), null); assert.equal(calculoMm(100, NaN), null);
+});
