@@ -1,4 +1,5 @@
 // Graficos en canvas: series vs frecuencia (eje X logaritmico), perdida de retorno y carta de Smith.
+import { NIVELES_ROE } from './analisis.js';
 
 const COLOR_ESTADO = { ok: '#2e9e5b', parcial: '#d6a21a', no: '#c8453b', sin_datos: '#888888', fuera: '#888888' };
 export const MARGEN = { l: 52, r: 12, t: 12, b: 34 };
@@ -55,6 +56,18 @@ export function dibujarSerie(canvas, freq, series, opts = {}) {
   const X = f => m.l + ((Math.log10(f) - Math.log10(fmin)) / (Math.log10(fmax) - Math.log10(fmin))) * (w - m.l - m.r);
   const Y = v => m.t + (1 - (Math.min(Math.max(v, yMin), yMax) - yMin) / (yMax - yMin)) * (h - m.t - m.b);
 
+  // regiones horizontales (p. ej. los niveles de ROE), con su etiqueta a la derecha
+  for (const r of opts.regionesY ?? []) {
+    const y0 = Y(Math.min(r.hasta, yMax)), y1 = Y(Math.max(r.desde, yMin));
+    if (y1 - y0 < 1) continue;
+    c.globalAlpha = 0.17; c.fillStyle = r.color; c.fillRect(m.l, y0, w - m.l - m.r, y1 - y0);
+    c.globalAlpha = 1;
+    if (r.etiqueta) {
+      c.fillStyle = t.texto; c.globalAlpha = 0.85; c.textAlign = 'right';
+      c.fillText(r.etiqueta, w - m.r - 6, (y0 + y1) / 2 + 4);
+      c.textAlign = 'left'; c.globalAlpha = 1;
+    }
+  }
   // bandas sombreadas
   for (const e of opts.evaluacion ?? []) {
     if (e.estado === 'fuera') continue;
@@ -117,9 +130,11 @@ export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
 // El umbral se da en dB de pérdida de retorno (como el resto de la app) y aquí se convierte a ROE.
 export function dibujarROE(canvas, medida, evaluacion, umbralDb, opts = {}) {
   const roeUmbral = (1 + 10 ** (-umbralDb / 20)) / (1 - 10 ** (-umbralDb / 20));
+  let desde = 1;
+  const regionesY = NIVELES_ROE.map(n => { const r = { desde, hasta: n.max, color: n.color, etiqueta: `${n.etiqueta} (${n.max === Infinity ? `más de ${desde}` : `${desde}–${n.max}`})`.replace(/\./g, ',') }; desde = n.max; return r; });
   dibujarSerie(canvas, medida.freq, [{ y: medida.vswr }], {
-    yMin: 1, yMax: 5, umbral: roeUmbral, evaluacion,
-    titulo: 'ROE (más bajo = mejor adaptada; la línea discontinua es el máximo aceptable)', ...opts,
+    yMin: 1, yMax: 5, umbral: roeUmbral, evaluacion, regionesY,
+    titulo: 'ROE (más bajo = mejor adaptada)', ...opts,
   });
 }
 

@@ -1,6 +1,6 @@
 // Informe PDF generado en el navegador con jsPDF (se carga bajo demanda desde cdnjs).
 import { dibujar, dibujarROE } from './grafico.js';
-import { veredicto, roeDeRl } from './analisis.js';
+import { veredicto, roeDeRl, textoAdaptacion } from './analisis.js';
 
 async function cargarJsPDF() {
   if (window.jspdf) return window.jspdf.jsPDF;
@@ -58,7 +58,9 @@ export async function generarPDF(ultimo, meta) {
   salto(alto + 6);
   doc.addImage(cv.toDataURL('image/png'), 'PNG', M, y, W, alto);
   y += alto + 2;
-  texto('Franjas: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea roja discontinua = minimo exigido.', { size: 8, color: [93, 106, 115], gap: 4 });
+  texto(roe
+    ? 'Zonas horizontales: ROE 1-1,5 muy bien acoplada, 1,5-2 aceptable, 2-3 mejorable, mas de 3 mal acoplada. Franjas verticales: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea discontinua = maximo aceptable (ROE 2).'
+    : 'Franjas: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea roja discontinua = minimo exigido.', { size: 8, color: [93, 106, 115], gap: 4 });
 
   // Datos de la medida
   texto('Datos de la medida', { size: 11, bold: true });
@@ -98,7 +100,7 @@ export async function generarPDF(ultimo, meta) {
     doc.setTextColor(31, 42, 48); doc.setFont('helvetica', 'normal');
     doc.text(`${b.servicio.toUpperCase()} ${b.nombre} [${b.region.join('/')}]`, M + 28, y + 4);
     doc.text(`${b.f_min} - ${b.f_max} MHz`, M + 100, y + 4);
-    if (e.fMejor) doc.text(roe ? `ROE ${e.vMejor.toFixed(2)}` : `${e.mejorRl.toFixed(1)} dB, VSWR ${e.vMejor.toFixed(2)}`, M + 140, y + 4);
+    if (e.fMejor) doc.text(roe ? textoAdaptacion({ vswr: e.vMejor }, 'roe') : `${e.mejorRl.toFixed(1)} dB, VSWR ${e.vMejor.toFixed(2)}`, M + 140, y + 4);
     y += 5;
   }
   y += 4;

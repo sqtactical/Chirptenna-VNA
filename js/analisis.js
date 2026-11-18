@@ -51,8 +51,19 @@ export function equivalenteReactivo(f, x) {
 
 // ROE (VSWR) equivalente a una pérdida de retorno en dB.
 export const roeDeRl = db => (1 + 10 ** (-db / 20)) / (1 - 10 ** (-db / 20));
-// Cómo se muestra la adaptación de un punto: 'roe' (modo Simple: lo que conoce todo el mundo) o 'rl' (pérdida de retorno y ROE).
-export const textoAdaptacion = (p, unidad = 'rl') => unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB, VSWR ${p.vswr.toFixed(2)}`;
+// Niveles de ROE del modo Simple (de mejor a peor). `max` es el límite superior de cada región.
+// «Aceptable» llega hasta ROE 2, que es el criterio de «bien adaptada» del modo Simple.
+export const NIVELES_ROE = [
+  { id: 'muy_bien', max: 1.5, etiqueta: 'Muy bien acoplada', color: '#2e9e5b' },
+  { id: 'aceptable', max: 2, etiqueta: 'Aceptable', color: '#8bc34a' },
+  { id: 'mejorable', max: 3, etiqueta: 'Mejorable', color: '#f0a30a' },
+  { id: 'mal', max: Infinity, etiqueta: 'Mal acoplada', color: '#d9534f' },
+];
+export const nivelROE = roe => NIVELES_ROE.find(n => roe <= n.max + 1e-9);
+// Cómo se muestra la adaptación de un punto: 'roe' (modo Simple: lo que conoce todo el mundo, con su nivel) o 'rl' (pérdida de retorno y ROE).
+export const textoAdaptacion = (p, unidad = 'rl') => unidad === 'roe'
+  ? `ROE ${p.vswr.toFixed(2)}: ${nivelROE(p.vswr).etiqueta.toLowerCase()}`
+  : `${p.rl.toFixed(1)} dB, VSWR ${p.vswr.toFixed(2)}`;
 export const textoUmbral = (umbralDb, unidad = 'rl') => unidad === 'roe' ? `ROE de ${+roeDeRl(umbralDb).toFixed(2)} o mejor` : `pérdida de retorno de al menos ${umbralDb} dB`;
 
 // Frase para explicar el criterio en ROE: porcentaje de potencia que se refleja con esa ROE como máximo.

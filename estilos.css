@@ -110,3 +110,8 @@ canvas.cuadrado { height: auto; aspect-ratio: 1 / 1; max-height: 420px; margin: 
 progress { width: 100%; }
 
 .pie { text-align: center; padding: 1.2rem 1rem 2rem; font-size: .85rem; color: var(--suave); }
+
+/* Niveles de ROE del modo Simple */
+.niveles { list-style: none; display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; padding: 0; margin: .5rem 0 .2rem; font-size: .88rem; }
+.niveles li { display: flex; align-items: center; gap: .4rem; }
+.niveles i { width: .9rem; height: .9rem; border-radius: 3px; display: inline-block; opacity: .85; flex: none; }

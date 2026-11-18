@@ -105,8 +105,14 @@
     <section class="tarjeta">
       <h2 id="titulo-grafico">ROE (relación de onda estacionaria)</h2>
       <canvas id="grafico"></canvas>
+      <ul class="niveles solo-simple" aria-label="Niveles de ROE">
+        <li><i style="background:#2e9e5b"></i><b>Muy bien acoplada</b> · ROE de 1 a 1,5</li>
+        <li><i style="background:#8bc34a"></i><b>Aceptable</b> · de 1,5 a 2</li>
+        <li><i style="background:#f0a30a"></i><b>Mejorable</b> · de 2 a 3</li>
+        <li><i style="background:#d9534f"></i><b>Mal acoplada</b> · más de 3</li>
+      </ul>
       <div class="leyenda solo-simple">ROE 1 es la adaptación perfecta. Se da por buena una antena con <b>ROE 2 o menos</b> (la línea discontinua): con ROE 2 se refleja solo el 11 % de la potencia, algo que casi no se nota en el alcance. Cuanto más abajo llegue la curva, mejor.</div>
-      <div class="leyenda">Franjas: verde = cubre la banda · ámbar = parcial · rojo = no resuena · gris = sin datos. Haz clic en el gráfico para mover el cursor.</div>
+      <div class="leyenda">Franjas verticales: verde = cubre la banda · ámbar = parcial · rojo = no resuena · gris = sin datos. Haz clic en el gráfico para mover el cursor.</div>
     </section>
 
     <section class="tarjeta solo-avanzado">

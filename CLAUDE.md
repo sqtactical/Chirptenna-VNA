@@ -31,6 +31,9 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    (9,54 dB, `UMBRAL_SIMPLE_DB` en `app.js`; se refleja el 11 % de la potencia) y se explica en pantalla y en el PDF; Avanzado usa el
    campo en dB (10 por defecto = ROE 1,92). Cada modo fija `ultimo.umbral` al cambiar de modo. Los textos reciben `unidad` ('roe'|'rl')
    (`textoAdaptacion`, `textoUmbral`, `explicacionROE` en `analisis.js`); en Simple no debe aparecer ningún «dB» (hay un test).
+   Niveles de ROE del modo Simple (`NIVELES_ROE`, también zonas de color del gráfico y leyenda): 1–1,5 muy bien acoplada, 1,5–2
+   aceptable, 2–3 mejorable, más de 3 mal acoplada; el límite de «aceptable» es el criterio (ROE 2). Si se cambian, tocar también
+   la leyenda de `index.html` y el texto del PDF.
 7. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 

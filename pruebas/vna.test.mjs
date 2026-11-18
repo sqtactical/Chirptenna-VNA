@@ -497,3 +497,20 @@ test('modo Simple: el criterio es ROE 2 (9,54 dB) y se explica con el porcentaje
   const a2 = A.resonancias(med, u)[0], a10 = A.resonancias(med, 10)[0];
   assert.ok(a2.fHi - a2.fLo >= a10.fHi - a10.fLo);
 });
+
+test('modo Simple: niveles de ROE (1-1,5 muy bien, 1,5-2 aceptable, 2-3 mejorable, mas de 3 mal)', async () => {
+  const n = r => A.nivelROE(r).id;
+  assert.equal(n(1), 'muy_bien'); assert.equal(n(1.5), 'muy_bien');
+  assert.equal(n(1.51), 'aceptable'); assert.equal(n(2), 'aceptable');
+  assert.equal(n(2.01), 'mejorable'); assert.equal(n(3), 'mejorable');
+  assert.equal(n(3.01), 'mal'); assert.equal(n(50), 'mal');
+  assert.deepEqual(A.NIVELES_ROE.map(x => x.etiqueta), ['Muy bien acoplada', 'Aceptable', 'Mejorable', 'Mal acoplada']);
+  // el limite de "Aceptable" es el criterio del modo Simple (ROE 2)
+  cercano(A.NIVELES_ROE[1].max, A.roeDeRl(20 * Math.log10(3)), 1e-9);
+  // el nivel sale en el texto del veredicto y de la recomendacion
+  const med = await barrido(776.7e6, 957e6, 601), picos = A.resonancias(med, 20 * Math.log10(3));
+  assert.match(A.veredicto(picos, [], 20 * Math.log10(3), 'roe').titulo, /ROE 1\.\d\d: muy bien acoplada/);
+  assert.match(A.recomendacion(med, picos, { fMin: 863e6, fMax: 870e6 }, 20 * Math.log10(3), 'roe').lineas[0], /muy bien acoplada/);
+  // en modo avanzado no aparecen los niveles
+  assert.ok(!/acoplada/.test(A.veredicto(picos, [], 10).titulo));
+});
