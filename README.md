@@ -1,3 +1,5 @@
+<p align="center"><img src="img/grillo-cable.svg" alt="El grillo de Chirptenna peleándose con un cable coaxial" width="200"></p>
+
 # Chirptenna VNA
 
 Asistente web para **medir una antena con un NanoVNA** desde el navegador, sin instalar nada: dice si resuena donde
