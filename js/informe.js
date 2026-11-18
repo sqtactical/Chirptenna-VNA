@@ -1,3 +1,4 @@
+import { T, idiomaActual } from './i18n.js';
 // Informe PDF generado en el navegador con jsPDF (se carga bajo demanda desde cdnjs).
 import { dibujar, dibujarROE } from './grafico.js';
 import { veredicto, roeDeRl, fmtROE, nivelROE, reactanciaCero, DESV_REACTANCIA } from './analisis.js';
@@ -8,14 +9,14 @@ async function cargarJsPDF() {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
     s.onload = ok;
-    s.onerror = () => ko(new Error('No se pudo cargar la libreria PDF (necesita conexion a internet)'));
+    s.onerror = () => ko(new Error(T('No se pudo cargar la libreria PDF (necesita conexion a internet)')));
     document.head.appendChild(s);
   });
   return window.jspdf.jsPDF;
 }
 
 const fmtF = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(2)} MHz` : `${(hz / 1e3).toFixed(1)} kHz`;
-const ETIQUETA = { ok: 'Cubre', parcial: 'Parcial', no: 'No resuena', sin_datos: 'Sin datos', fuera: 'Fuera de rango' };
+const ETIQUETA = { ok: T('Cubre'), parcial: T('Parcial'), no: T('No resuena'), sin_datos: T('Sin datos'), fuera: T('Fuera de rango') };
 const COLOR = { ok: [46, 125, 50], parcial: [178, 106, 0], no: [198, 40, 40], sin_datos: [120, 120, 120], fuera: [120, 120, 120] };
 
 // meta: { equipo, puntos, espaciado, fIni, fFin, region, antena }
@@ -36,11 +37,11 @@ export async function generarPDF(ultimo, meta) {
   // Cabecera
   doc.setFillColor(21, 101, 192); doc.rect(0, 0, 210, 14, 'F');
   doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-  doc.text('Chirptenna VNA - Informe de medida de antena', M, 9);
+  doc.text(T('Chirptenna VNA - Informe de medida de antena'), M, 9);
   y = 22;
 
   if (ultimo.reco) {
-    texto('Que hacer con la antena', { size: 9, color: [93, 106, 115], gap: 0.5 });
+    texto(T('Que hacer con la antena'), { size: 9, color: [93, 106, 115], gap: 0.5 });
     texto(ultimo.reco.titulo, { size: 15, bold: true, color: [21, 101, 192], gap: 2 });
     for (const l of ultimo.reco.lineas) texto('- ' + l, { size: 9.5, gap: 1 });
     y += 3;
@@ -59,38 +60,38 @@ export async function generarPDF(ultimo, meta) {
   doc.addImage(cv.toDataURL('image/png'), 'PNG', M, y, W, alto);
   y += alto + 2;
   texto(roe
-    ? 'Zonas horizontales: ROE 1-1,5 muy bien acoplada; 1,5-2 aceptable; 2-3 mejorable (transmitir poco y a potencia reducida); mas de 3 mal acoplada (no transmitir salvo emergencias). Franjas verticales con borde: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos.' + (meta.marcasX?.length ? ' Linea violeta discontinua: resonancia electrica (reactancia cero); si no coincide con el punto mas bajo de la curva, el porcentaje de longitud puede no ser fiable.' : '')
-    : 'Franjas: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea roja discontinua = minimo exigido.', { size: 8, color: [93, 106, 115], gap: 4 });
+    ? T('Zonas horizontales: ROE 1-1,5 muy bien acoplada; 1,5-2 aceptable; 2-3 mejorable (transmitir poco y a potencia reducida); mas de 3 mal acoplada (no transmitir salvo emergencias). Franjas verticales con borde: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos.') + (meta.marcasX?.length ? T(' Linea violeta discontinua: resonancia electrica (reactancia cero); si no coincide con el punto mas bajo de la curva, el porcentaje de longitud puede no ser fiable.') : '')
+    : T('Franjas: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea roja discontinua = minimo exigido.'), { size: 8, color: [93, 106, 115], gap: 4 });
 
   // Datos de la medida
-  texto('Datos de la medida', { size: 11, bold: true });
+  texto(T('Datos de la medida'), { size: 11, bold: true });
   texto([
-    `Fecha: ${ultimo.fecha.toLocaleString('es-ES')}`,
-    `Equipo: ${meta.equipo}`,
-    `Calibracion: ${ultimo.calNombre ?? 'la del equipo'}`,
-    `Rango: ${fmtF(ultimo.medida.freq[0])} a ${fmtF(ultimo.medida.freq[ultimo.medida.freq.length - 1])}, ${ultimo.medida.freq.length} puntos, espaciado ${meta.espaciado}${ultimo.afinado ? ', con afinado alrededor de resonancias y bandas' : ''}`,
+    T('Fecha: {0}', ultimo.fecha.toLocaleString(idiomaActual())),
+    T('Equipo: {0}', meta.equipo),
+    T('Calibracion: {0}', ultimo.calNombre ?? T('la del equipo')),
+    T('Rango: {0} a {1}, {2} puntos, espaciado {3}{4}', fmtF(ultimo.medida.freq[0]), fmtF(ultimo.medida.freq[ultimo.medida.freq.length - 1]), ultimo.medida.freq.length, meta.espaciado, ultimo.afinado ? T(', con afinado alrededor de resonancias y bandas') : ''),
     roe
-      ? `Maximo aceptable: ROE <= ${+roeDeRl(ultimo.umbral).toFixed(2)} (se refleja como maximo un ${(100 * 10 ** (-ultimo.umbral / 10)).toFixed(0)} % de la potencia)`
-      : `Minimo exigido: perdida de retorno >= ${ultimo.umbral} dB (VSWR <= ${roeDeRl(ultimo.umbral).toFixed(2)})`,
-    `Region de bandas: ${meta.region}`,
+      ? T('Maximo aceptable: ROE <= {0} (se refleja como maximo un {1} % de la potencia)', +roeDeRl(ultimo.umbral).toFixed(2), (100 * 10 ** (-ultimo.umbral / 10)).toFixed(0))
+      : T('Minimo exigido: perdida de retorno >= {0} dB (VSWR <= {1})', ultimo.umbral, roeDeRl(ultimo.umbral).toFixed(2)),
+    T('Region de bandas: {0}', meta.region),
   ].join('\n'), { size: 9, gap: 4 });
 
   // Resonancias
-  texto('Resonancias detectadas', { size: 11, bold: true });
-  if (!ultimo.picos.length) texto('No se detectan resonancias claras en el rango medido.', { size: 9 });
+  texto(T('Resonancias detectadas'), { size: 11, bold: true });
+  if (!ultimo.picos.length) texto(T('No se detectan resonancias claras en el rango medido.'), { size: 9 });
   for (const p of ultimo.picos.slice(0, 8)) {
-    const bw = p.fLo != null ? `ancho de banda ${fmtF(p.fHi - p.fLo)}` : `no alcanza ${roe ? `ROE ${roeDeRl(ultimo.umbral).toFixed(2)}` : `${ultimo.umbral} dB`}`;
+    const bw = p.fLo != null ? T('ancho de banda {0}', fmtF(p.fHi - p.fLo)) : T('no alcanza {0}', roe ? T('ROE {0}', roeDeRl(ultimo.umbral).toFixed(2)) : `${ultimo.umbral} dB`);
     const rx = roe ? null : reactanciaCero(ultimo.medida, p.f);
-    const xTxt = rx ? `  -  X=0 en ${fmtF(rx.fX)} (${rx.desv > 0 ? '+' : ''}${(rx.desv * 100).toFixed(1)} %${rx.tipo === 'paralelo' ? ', en paralelo' : Math.abs(rx.desv) > DESV_REACTANCIA ? ', no coincide con el minimo de ROE' : ''})` : '';
-    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB  -  VSWR ${fmtROE(p.vswr)}`}  -  ${bw}${xTxt}`, { size: 9, gap: 0.5 });
+    const xTxt = rx ? T('  -  X=0 en {0} ({1}{2} %{3})', fmtF(rx.fX), rx.desv > 0 ? '+' : '', (rx.desv * 100).toFixed(1), rx.tipo === 'paralelo' ? T(', en paralelo') : Math.abs(rx.desv) > DESV_REACTANCIA ? T(', no coincide con el minimo de ROE') : '') : '';
+    texto(`${fmtF(p.f)}  -  ${roe ? T('ROE {0}', fmtROE(p.vswr)) : T('{0} dB  -  VSWR {1}', p.rl.toFixed(1), fmtROE(p.vswr))}  -  ${bw}${xTxt}`, { size: 9, gap: 0.5 });
   }
   for (const p of ultimo.dudosos ?? []) {
-    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB`}  -  POSIBLEMENTE FALSA: ${p.motivo}`, { size: 8, gap: 0.5 });
+    texto(`${fmtF(p.f)}  -  ${roe ? T('ROE {0}', fmtROE(p.vswr)) : `${p.rl.toFixed(1)} dB`}  -  ${T('POSIBLEMENTE FALSA: {0}', p.motivo)}`, { size: 8, gap: 0.5 });
   }
   y += 3;
 
   // Bandas
-  texto('Bandas', { size: 11, bold: true });
+  texto(T('Bandas'), { size: 11, bold: true });
   const orden = { ok: 0, parcial: 1, no: 2, sin_datos: 3, fuera: 4 };
   const filas = [...ultimo.evaluacion].sort((a, b) => orden[a.estado] - orden[b.estado] || a.banda.f_min - b.banda.f_min);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
@@ -102,17 +103,17 @@ export async function generarPDF(ultimo, meta) {
     doc.setTextColor(31, 42, 48); doc.setFont('helvetica', 'normal');
     doc.text(`${b.servicio.toUpperCase()} ${b.nombre} [${b.region.join('/')}]`, M + 28, y + 4);
     doc.text(`${b.f_min} - ${b.f_max} MHz`, M + 100, y + 4);
-    if (e.fMejor) doc.text(roe ? `ROE ${fmtROE(e.vMejor)} a ${fmtROE(e.peorVswr)} (${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` :`${e.mejorRl.toFixed(1)} dB, VSWR ${fmtROE(e.vMejor)}`, M + 140, y + 4);
+    if (e.fMejor) doc.text(roe ? T('ROE {0} a {1} ({2})', fmtROE(e.vMejor), fmtROE(e.peorVswr), nivelROE(e.peorVswr).etiqueta.toLowerCase()) : T('{0} dB, VSWR {1}', e.mejorRl.toFixed(1), fmtROE(e.vMejor)), M + 140, y + 4);
     y += 5;
   }
   y += 4;
 
-  texto('Notas', { size: 11, bold: true });
+  texto(T('Notas'), { size: 11, bold: true });
   texto([
-    '- La precision depende de la calibracion (open/short/load) hecha en el extremo del cable de la antena.',
-    '- Por encima de ~1,5 GHz el NanoVNA-H usa armonicos y la medida es menos fiable.',
-    '- Los bordes de las bandas varian segun el pais y la licencia: verificalos antes de transmitir.',
-    '- El cable y la posicion del cuerpo pueden alterar la medida en antenas pequenas.',
+    T('- La precision depende de la calibracion (open/short/load) hecha en el extremo del cable de la antena.'),
+    T('- Por encima de ~1,5 GHz el NanoVNA-H usa armonicos y la medida es menos fiable.'),
+    T('- Los bordes de las bandas varian segun el pais y la licencia: verificalos antes de transmitir.'),
+    T('- El cable y la posicion del cuerpo pueden alterar la medida en antenas pequenas.'),
   ].join('\n'), { size: 8.5, color: [93, 106, 115] });
 
   const nombre = `informe_antena_${ultimo.fecha.toISOString().slice(0, 10)}.pdf`;

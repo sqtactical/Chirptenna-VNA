@@ -1,3 +1,4 @@
+import { T } from './i18n.js';
 // Analisis de S11: perdida de retorno, VSWR, resonancias y evaluacion por banda.
 // Sin dependencias del DOM (se puede probar con Node).
 
@@ -58,22 +59,22 @@ export const fmtROE = x => x > ROE_MAX_MOSTRADO ? `> ${ROE_MAX_MOSTRADO}` : x.to
 // Niveles de ROE del modo Simple (de mejor a peor). `max` es el límite superior de cada región.
 // «Aceptable» llega hasta ROE 2, que es el criterio de «bien adaptada» del modo Simple.
 export const NIVELES_ROE = [
-  { id: 'muy_bien', max: 1.5, etiqueta: 'Muy bien acoplada', consejo: 'Se puede usar con normalidad', color: '#2e9e5b' },
-  { id: 'aceptable', max: 2, etiqueta: 'Aceptable', consejo: 'Se puede usar con normalidad', color: '#8bc34a' },
-  { id: 'mejorable', max: 3, etiqueta: 'Mejorable', consejo: 'Transmitir poco y a potencia reducida', color: '#f0a30a' },
-  { id: 'mal', max: Infinity, etiqueta: 'Mal acoplada', consejo: 'No transmitir salvo emergencias', color: '#d9534f' },
+  { id: 'muy_bien', max: 1.5, etiqueta: T('Muy bien acoplada'), consejo: T('Se puede usar con normalidad'), color: '#2e9e5b' },
+  { id: 'aceptable', max: 2, etiqueta: T('Aceptable'), consejo: T('Se puede usar con normalidad'), color: '#8bc34a' },
+  { id: 'mejorable', max: 3, etiqueta: T('Mejorable'), consejo: T('Transmitir poco y a potencia reducida'), color: '#f0a30a' },
+  { id: 'mal', max: Infinity, etiqueta: T('Mal acoplada'), consejo: T('No transmitir salvo emergencias'), color: '#d9534f' },
 ];
 export const nivelROE = roe => NIVELES_ROE.find(n => roe <= n.max + 1e-9);
 // Cómo se muestra la adaptación de un punto: 'roe' (modo Simple: lo que conoce todo el mundo, con su nivel) o 'rl' (pérdida de retorno y ROE).
 export const textoAdaptacion = (p, unidad = 'rl') => unidad === 'roe'
-  ? `ROE ${fmtROE(p.vswr)}: ${nivelROE(p.vswr).etiqueta.toLowerCase()}`
-  : `${p.rl.toFixed(1)} dB, VSWR ${fmtROE(p.vswr)}`;
-export const textoUmbral = (umbralDb, unidad = 'rl') => unidad === 'roe' ? `ROE de ${+roeDeRl(umbralDb).toFixed(2)} o mejor` : `pérdida de retorno de al menos ${umbralDb} dB`;
+  ? T('ROE {0}: {1}', fmtROE(p.vswr), nivelROE(p.vswr).etiqueta.toLowerCase())
+  : T('{0} dB, VSWR {1}', p.rl.toFixed(1), fmtROE(p.vswr));
+export const textoUmbral = (umbralDb, unidad = 'rl') => unidad === 'roe' ? T('ROE de {0} o mejor', +roeDeRl(umbralDb).toFixed(2)) : T('pérdida de retorno de al menos {0} dB', umbralDb);
 
 // Frase para explicar el criterio en ROE: porcentaje de potencia que se refleja con esa ROE como máximo.
 export const explicacionROE = umbralDb => {
   const g = 10 ** (-umbralDb / 20);
-  return `Con ese valor se refleja como máximo un ${(g * g * 100).toFixed(0)} % de la potencia hacia el equipo: suficiente para casi cualquier uso. ROE 1 sería la adaptación perfecta.`;
+  return T('Con ese valor se refleja como máximo un {0} % de la potencia hacia el equipo: suficiente para casi cualquier uso. ROE 1 sería la adaptación perfecta.', (g * g * 100).toFixed(0));
 };
 
 const fmtF = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(2)} MHz` : `${(hz / 1e3).toFixed(1)} kHz`;
@@ -128,7 +129,7 @@ export const DESV_REACTANCIA = 0.025; // por encima de un 2,5 % se avisa de que 
 export function curvaIrregular(medida, picos, { fMin, fMax }, umbralDb) {
   const fc = (fMin + fMax) / 2, cerca = Math.max(0.03, Math.log(fMax / fMin));
   const valles = picos.filter(p => Math.abs(Math.log(p.f / fc)) <= cerca && p.rl >= umbralDb - 6);
-  if (valles.length >= 2) return { motivo: `Hay ${valles.length} mínimos de ROE a ambos lados del objetivo, a ${valles.map(p => fmtF(p.f)).join(' y ')}`, valles };
+  if (valles.length >= 2) return { motivo: T('Hay {0} mínimos de ROE a ambos lados del objetivo, a {1}', valles.length, valles.map(p => fmtF(p.f)).join(' y ')), valles };
   const est = estadisticaBanda(medida, fMin, fMax, umbralDb);
   if (est.n >= 4 && est.roeMax / est.roeMin >= 1.25) {
     const { freq, vswr } = medida, lo = fMin / 1.02, hi = fMax * 1.02;
@@ -145,7 +146,7 @@ export function curvaIrregular(medida, picos, { fMin, fMax }, umbralDb) {
       if (techo >= 1.1 * Math.max(vswr[prev], vswr[i])) reales.push(i);
       else if (vswr[i] < vswr[prev]) reales[reales.length - 1] = i; // mismo valle: se queda el más bajo
     }
-    if (reales.length >= 2) return { motivo: 'La ROE sube y baja varias veces dentro de la propia banda', valles: [] };
+    if (reales.length >= 2) return { motivo: T('La ROE sube y baja varias veces dentro de la propia banda'), valles: [] };
   }
   return null;
 }
@@ -158,16 +159,16 @@ function lineasBanda(est, fMin, fMax, umbralDb) {
   const puntual = esPuntual(est, fMin, fMax);
   const peor = nivelROE(est.roeMax);
   const l = [];
-  if (puntual) l.push(`A ${fmtF(est.fMejor)}: ROE ${fmtROE(est.roeMin)} (${nivelROE(est.roeMin).etiqueta.toLowerCase()}).`);
-  else if (est.roeMin > ROE_MAX_MOSTRADO) l.push(`En toda la banda (${fmtF(fMin)} a ${fmtF(fMax)}): ROE ${fmtROE(est.roeMin)}; mal acoplada.`);
-  else l.push(`En la banda (${fmtF(fMin)} a ${fmtF(fMax)}): ROE entre ${fmtROE(est.roeMin)} y ${fmtROE(est.roeMax)}; en el peor punto, ${peor.etiqueta.toLowerCase()}.`);
+  if (puntual) l.push(T('A {0}: ROE {1} ({2}).', fmtF(est.fMejor), fmtROE(est.roeMin), nivelROE(est.roeMin).etiqueta.toLowerCase()));
+  else if (est.roeMin > ROE_MAX_MOSTRADO) l.push(T('En toda la banda ({0} a {1}): ROE {2}; mal acoplada.', fmtF(fMin), fmtF(fMax), fmtROE(est.roeMin)));
+  else l.push(T('En la banda ({0} a {1}): ROE entre {2} y {3}; en el peor punto, {4}.', fmtF(fMin), fmtF(fMax), fmtROE(est.roeMin), fmtROE(est.roeMax), peor.etiqueta.toLowerCase()));
   l.push(`${(puntual ? nivelROE(est.roeMin) : peor).consejo}.`);
   if (est.roeMin > ROE_MAX_MOSTRADO) {
-    l.push('No entra casi nada de potencia en ningún punto de la banda. Si la antena no está conectada (circuito abierto) o el cable está suelto, sale exactamente igual: comprueba la conexión antes de tocar la antena.');
+    l.push(T('No entra casi nada de potencia en ningún punto de la banda. Si la antena no está conectada (circuito abierto) o el cable está suelto, sale exactamente igual: comprueba la conexión antes de tocar la antena.'));
   } else if (!puntual && est.fracBuena < 1) {
     l.push(est.fracBuena > 0
-      ? `Solo el ${(est.fracBuena * 100).toFixed(0)} % de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor frecuencia es ${fmtF(est.fMejor)} (ROE ${fmtROE(est.roeMin)}).`
-      : `Ninguna frecuencia de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor es ${fmtF(est.fMejor)} (ROE ${fmtROE(est.roeMin)}).`);
+      ? T('Solo el {0} % de la banda llega a {1}; la mejor frecuencia es {2} (ROE {3}).', (est.fracBuena * 100).toFixed(0), textoUmbral(umbralDb, 'roe'), fmtF(est.fMejor), fmtROE(est.roeMin))
+      : T('Ninguna frecuencia de la banda llega a {0}; la mejor es {1} (ROE {2}).', textoUmbral(umbralDb, 'roe'), fmtF(est.fMejor), fmtROE(est.roeMin)));
   }
   return l;
 }
@@ -186,7 +187,7 @@ export function segmentosDeBanda(cfg, banda, region) {
     const dial = typeof v === 'number' ? v : v.dial;
     lista.push({
       id, nombre: nombres[id] ?? id.toUpperCase(), f_min: dial, f_max: +(dial + ancho).toFixed(6), puntual: true,
-      nota: typeof v === 'object' && v.nota ? v.nota : `Dial de WSJT-X ${dial.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} MHz`,
+      nota: typeof v === 'object' && v.nota ? v.nota : T('Dial de WSJT-X {0} MHz', dial.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')),
     });
   }
   return lista;
@@ -239,7 +240,7 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
     .filter(p => p.f >= fc / 2 && p.f <= fc * 2)
     .sort((a, b) => Math.abs(Math.log(a.f / fc)) - Math.abs(Math.log(b.f / fc)));
   const p = cand[0];
-  const nota = 'Estimación de primer orden (la longitud es inversamente proporcional a la frecuencia). Tras cada cambio vuelve a medir; en antenas cargadas, fractales o con plano de masa el efecto real puede diferir.';
+  const nota = T('Estimación de primer orden (la longitud es inversamente proporcional a la frecuencia). Tras cada cambio vuelve a medir; en antenas cargadas, fractales o con plano de masa el efecto real puede diferir.');
   const est = estadisticaBanda(medida, fMin, fMax, umbralDb);
   const intro = unidad === 'roe' ? lineasBanda(est, fMin, fMax, umbralDb) : [];
   if (!p) {
@@ -248,81 +249,81 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
     const k = Math.max(3, Math.floor(n * 0.05));
     const media = (a, b) => { let s = 0; for (let i = a; i < b; i++) s += rl[i]; return s / Math.max(1, b - a); };
     const bajo = media(0, k) - media(k, 2 * k), alto = media(n - k, n) - media(n - 2 * k, n - k);
-    const lineas = [...intro, `No se ve ningún mínimo claro de S11 dentro del rango medido (${fmt(f0)} a ${fmt(f1)}).`];
-    if (alto > 1 && alto >= bajo) lineas.push('La adaptación mejora hacia el extremo ALTO del rango: la antena probablemente resuena por encima. Sube el margen lateral o usa el barrido general.');
-    else if (bajo > 1) lineas.push('La adaptación mejora hacia el extremo BAJO del rango: la antena probablemente resuena por debajo. Sube el margen lateral o usa el barrido general.');
-    else lineas.push('Puede que resuene fuera del rango medido. Sube el margen lateral o usa el barrido general para buscarla.');
-    lineas.push('Si no aparece en ningún sitio, comprueba la conexión del cable y la calibración.');
-    return { accion: 'sin_resonancia', titulo: 'No resuena dentro del rango medido', lineas, est };
+    const lineas = [...intro, T('No se ve ningún mínimo claro de S11 dentro del rango medido ({0} a {1}).', fmt(f0), fmt(f1))];
+    if (alto > 1 && alto >= bajo) lineas.push(T('La adaptación mejora hacia el extremo ALTO del rango: la antena probablemente resuena por encima. Sube el margen lateral o usa el barrido general.'));
+    else if (bajo > 1) lineas.push(T('La adaptación mejora hacia el extremo BAJO del rango: la antena probablemente resuena por debajo. Sube el margen lateral o usa el barrido general.'));
+    else lineas.push(T('Puede que resuene fuera del rango medido. Sube el margen lateral o usa el barrido general para buscarla.'));
+    lineas.push(T('Si no aparece en ningún sitio, comprueba la conexión del cable y la calibración.'));
+    return { accion: 'sin_resonancia', titulo: T('No resuena dentro del rango medido'), lineas, est };
   }
   const pct = (p.f / fc - 1) * 100;
   const bien = p.rl >= umbralDb;
   const cubre = p.fLo != null && p.fLo <= fMin && p.fHi >= fMax;
-  const lineas = [...intro, `Resonancia más cercana: ${fmt(p.f)} (${unidad === 'roe' ? `ROE ${fmtROE(p.vswr)}` : textoAdaptacion(p, unidad)}). Objetivo: ${fmt(fc)}.`];
+  const lineas = [...intro, T('Resonancia más cercana: {0} ({1}). Objetivo: {2}.', fmt(p.f), unidad === 'roe' ? T('ROE {0}', fmtROE(p.vswr)) : textoAdaptacion(p, unidad), fmt(fc))];
   // Banda ancha (típico en HF: 80 m es un 8 % de su frecuencia): una antena resonante sencilla rara vez la cubre entera con ROE 2
   if (unidad === 'roe' && !(bien && cubre) && (fMax - fMin) / fc > 0.04) {
-    lineas.push(`Esta banda es ancha (${(((fMax - fMin) / fc) * 100).toFixed(0)} % de su frecuencia): una antena resonante sencilla rara vez la cubre entera con ROE 2. Si no la necesitas toda, elige el segmento que más uses (CW, fonía, digital, FT8…) y la antena se ajustará a ese.`);
+    lineas.push(T('Esta banda es ancha ({0} % de su frecuencia): una antena resonante sencilla rara vez la cubre entera con ROE 2. Si no la necesitas toda, elige el segmento que más uses (CW, fonía, digital, FT8…) y la antena se ajustará a ese.', (((fMax - fMin) / fc) * 100).toFixed(0)));
   }
   const irreg = bien && cubre ? null : curvaIrregular(medida, picos, { fMin, fMax }, umbralDb);
   if (irreg) {
     lineas.push(`${irreg.motivo}.`);
-    lineas.push('Con una curva así no se puede saber cuánto alargar o cortar: el porcentaje de longitud solo vale cuando hay una única resonancia.');
-    lineas.push('Mide en la frecuencia exacta que vas a usar (objetivo «frecuencia personalizada»), y recuerda que mover el cable o la mano cambia el resultado.');
-    return { accion: 'irregular', titulo: 'La curva es irregular: el ajuste por longitud no es fiable', lineas, est, irreg };
+    lineas.push(T('Con una curva así no se puede saber cuánto alargar o cortar: el porcentaje de longitud solo vale cuando hay una única resonancia.'));
+    lineas.push(T('Mide en la frecuencia exacta que vas a usar (objetivo «frecuencia personalizada»), y recuerda que mover el cable o la mano cambia el resultado.'));
+    return { accion: 'irregular', titulo: T('La curva es irregular: el ajuste por longitud no es fiable'), lineas, est, irreg };
   }
   let accion, titulo;
   if (bien && cubre) {
     accion = 'ok';
-    titulo = `La antena cubre la banda objetivo (${fmt(fMin)} a ${fmt(fMax)})`;
-    lineas.push(`Ancho de banda útil: ${fmt(p.fHi - p.fLo)} (${fmt(p.fLo)} a ${fmt(p.fHi)}).`);
+    titulo = T('La antena cubre la banda objetivo ({0} a {1})', fmt(fMin), fmt(fMax));
+    lineas.push(T('Ancho de banda útil: {0} ({1} a {2}).', fmt(p.fHi - p.fLo), fmt(p.fLo), fmt(p.fHi)));
   } else if (Math.abs(pct) < 1) {
     if (!bien) {
       accion = 'adaptacion';
-      titulo = 'Resuena en la frecuencia correcta pero está mal adaptada';
-      lineas.push(`A la resonancia, Z ≈ ${zr.toFixed(0)} Ω frente a 50 Ω. No es un problema de longitud: revisa el punto de alimentación o añade un adaptador de impedancia.`);
+      titulo = T('Resuena en la frecuencia correcta pero está mal adaptada');
+      lineas.push(T('A la resonancia, Z ≈ {0} Ω frente a 50 Ω. No es un problema de longitud: revisa el punto de alimentación o añade un adaptador de impedancia.', zr.toFixed(0)));
     } else {
       accion = 'estrecha';
-      titulo = 'Está centrada pero su ancho de banda no cubre toda la banda';
-      lineas.push(`Ancho de banda actual ${fmt(p.fHi - p.fLo)}; la banda objetivo necesita ${fmt(fMax - fMin)}.`);
-      lineas.push('Para ensanchar: elementos más anchos o gruesos, o una geometría de banda ancha (bowtie, etc.).');
+      titulo = T('Está centrada pero su ancho de banda no cubre toda la banda');
+      lineas.push(T('Ancho de banda actual {0}; la banda objetivo necesita {1}.', fmt(p.fHi - p.fLo), fmt(fMax - fMin)));
+      lineas.push(T('Para ensanchar: elementos más anchos o gruesos, o una geometría de banda ancha (bowtie, etc.).'));
     }
   } else if (pct > 0) {
     accion = 'alargar';
-    titulo = `Alarga la antena un ${pct.toFixed(1)} %`;
-    lineas.push(`Resuena demasiado alto: la antena es eléctricamente corta. Multiplica sus dimensiones por ${(p.f / fc).toFixed(3)}.`);
+    titulo = T('Alarga la antena un {0} %', pct.toFixed(1));
+    lineas.push(T('Resuena demasiado alto: la antena es eléctricamente corta. Multiplica sus dimensiones por {0}.', (p.f / fc).toFixed(3)));
   } else {
     accion = 'cortar';
-    titulo = `Acorta la antena un ${(-pct).toFixed(1)} %`;
-    lineas.push(`Resuena demasiado bajo: la antena es eléctricamente larga. Multiplica sus dimensiones por ${(p.f / fc).toFixed(3)}.`);
+    titulo = T('Acorta la antena un {0} %', (-pct).toFixed(1));
+    lineas.push(T('Resuena demasiado bajo: la antena es eléctricamente larga. Multiplica sus dimensiones por {0}.', (p.f / fc).toFixed(3)));
   }
   const mb = accion === 'alargar' || accion === 'cortar' ? infoMultibanda(picos, fc, !!opts.multibanda) : null;
   if (mb) {
     // En una antena multibanda cada banda la manda un tramo: un factor global movería todas las bandas a la vez.
-    const verbo = accion === 'alargar' ? 'Alarga' : 'Acorta', verboIng = accion === 'alargar' ? 'alargar' : 'acortar', pctTxt = Math.abs(pct).toFixed(1);
-    titulo = `${verbo} un ${pctTxt} % el tramo que gobierna esta banda`;
+    const verbo = accion === 'alargar' ? T('Alarga') : T('Acorta'), verboIng = accion === 'alargar' ? T('alargar') : T('acortar'), pctTxt = Math.abs(pct).toFixed(1);
+    titulo = T('{0} un {1} % el tramo que gobierna esta banda', verbo, pctTxt);
     const quien = mb.posicion === 'baja'
-      ? `Es la banda más baja: la gobiernan el tramo exterior (el que queda más allá de la trampa o del elemento de las bandas altas) y las bobinas de carga. Hay que ${verboIng} ese tramo una longitud equivalente al ${pctTxt} % de lo que mide el brazo entero.`
+      ? T('Es la banda más baja: la gobiernan el tramo exterior (el que queda más allá de la trampa o del elemento de las bandas altas) y las bobinas de carga. Hay que {0} ese tramo una longitud equivalente al {1} % de lo que mide el brazo entero.', verboIng, pctTxt)
       : mb.posicion === 'alta'
-        ? `Es una banda alta: la gobierna el tramo interior, el que va desde el alimentador hasta la primera trampa. Hay que ${verboIng} ese tramo un ${pctTxt} % de su propia longitud.`
+        ? T('Es una banda alta: la gobierna el tramo interior, el que va desde el alimentador hasta la primera trampa. Hay que {0} ese tramo un {1} % de su propia longitud.', verboIng, pctTxt)
         : mb.posicion === 'media'
-          ? `Es una banda intermedia: la gobierna el tramo que queda entre dos trampas (o elementos). Hay que ${verboIng} ese tramo un ${pctTxt} % de su propia longitud.`
-          : `Ajusta el tramo que gobierna esta banda (el que resuena en ella) un ${pctTxt} % de su longitud efectiva.`;
+          ? T('Es una banda intermedia: la gobierna el tramo que queda entre dos trampas (o elementos). Hay que {0} ese tramo un {1} % de su propia longitud.', verboIng, pctTxt)
+          : T('Ajusta el tramo que gobierna esta banda (el que resuena en ella) un {0} % de su longitud efectiva.', pctTxt);
     const aviso = mb.indicado
-      ? 'Has indicado que la antena es multibanda: el factor «multiplica todas las dimensiones» no sirve, porque cambiar todo mueve todas las bandas a la vez.'
-      : `La antena parece multibanda (otras resonancias en ${mb.otras.slice(0, 3).map(q => fmt(q.f)).join(', ')}): el factor «multiplica todas las dimensiones» no sirve, porque cambiar todo mueve todas las bandas a la vez.`;
+      ? T('Has indicado que la antena es multibanda: el factor «multiplica todas las dimensiones» no sirve, porque cambiar todo mueve todas las bandas a la vez.')
+      : T('La antena parece multibanda (otras resonancias en {0}): el factor «multiplica todas las dimensiones» no sirve, porque cambiar todo mueve todas las bandas a la vez.', mb.otras.slice(0, 3).map(q => fmt(q.f)).join(', '));
     const i = lineas.findIndex(l => /Multiplica sus dimensiones/.test(l));
-    lineas.splice(i < 0 ? lineas.length : i, i < 0 ? 0 : 1, aviso, quien, 'Ajusta una banda cada vez y vuelve a medir también las demás: tocar un tramo las mueve un poco a todas.');
+    lineas.splice(i < 0 ? lineas.length : i, i < 0 ? 0 : 1, aviso, quien, T('Ajusta una banda cada vez y vuelve a medir también las demás: tocar un tramo las mueve un poco a todas.'));
   }
   if (accion === 'alargar' || accion === 'cortar') {
-    if (!bien) lineas.push(`La adaptación en la resonancia es baja (${unidad === 'roe' ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB`}): tras ajustar la longitud, revisa también la alimentación.`);
+    if (!bien) lineas.push(T('La adaptación en la resonancia es baja ({0}): tras ajustar la longitud, revisa también la alimentación.', unidad === 'roe' ? T('ROE {0}', fmtROE(p.vswr)) : `${p.rl.toFixed(1)} dB`));
     const inductiva = zx > 0;
     const coincide = (accion === 'cortar') === inductiva;
-    lineas.push(`A ${fmt(fc)} la antena presenta Z = ${zr.toFixed(1)} ${zx >= 0 ? '+' : '-'} j${Math.abs(zx).toFixed(1)} Ω (${inductiva ? 'inductiva' : 'capacitiva'}): ${coincide ? 'coincide con ese diagnóstico.' : 'no coincide con el diagnóstico; es normal en antenas que no son tipo dipolo o monopolo. Fíate más de la frecuencia de resonancia.'}`);
-    if (Math.abs(pct) > 25) lineas.push('El cambio es grande: hazlo en dos pasos y mide entre ellos.');
+    lineas.push(T('A {0} la antena presenta Z = {1} {2} j{3} Ω ({4}): {5}', fmt(fc), zr.toFixed(1), zx >= 0 ? '+' : '-', Math.abs(zx).toFixed(1), inductiva ? 'inductiva' : 'capacitiva', coincide ? T('coincide con ese diagnóstico.') : T('no coincide con el diagnóstico; es normal en antenas que no son tipo dipolo o monopolo. Fíate más de la frecuencia de resonancia.')));
+    if (Math.abs(pct) > 25) lineas.push(T('El cambio es grande: hazlo en dos pasos y mide entre ellos.'));
   }
   const rx = accion === 'ok' ? null : reactanciaCero(medida, p.f);
   if (rx && rx.tipo === 'serie' && Math.abs(rx.desv) > DESV_REACTANCIA) {
-    lineas.push(`Ojo: la antena resuena eléctricamente (reactancia cero) a ${fmt(rx.fX)}, un ${(Math.abs(rx.desv) * 100).toFixed(1)} % ${rx.desv > 0 ? 'por encima' : 'por debajo'} de donde mejor se adapta (${fmt(p.f)}). Es habitual en antenas cargadas, fractales o con adaptador, pero el porcentaje de longitud puede no ser fiable: corta o alarga poco a poco y vuelve a medir.`);
+    lineas.push(T('Ojo: la antena resuena eléctricamente (reactancia cero) a {0}, un {1} % {2} de donde mejor se adapta ({3}). Es habitual en antenas cargadas, fractales o con adaptador, pero el porcentaje de longitud puede no ser fiable: corta o alarga poco a poco y vuelve a medir.', fmt(rx.fX), (Math.abs(rx.desv) * 100).toFixed(1), rx.desv > 0 ? T('por encima') : T('por debajo'), fmt(p.f)));
   }
   lineas.push(nota);
   return { accion, titulo, lineas, fRes: p.f, pct, est, rx, multibanda: mb };
@@ -381,7 +382,7 @@ export function resonanciasDudosas({ freq, rl, vswr }, picos, { max = 5, minRlDb
       .sort((a, b) => Math.abs(Math.log(freq[i] / a.f)) - Math.abs(Math.log(freq[i] / b.f)))[0];
     return {
       i, f: freq[i], rl: rl[i], vswr: vswr[i], dudosa: true,
-      motivo: cerca ? 'rizado en la falda de la resonancia principal, probablemente ruido' : 'muy poco marcada, probablemente ruido o un artefacto de la medida',
+      motivo: cerca ? T('rizado en la falda de la resonancia principal, probablemente ruido') : T('muy poco marcada, probablemente ruido o un artefacto de la medida'),
       cercaDe: cerca ? cerca.f : null,
     };
   }).sort((a, b) => a.f - b.f);
@@ -397,7 +398,7 @@ export function ventanasAfinado(picos, evaluacion, fIni, fFin, { maxPicos = 4, m
   }
   for (const e of evaluacion.filter(e => e.estado === 'sin_datos')) {
     const f0 = e.banda.f_min * 1e6, f1 = e.banda.f_max * 1e6, pad = (f1 - f0) * 0.05;
-    v.push({ lo: f0 - pad, hi: f1 + pad, puntos: 101, motivo: `banda ${e.banda.nombre}` });
+    v.push({ lo: f0 - pad, hi: f1 + pad, puntos: 101, motivo: T('banda {0}', e.banda.nombre) });
   }
   return v
     .map(w => ({ ...w, lo: Math.max(w.lo, fIni), hi: Math.min(w.hi, fFin) }))
@@ -433,30 +434,30 @@ export function veredicto(picos, evaluacion, umbralDb, unidad = 'rl', ctx = null
     const peor = nivelROE(puntual ? est.roeMin : est.roeMax);
     const nom = banda && banda.servicio !== 'objetivo' ? `${banda.servicio.toUpperCase()} ${banda.nombre}` : fmt((fMin + fMax) / 2);
     const titulo = puntual
-      ? `${nom}: ROE ${fmtROE(est.roeMin)} (${peor.etiqueta.toLowerCase()}).`
-      : `${nom}: ROE entre ${fmtROE(est.roeMin)} y ${fmtROE(est.roeMax)} (${peor.etiqueta.toLowerCase()} en el peor punto).`;
+      ? T('{0}: ROE {1} ({2}).', nom, fmtROE(est.roeMin), peor.etiqueta.toLowerCase())
+      : T('{0}: ROE entre {1} y {2} ({3} en el peor punto).', nom, fmtROE(est.roeMin), fmtROE(est.roeMax), peor.etiqueta.toLowerCase());
     const l = lineasBanda(est, fMin, fMax, umbralDb).slice(1); // consejo (y, si procede, qué parte de la banda es buena)
-    if (mejor && (mejor.f < fMin || mejor.f > fMax)) l.push(`La antena resuena mejor en ${fmt(mejor.f)} (ROE ${fmtROE(mejor.vswr)}), fuera de esta banda.`);
-    else if (mejor && mejor.fLo != null && !puntual) l.push(`Ancho de banda con ${textoUmbral(umbralDb, unidad)}: ${fmt(mejor.fHi - mejor.fLo)} (${fmt(mejor.fLo)} a ${fmt(mejor.fHi)}).`);
-    if (est.fracBuena < 1 && curvaIrregular(ctx.medida, picos, { fMin, fMax }, umbralDb)) l.push('La curva es irregular (varios mínimos): no te fíes de un solo punto y mide la frecuencia exacta que vas a usar.');
+    if (mejor && (mejor.f < fMin || mejor.f > fMax)) l.push(T('La antena resuena mejor en {0} (ROE {1}), fuera de esta banda.', fmt(mejor.f), fmtROE(mejor.vswr)));
+    else if (mejor && mejor.fLo != null && !puntual) l.push(T('Ancho de banda con {0}: {1} ({2} a {3}).', textoUmbral(umbralDb, unidad), fmt(mejor.fHi - mejor.fLo), fmt(mejor.fLo), fmt(mejor.fHi)));
+    if (est.fracBuena < 1 && curvaIrregular(ctx.medida, picos, { fMin, fMax }, umbralDb)) l.push(T('La curva es irregular (varios mínimos): no te fíes de un solo punto y mide la frecuencia exacta que vas a usar.'));
     l.push(`Criterio: ${textoUmbral(umbralDb, unidad)}. ${explicacionROE(umbralDb)}`);
     return { titulo, lineas: l };
   }
   const lineas = [];
   let titulo;
   if (!mejor || mejor.rl < umbralDb) {
-    titulo = 'La antena no está bien adaptada en ninguna frecuencia del rango medido.';
-    if (mejor) lineas.push(`La mejor adaptación es ${textoAdaptacion(mejor, unidad)} a ${fmt(mejor.f)}, peor que el mínimo exigido (${textoUmbral(umbralDb, unidad)}).`);
-    lineas.push('Revisa el conector, el cable y la calibración antes de concluir que la antena es defectuosa.');
+    titulo = T('La antena no está bien adaptada en ninguna frecuencia del rango medido.');
+    if (mejor) lineas.push(T('La mejor adaptación es {0} a {1}, peor que el mínimo exigido ({2}).', textoAdaptacion(mejor, unidad), fmt(mejor.f), textoUmbral(umbralDb, unidad)));
+    lineas.push(T('Revisa el conector, el cable y la calibración antes de concluir que la antena es defectuosa.'));
   } else {
-    titulo = `Resuena a ${fmt(mejor.f)} (${textoAdaptacion(mejor, unidad)}).`;
-    if (mejor.fLo != null) lineas.push(`Ancho de banda con ${textoUmbral(umbralDb, unidad)}: ${fmt(mejor.fHi - mejor.fLo)} (${fmt(mejor.fLo)} a ${fmt(mejor.fHi)}).`);
+    titulo = T('Resuena a {0} ({1}).', fmt(mejor.f), textoAdaptacion(mejor, unidad));
+    if (mejor.fLo != null) lineas.push(T('Ancho de banda con {0}: {1} ({2} a {3}).', textoUmbral(umbralDb, unidad), fmt(mejor.fHi - mejor.fLo), fmt(mejor.fLo), fmt(mejor.fHi)));
     const otros = picos.slice(1).filter(p => p.rl >= umbralDb);
-    if (otros.length) lineas.push(`Otras resonancias: ${otros.slice(0, 4).map(p => `${fmt(p.f)} (${unidad === 'roe' ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB`})`).join(', ')}.`);
+    if (otros.length) lineas.push(T('Otras resonancias: {0}.', otros.slice(0, 4).map(p => `${fmt(p.f)} (${unidad === 'roe' ? T('ROE {0}', fmtROE(p.vswr)) : `${p.rl.toFixed(1)} dB`})`).join(', ')));
   }
-  if (unidad === 'roe') lineas.push(`Criterio: ${textoUmbral(umbralDb, unidad)}. ${explicacionROE(umbralDb)}`, 'El resultado de cada banda (y si se puede usar) está en la tabla de bandas.');
-  lineas.push(buenos.length ? `Cubre por completo: ${buenos.map(nombre).join(', ')}.` : 'No cubre por completo ninguna banda de la lista.');
-  if (parciales.length) lineas.push(`Cubre parte de: ${parciales.map(nombre).join(', ')}.`);
+  if (unidad === 'roe') lineas.push(`Criterio: ${textoUmbral(umbralDb, unidad)}. ${explicacionROE(umbralDb)}`, T('El resultado de cada banda (y si se puede usar) está en la tabla de bandas.'));
+  lineas.push(buenos.length ? T('Cubre por completo: {0}.', buenos.map(nombre).join(', ')) : T('No cubre por completo ninguna banda de la lista.'));
+  if (parciales.length) lineas.push(T('Cubre parte de: {0}.', parciales.map(nombre).join(', ')));
   return { titulo, lineas };
 }
 

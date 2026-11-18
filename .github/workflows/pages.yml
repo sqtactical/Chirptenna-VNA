@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           mkdir _sitio
-          cp -r index.html diagnostico.html estilos.css bandas.json segmentos_hf.json js img _sitio/
+          cp -r index.html diagnostico.html estilos.css bandas.json segmentos_hf.json js img idiomas _sitio/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _sitio

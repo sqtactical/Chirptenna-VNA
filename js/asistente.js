@@ -1,15 +1,16 @@
 // Asistente de calibracion guiado (OPEN, SHORT, LOAD) por tramos de frecuencia.
 // Cada tramo se calibra por separado y se guarda en el navegador, asi se puede completar mas tarde.
+import { T, idiomaActual } from './i18n.js';
 import {
   calcularTramo, comprobarPatron, resumenTramo, repetibilidadDb, planificarTramos, faltante,
   cargarJuegos, guardarJuegos,
 } from './calibracion.js';
 
 const PASOS = [
-  { id: 'open', titulo: 'OPEN (abierto)', instr: 'Conecta el patrón OPEN en el extremo del cable, justo donde luego irá la antena. Si tu kit no trae OPEN, deja el conector al aire, sin nada conectado.' },
-  { id: 'short', titulo: 'SHORT (cortocircuito)', instr: 'Quita el OPEN y conecta el patrón SHORT (cortocircuito) en el mismo punto.' },
-  { id: 'load', titulo: 'LOAD (carga de 50 Ω)', instr: 'Quita el SHORT y conecta la carga de 50 Ω (LOAD) en el mismo punto.' },
-  { id: 'verif', titulo: 'Verificación (opcional)', instr: 'Desconecta la carga y vuelve a conectarla. Así se comprueba que la calibración se repite bien al reconectar.' },
+  { id: 'open', titulo: T('OPEN (abierto)'), instr: T('Conecta el patrón OPEN en el extremo del cable, justo donde luego irá la antena. Si tu kit no trae OPEN, deja el conector al aire, sin nada conectado.') },
+  { id: 'short', titulo: T('SHORT (cortocircuito)'), instr: T('Quita el OPEN y conecta el patrón SHORT (cortocircuito) en el mismo punto.') },
+  { id: 'load', titulo: T('LOAD (carga de 50 Ω)'), instr: T('Quita el SHORT y conecta la carga de 50 Ω (LOAD) en el mismo punto.') },
+  { id: 'verif', titulo: T('Verificación (opcional)'), instr: T('Desconecta la carga y vuelve a conectarla. Así se comprueba que la calibración se repite bien al reconectar.') },
 ];
 
 // Juegos de calibracion: en memoria y en localStorage
@@ -27,7 +28,7 @@ export function barraCobertura(el, segs, fMin, fMax) {
   const L = Math.log10, pos = f => Math.min(100, Math.max(0, ((L(f) - L(fMin)) / (L(fMax) - L(fMin))) * 100));
   const trozos = segs.map(s => {
     const a = s.freq[0], b = s.freq[s.freq.length - 1];
-    return `<span style="left:${pos(a)}%;width:${Math.max(0.6, pos(b) - pos(a))}%" title="${fmtF(a)} a ${fmtF(b)}"></span>`;
+    return `<span style="left:${pos(a)}%;width:${Math.max(0.6, pos(b) - pos(a))}%" title="${T('{0} a {1}', fmtF(a), fmtF(b))}"></span>`;
   }).join('');
   el.innerHTML = `<div class="cobertura">${trozos}</div><div class="cob-eje"><span>${fmtF(fMin)}</span><span>${fmtF(fMax)}</span></div>`;
 }
@@ -70,26 +71,24 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
     const r = S.rango;
     const ratio = r.fFin / r.fIni;
     const nSug = Math.max(1, Math.min(6, Math.ceil(Math.log10(ratio))));
-    const opts = almacen.lista.map(j => `<option value="${esc(j.id)}" ${j.id === S.juegoId ? 'selected' : ''}>${esc(j.nombre)} (${j.segmentos.length} tramos)</option>`).join('');
+    const opts = almacen.lista.map(j => `<option value="${esc(j.id)}" ${j.id === S.juegoId ? 'selected' : ''}>${esc(j.nombre)} (${T('{0} tramos', j.segmentos.length)})</option>`).join('');
     contenedor.innerHTML = `
-      <h3>Calibración guiada</h3>
-      <p>Se calibra el equipo con tres patrones (OPEN, SHORT y LOAD) <b>en el extremo del cable, donde irá la antena</b>.
-      Puedes hacerlo en <b>uno o varios tramos de frecuencia</b>: cada tramo se guarda al terminarlo, así que puedes parar y seguir otro día.
-      Usa siempre el mismo cable y los mismos adaptadores para todos los tramos.</p>
-      <p class="leyenda">Rango propuesto: ${esc(r.desc)}. Para esa medida conviene ${nSug} tramo${nSug > 1 ? 's' : ''}.</p>
+      <h3>${T('Calibración guiada')}</h3>
+      <p>${T('Se calibra el equipo con tres patrones (OPEN, SHORT y LOAD) <b>en el extremo del cable, donde irá la antena</b>. Puedes hacerlo en <b>uno o varios tramos de frecuencia</b>: cada tramo se guarda al terminarlo, así que puedes parar y seguir otro día. Usa siempre el mismo cable y los mismos adaptadores para todos los tramos.')}</p>
+      <p class="leyenda">${nSug > 1 ? T('Rango propuesto: {0}. Para esa medida conviene {1} tramos.', esc(r.desc), nSug) : T('Rango propuesto: {0}. Para esa medida conviene 1 tramo.', esc(r.desc))}</p>
       <div class="campos">
-        <label>Desde (MHz)<input id="pl-ini" type="number" step="any" value="${+(r.fIni / 1e6).toPrecision(6)}"></label>
-        <label>Hasta (MHz)<input id="pl-fin" type="number" step="any" value="${+(r.fFin / 1e6).toPrecision(6)}"></label>
-        <label>Número de tramos<input id="pl-n" type="number" min="1" max="8" value="${nSug}"></label>
-        <label>Puntos por tramo<input id="pl-pts" type="number" min="21" max="1001" value="401"></label>
-        <label>Guardar en
-          <select id="pl-juego"><option value="nuevo">Un juego nuevo</option>${opts}</select>
+        <label>${T('Desde (MHz)')}<input id="pl-ini" type="number" step="any" value="${+(r.fIni / 1e6).toPrecision(6)}"></label>
+        <label>${T('Hasta (MHz)')}<input id="pl-fin" type="number" step="any" value="${+(r.fFin / 1e6).toPrecision(6)}"></label>
+        <label>${T('Número de tramos')}<input id="pl-n" type="number" min="1" max="8" value="${nSug}"></label>
+        <label>${T('Puntos por tramo')}<input id="pl-pts" type="number" min="21" max="1001" value="401"></label>
+        <label>${T('Guardar en')}
+          <select id="pl-juego"><option value="nuevo">${T('Un juego nuevo')}</option>${opts}</select>
         </label>
-        <label id="pl-lnombre">Nombre del juego<input id="pl-nombre" type="text" maxlength="40" value="Calibración ${new Date().toLocaleDateString('es-ES')}"></label>
-        <label class="chk" id="pl-lhuecos" hidden><input id="pl-huecos" type="checkbox" checked> Calibrar solo lo que falta</label>
+        <label id="pl-lnombre">${T('Nombre del juego')}<input id="pl-nombre" type="text" maxlength="40" value="${esc(T('Calibración {0}', new Date().toLocaleDateString(idiomaActual())))}"></label>
+        <label class="chk" id="pl-lhuecos" hidden><input id="pl-huecos" type="checkbox" checked> ${T('Calibrar solo lo que falta')}</label>
       </div>
       <div id="pl-previa"></div>
-      <div class="botones"><button id="pl-ir" class="primario">Empezar</button><button id="pl-x">Cancelar</button></div>`;
+      <div class="botones"><button id="pl-ir" class="primario">${T('Empezar')}</button><button id="pl-x">${T('Cancelar')}</button></div>`;
     const actualizar = () => {
       const p = leerPlan();
       const hayJuego = p.id !== 'nuevo';
@@ -97,8 +96,8 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
       contenedor.querySelector('#pl-lhuecos').hidden = !hayJuego;
       const t = tramosDePlan(p);
       contenedor.querySelector('#pl-previa').innerHTML = t.length
-        ? `<table><tr><th>Tramo</th><th>Rango</th><th>Puntos</th></tr>${t.map((x, k) => `<tr><td>${k + 1}</td><td>${fmtF(x.fIni)} a ${fmtF(x.fFin)}</td><td>${x.puntos}</td></tr>`).join('')}</table>`
-        : '<p class="leyenda">Todo ese rango ya está calibrado en el juego elegido.</p>';
+        ? `<table><tr><th>${T('Tramo')}</th><th>${T('Rango')}</th><th>${T('Puntos')}</th></tr>${t.map((x, k) => `<tr><td>${k + 1}</td><td>${T('{0} a {1}', fmtF(x.fIni), fmtF(x.fFin))}</td><td>${x.puntos}</td></tr>`).join('')}</table>`
+        : `<p class="leyenda">${T('Todo ese rango ya está calibrado en el juego elegido.')}</p>`;
       contenedor.querySelector('#pl-ir').disabled = !t.length;
     };
     contenedor.querySelectorAll('input,select').forEach(e => (e.oninput = actualizar));
@@ -107,7 +106,7 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
       const p = leerPlan();
       S.tramos = tramosDePlan(p);
       if (p.id === 'nuevo') {
-        const j = { id: 'cal' + Date.now(), nombre: p.nombre || 'Calibración', fecha: Date.now(), segmentos: [] };
+        const j = { id: 'cal' + Date.now(), nombre: p.nombre || T('Calibración'), fecha: Date.now(), segmentos: [] };
         almacen.lista.push(j);
         S.juegoId = j.id;
       } else S.juegoId = p.id;
@@ -128,16 +127,16 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
       return `<li class="${hecho ? 'hecho' : k === S.paso ? 'actual' : ''}">${hecho ? '✔' : k === S.paso ? '▶' : '○'} ${p.titulo}</li>`;
     }).join('');
     contenedor.innerHTML = `
-      <h3>Tramo ${S.i + 1} de ${S.tramos.length}: ${fmtF(t.fIni)} a ${fmtF(t.fFin)}</h3>
+      <h3>${T('Tramo {0} de {1}: {2} a {3}', S.i + 1, S.tramos.length, fmtF(t.fIni), fmtF(t.fFin))}</h3>
       <ul class="pasos-cal">${lista}</ul>
       <div class="instr"><b>${paso.titulo}</b><p>${esc(paso.instr)}</p></div>
-      ${S.ocupado ? `<progress max="1" value="${S.prog}"></progress><p class="leyenda">Midiendo… no toques el cable.</p>` : ''}
+      ${S.ocupado ? `<progress max="1" value="${S.prog}"></progress><p class="leyenda">${T('Midiendo… no toques el cable.')}</p>` : ''}
       ${S.msg ? `<p class="${S.msgError ? 'msg-error' : 'msg-ok'}">${esc(S.msg)}</p>` : ''}
       <div class="botones">
-        <button id="m-medir" class="primario" ${S.ocupado ? 'disabled' : ''}>${paso.id === 'verif' ? 'Medir reconexión' : 'Medir ' + paso.id.toUpperCase()}</button>
-        ${paso.id === 'verif' ? '<button id="m-omitir">Omitir verificación y guardar el tramo</button>' : ''}
-        ${S.paso > 0 && paso.id !== 'verif' ? '<button id="m-atras" ' + (S.ocupado ? 'disabled' : '') + '>Repetir el paso anterior</button>' : ''}
-        <button id="m-luego" ${S.ocupado ? 'disabled' : ''}>Dejar el resto para más tarde</button>
+        <button id="m-medir" class="primario" ${S.ocupado ? 'disabled' : ''}>${paso.id === 'verif' ? T('Medir reconexión') : T('Medir {0}', paso.id.toUpperCase())}</button>
+        ${paso.id === 'verif' ? `<button id="m-omitir">${T('Omitir verificación y guardar el tramo')}</button>` : ''}
+        ${S.paso > 0 && paso.id !== 'verif' ? '<button id="m-atras" ' + (S.ocupado ? 'disabled' : '') + '>' + T('Repetir el paso anterior') + '</button>' : ''}
+        <button id="m-luego" ${S.ocupado ? 'disabled' : ''}>${T('Dejar el resto para más tarde')}</button>
       </div>`;
     contenedor.querySelector('#m-medir').onclick = medirPaso;
     contenedor.querySelector('#m-luego').onclick = () => { S.fase = 'fin'; render(); };
@@ -149,7 +148,7 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
 
   async function medirPaso() {
     const drv = getDriver();
-    if (!drv) { S.msg = 'Conecta primero el equipo (o activa el modo simulado y pulsa Conectar).'; S.msgError = true; return render(); }
+    if (!drv) { S.msg = T('Conecta primero el equipo (o activa el modo simulado y pulsa Conectar).'); S.msgError = true; return render(); }
     const t = S.tramos[S.i], paso = PASOS[S.paso];
     S.ocupado = true; S.msg = ''; S.prog = 0; render();
     try {
@@ -162,11 +161,11 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
       if (paso.id === 'verif') {
         const db = repetibilidadDb(S.seg, crudo);
         const bien = db <= -20;
-        S.msg = `Con la carga reconectada, |Γ| medio = ${db.toFixed(1)} dB. ${bien ? 'La calibración se repite bien.' : 'Es poco: revisa conectores, apriétalos y repite la calibración de este tramo.'}`;
+        S.msg = T('Con la carga reconectada, |Γ| medio = {0} dB. {1}', db.toFixed(1), bien ? T('La calibración se repite bien.') : T('Es poco: revisa conectores, apriétalos y repite la calibración de este tramo.'));
         S.msgError = !bien; S.ocupado = false; S.verifHecha = bien;
         return bien ? guardarTramo() : render();
       }
-      if (S.paso > 0 && !mismaRejilla(S.freq, Array.from(crudo.freq))) throw new Error('El equipo ha cambiado las frecuencias de medida. Repite el tramo desde OPEN.');
+      if (S.paso > 0 && !mismaRejilla(S.freq, Array.from(crudo.freq))) throw new Error(T('El equipo ha cambiado las frecuencias de medida. Repite el tramo desde OPEN.'));
       const ref = S.m.open;
       const chk = comprobarPatron(paso.id, crudo, ref);
       if (!chk.ok) { S.msg = chk.mensaje; S.msgError = true; S.ocupado = false; return render(); }
@@ -177,10 +176,10 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
       if (paso.id === 'load') {
         S.seg = calcularTramo(S.freq, S.m.open, S.m.short, S.m.load, { equipo: drv.nombre + (drv.version ? ' ' + drv.version : '') });
         const r = resumenTramo(S.seg);
-        S.msg = `Calibración calculada. Directividad |Ed| media ${r.ed.toFixed(3)}, adaptación de fuente |Es| media ${r.es.toFixed(3)}. Ahora una verificación rápida (puedes omitirla).`;
+        S.msg = T('Calibración calculada. Directividad |Ed| media {0}, adaptación de fuente |Es| media {1}. Ahora una verificación rápida (puedes omitirla).', r.ed.toFixed(3), r.es.toFixed(3));
       }
     } catch (e) {
-      S.msg = e.codigo === 'desconectado' ? `${e.message} El paso no se ha guardado: vuelve a conectar y repítelo.` : e.message;
+      S.msg = e.codigo === 'desconectado' ? T('{0} El paso no se ha guardado: vuelve a conectar y repítelo.', e.message) : e.message;
       S.msgError = true;
     }
     S.ocupado = false;
@@ -192,9 +191,9 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
     j.segmentos.push(S.seg);
     const ok = almacen.guardar();
     onCambio(j.id);
-    estado(ok ? `Tramo guardado en «${j.nombre}»` : 'Tramo calculado, pero no se pudo guardar en el navegador (exporta el juego para no perderlo)', !ok);
+    estado(ok ? T('Tramo guardado en «{0}»', j.nombre) : T('Tramo calculado, pero no se pudo guardar en el navegador (exporta el juego para no perderlo)'), !ok);
     S.i++; S.paso = 0; S.m = {}; S.seg = null; S.verifHecha = false;
-    S.msg = ok ? 'Tramo guardado.' : 'No se pudo guardar en el navegador: exporta el juego desde el panel de calibración.';
+    S.msg = ok ? T('Tramo guardado.') : T('No se pudo guardar en el navegador: exporta el juego desde el panel de calibración.');
     S.msgError = !ok;
     if (S.i >= S.tramos.length) S.fase = 'fin';
     render();
@@ -205,16 +204,16 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
     const j = juegoActual();
     const huecos = j ? faltante(j.segmentos, S.rango.fIni, S.rango.fFin) : [];
     contenedor.innerHTML = `
-      <h3>${S.i >= S.tramos.length ? 'Calibración completada' : 'Calibración guardada hasta aquí'}</h3>
-      <p>Juego «${esc(j?.nombre ?? '')}»: ${j?.segmentos.length ?? 0} tramo${j?.segmentos.length === 1 ? '' : 's'} calibrado${j?.segmentos.length === 1 ? '' : 's'}.</p>
+      <h3>${S.i >= S.tramos.length ? T('Calibración completada') : T('Calibración guardada hasta aquí')}</h3>
+      <p>${j?.segmentos.length === 1 ? T('Juego «{0}»: 1 tramo calibrado.', esc(j?.nombre ?? '')) : T('Juego «{0}»: {1} tramos calibrados.', esc(j?.nombre ?? ''), j?.segmentos.length ?? 0)}</p>
       <div id="fin-cob"></div>
       ${huecos.length
-        ? `<p class="msg-error">Falta por calibrar (del rango ${fmtF(S.rango.fIni)} a ${fmtF(S.rango.fFin)}): ${huecos.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')}. Vuelve al asistente cuando quieras para completarlo.</p>`
-        : '<p class="msg-ok">Todo el rango previsto está calibrado.</p>'}
+        ? `<p class="msg-error">${T('Falta por calibrar (del rango {0} a {1}): {2}. Vuelve al asistente cuando quieras para completarlo.', fmtF(S.rango.fIni), fmtF(S.rango.fFin), huecos.map(h => T('{0} a {1}', fmtF(h[0]), fmtF(h[1]))).join('; '))}</p>`
+        : `<p class="msg-ok">${T('Todo el rango previsto está calibrado.')}</p>`}
       <div class="botones">
-        <button id="f-usar" class="primario">Usar esta calibración</button>
-        <button id="f-otro">Calibrar otro tramo</button>
-        <button id="f-x">Cerrar</button>
+        <button id="f-usar" class="primario">${T('Usar esta calibración')}</button>
+        <button id="f-otro">${T('Calibrar otro tramo')}</button>
+        <button id="f-x">${T('Cerrar')}</button>
       </div>`;
     if (j) barraCobertura(contenedor.querySelector('#fin-cob'), j.segmentos, S.rango.fIni, S.rango.fFin);
     contenedor.querySelector('#f-usar').onclick = () => { onCambio(S.juegoId, true); cerrar(); };

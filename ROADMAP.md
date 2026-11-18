@@ -55,8 +55,9 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       extremo. **M**
 - [ ] 🟢🕸️ **Ilustraciones del montaje**: dónde poner el OPEN/SHORT/LOAD (en el extremo del cable, no en el equipo),
       adaptadores SMA/RP-SMA/u.FL, por qué no medir con la antena encima de la mesa. **S**
-- [ ] 🟢 **Idiomas**: **inglés primero** (la mayoría de Meshtastic de EE. UU.), luego los mismos que Chirptenna (fr, de);
-      catálogos JSON con el castellano como clave, como en Chirptenna. **M**
+- [x] 🟢 **Idiomas**: inglés, francés y alemán (traducidos por Claude, a revisar por hablantes nativos); catálogos JSON
+      con el castellano como clave, como en Chirptenna. Falta: formato de números por idioma (hoy siempre con punto) y
+      un idioma más (it, pt). **M**
 - [ ] 🟢 **Informe para compartir**: PDF actual + imagen PNG del veredicto lista para foros/Discord, y enlace con los datos
       dentro de la URL (sin servidor) para que otro abra la misma medida. **S**
 - [ ] 🟢 **Web instalable (PWA) y sin conexión**: para medir en el monte sin cobertura. **S**

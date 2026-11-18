@@ -142,3 +142,5 @@ body[data-modo="simple"] #grillo[data-activo="1"] { display: flex; }
 #grillo-img { width: 120px; height: 120px; }
 @media (min-width: 900px) { #grillo { max-width: 380px; } #grillo-burbuja { font-size: 1rem; } }
 @media (max-width: 560px) { #grillo-img { width: 64px; height: 64px; } }
+
+.selector-idioma { height: 32px; border-radius: 8px; border: 1px solid var(--borde); background: transparent; color: var(--texto); font-size: .85rem; padding: 0 .4rem; cursor: pointer; }

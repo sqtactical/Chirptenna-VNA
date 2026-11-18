@@ -1,3 +1,4 @@
+import { T } from './i18n.js';
 // Cricky, el grillo asistente (guiño a Clippy): un grillo pequeño con una burbuja que comenta lo que pasa en la app.
 // Reglas de convivencia: habla solo ante eventos (nunca por intervalos), no bloquea nada, se cierra de un clic, se puede
 // silenciar para siempre y solo se ve en el modo Simple. Los textos salen de lo que ya calcula la app (nivel de ROE, curva
@@ -10,19 +11,19 @@ export const NOMBRE = 'Cricky'; // un solo sitio: aquí se cambia el nombre del 
 export function elegirMensaje(evento, d = {}) {
   switch (evento) {
     case 'inicio':
-      return { id: 'inicio', img: 'estado-conecta', texto: `Soy ${NOMBRE}. Parece que quieres medir una antena. ¿Conectamos el NanoVNA? Si solo quieres probar, marca «Modo simulado».` };
+      return { id: 'inicio', img: 'estado-conecta', texto: T('Soy {0}. Parece que quieres medir una antena. ¿Conectamos el NanoVNA? Si solo quieres probar, marca «Modo simulado».', NOMBRE) };
     case 'conectado':
       return d.calibracionApp
-        ? { id: 'conectado-cal', img: 'roe-aceptable', texto: 'Conectado y con calibración propia. Elige la banda y pulsa Medir.' }
-        : { id: 'conectado', img: 'osl-tramos', texto: 'Conectado. ¿Has calibrado? Si no, el asistente de calibración te guía (open, short, load) y puedes hacerlo por tramos.' };
+        ? { id: 'conectado-cal', img: 'roe-aceptable', texto: T('Conectado y con calibración propia. Elige la banda y pulsa Medir.') }
+        : { id: 'conectado', img: 'osl-tramos', texto: T('Conectado. ¿Has calibrado? Si no, el asistente de calibración te guía (open, short, load) y puedes hacerlo por tramos.') };
     case 'cuenta-atras':
-      return { id: 'cuenta-atras', img: 'estado-alejate', texto: 'Aléjate de la antena y no toques el cable: tu mano cambia la medida.' };
+      return { id: 'cuenta-atras', img: 'estado-alejate', texto: T('Aléjate de la antena y no toques el cable: tu mano cambia la medida.') };
     case 'midiendo':
-      return { id: 'midiendo', img: 'estado-midiendo', texto: 'Midiendo… quieto, que yo también me quedo quieto.' };
+      return { id: 'midiendo', img: 'estado-midiendo', texto: T('Midiendo… quieto, que yo también me quedo quieto.') };
     case 'perdida':
-      return { id: 'perdida', img: 'estado-desconectado', texto: 'Se ha soltado el cable o el equipo. Vuelve a conectar y repite la medida.' };
+      return { id: 'perdida', img: 'estado-desconectado', texto: T('Se ha soltado el cable o el equipo. Vuelve a conectar y repite la medida.') };
     case 'falta-cal':
-      return { id: 'falta-cal', img: 'osl-tramos', texto: 'Falta calibrar parte del rango medido. El asistente te guía tramo a tramo y puedes dejarlo para otro día.' };
+      return { id: 'falta-cal', img: 'osl-tramos', texto: T('Falta calibrar parte del rango medido. El asistente te guía tramo a tramo y puedes dejarlo para otro día.') };
     case 'resultado': return mensajeResultado(d);
     default: return null;
   }
@@ -35,20 +36,20 @@ export function resumenHF(cobertura, segmento) {
   const filas = (cobertura ?? []).filter(f => f.medido);
   if (!filas.length) return '';
   const ok = f => ['muy_bien', 'aceptable'].includes(f.nivel.id);
-  const lista = fs => fs.map(f => f.segmento.nombre).join(', ');
+  const lista = fs => fs.map(f => T(f.segmento.nombre)).join(', ');
   const partes = [];
   const sel = segmento && filas.find(f => f.segmento.id === segmento.id);
   if (sel) {
     partes.push(ok(sel)
-      ? `Para ${sel.segmento.nombre} (el tramo que has elegido) va bien: ${sel.nivel.consejo.toLowerCase()}.`
-      : `Para ${sel.segmento.nombre} (el tramo que has elegido) no llega: ${sel.nivel.consejo.toLowerCase()}.`);
+      ? T('Para {0} (el tramo que has elegido) va bien: {1}.', T(sel.segmento.nombre), sel.nivel.consejo.toLowerCase())
+      : T('Para {0} (el tramo que has elegido) no llega: {1}.', T(sel.segmento.nombre), sel.nivel.consejo.toLowerCase()));
   }
   const otros = filas.filter(f => f !== sel);
   const bien = otros.filter(ok), mal = otros.filter(f => !ok(f));
   if (!otros.length) return partes.join(' ');
-  if (!mal.length) partes.push(`En HF sirve para todos los modos medidos (${lista(bien)}).`);
-  else if (!bien.length) partes.push(`En HF no queda bien en ningún modo medido (${lista(mal)}): mira la tabla por modos.`);
-  else partes.push(`En HF va bien en ${lista(bien)}, pero no en ${lista(mal)}.`);
+  if (!mal.length) partes.push(T('En HF sirve para todos los modos medidos ({0}).', lista(bien)));
+  else if (!bien.length) partes.push(T('En HF no queda bien en ningún modo medido ({0}): mira la tabla por modos.', lista(mal)));
+  else partes.push(T('En HF va bien en {0}, pero no en {1}.', lista(bien), lista(mal)));
   return partes.join(' ');
 }
 
@@ -56,33 +57,33 @@ export function mensajeResultado({ reco, cobertura, segmento }) {
   if (!reco) return null;
   if (reco.accion === 'sin_resonancia') {
     if (reco.est && reco.est.roeMin > ROE_MAX_MOSTRADO) {
-      return { id: 'sin-resonancia-abierto', img: 'estado-sin-resonancia', texto: `ROE ${fmtROE(reco.est.roeMin)} en toda la banda: no entra casi nada de potencia. Un circuito abierto o un cable suelto salen igual, así que mira primero que la antena esté conectada. Si lo está, no resuena en esta banda.` };
+      return { id: 'sin-resonancia-abierto', img: 'estado-sin-resonancia', texto: T('ROE {0} en toda la banda: no entra casi nada de potencia. Un circuito abierto o un cable suelto salen igual, así que mira primero que la antena esté conectada. Si lo está, no resuena en esta banda.', fmtROE(reco.est.roeMin)) };
     }
-    return { id: 'sin-resonancia', img: 'estado-sin-resonancia', texto: 'No veo ninguna resonancia en lo medido. Sube el margen lateral o mide en barrido general, y revisa el cable y la calibración.' };
+    return { id: 'sin-resonancia', img: 'estado-sin-resonancia', texto: T('No veo ninguna resonancia en lo medido. Sube el margen lateral o mide en barrido general, y revisa el cable y la calibración.') };
   }
   if (reco.accion === 'irregular') {
-    return { id: 'irregular', img: 'tec-curva-real', texto: 'La curva sube y baja mucho, así que no te doy un porcentaje de corte. Mide la frecuencia exacta que vas a usar.' };
+    return { id: 'irregular', img: 'tec-curva-real', texto: T('La curva sube y baja mucho, así que no te doy un porcentaje de corte. Mide la frecuencia exacta que vas a usar.') };
   }
   const e = reco.est;
   if (!e) return null;
   const puntual = e.n <= 3 || e.roeMax - e.roeMin < 1e-9;
   const nivel = nivelROE(puntual ? e.roeMin : e.roeMax);
-  const rango = puntual ? `ROE ${fmtROE(e.roeMin)}` : `ROE entre ${fmtROE(e.roeMin)} y ${fmtROE(e.roeMax)}`;
+  const rango = puntual ? T('ROE {0}', fmtROE(e.roeMin)) : T('ROE entre {0} y {1}', fmtROE(e.roeMin), fmtROE(e.roeMax));
   const extra = [];
-  if (reco.multibanda) extra.push('Parece una multibanda: ajusta una banda cada vez y vuelve a medir las demás.');
+  if (reco.multibanda) extra.push(T('Parece una multibanda: ajusta una banda cada vez y vuelve a medir las demás.'));
   else if (reco.accion === 'cortar' || reco.accion === 'alargar') extra.push(`${reco.titulo}.`);
   const rx = reco.rx;
   const xFuera = rx && rx.tipo === 'serie' && Math.abs(rx.desv) > 0.025;
   if (xFuera) {
-    extra.push(`Ojo: la resonancia eléctrica (X = 0) cae un ${(Math.abs(rx.desv) * 100).toFixed(1)} % ${rx.desv > 0 ? 'por encima' : 'por debajo'} del mínimo de ROE. Activa «Mostrar la resonancia eléctrica» para verla; el porcentaje de longitud puede fallar, así que ajusta poco a poco.`);
+    extra.push(T('Ojo: la resonancia eléctrica (X = 0) cae un {0} % {1} del mínimo de ROE. Activa «Mostrar la resonancia eléctrica» para verla; el porcentaje de longitud puede fallar, así que ajusta poco a poco.', (Math.abs(rx.desv) * 100).toFixed(1), rx.desv > 0 ? T('por encima') : T('por debajo')));
   }
   const hf = resumenHF(cobertura, segmento);
   if (hf) extra.push(hf);
   const cabecera = {
-    muy_bien: '¡Música para mis antenas!',
-    aceptable: 'Aceptable.',
-    mejorable: 'Mejorable.',
-    mal: 'Mal acoplada.',
+    muy_bien: T('¡Música para mis antenas!'),
+    aceptable: T('Aceptable.'),
+    mejorable: T('Mejorable.'),
+    mal: T('Mal acoplada.'),
   }[nivel.id];
   const img = reco.multibanda ? 'tipo-multibanda' : `roe-${nivel.id.replace('_', '-')}`;
   return { id: `resultado-${nivel.id}${reco.multibanda ? '-mb' : ''}${hf ? '-hf' : ''}${xFuera ? '-x' : ''}`, img, texto: [`${cabecera} ${rango}: ${nivel.consejo.toLowerCase()}.`, ...extra].join(' '), nivel: nivel.id };

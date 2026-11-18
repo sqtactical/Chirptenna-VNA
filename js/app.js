@@ -1,8 +1,9 @@
+import { T, idiomaActual } from './i18n.js';
 import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
 import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
-  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE,
+  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
 import { generarPDF } from './informe.js';
@@ -11,7 +12,7 @@ import { almacen, crearAsistente, barraCobertura } from './asistente.js';
 import { crearGrillo, elegirMensaje } from './grillo.js';
 
 const $ = id => document.getElementById(id);
-const ETIQUETA = { ok: 'Cubre la banda', parcial: 'Cubre parte', no: 'No resuena aquí', sin_datos: 'Sin puntos (ver resolución)', fuera: 'Fuera del rango del equipo' };
+const ETIQUETA = { ok: T('Cubre la banda'), parcial: T('Cubre parte'), no: T('No resuena aquí'), sin_datos: T('Sin puntos (ver resolución)'), fuera: T('Fuera del rango del equipo') };
 const ICONO = { ok: '✔', parcial: '◐', no: '✘', sin_datos: '?', fuera: '–' };
 const CANVAS_CLICK = ['grafico', 'g-z', 'g-fase', 'g-vswr', 'g-retardo'];
 // Modo Simple: la adaptación se da en ROE (lo que conoce todo el mundo); Avanzado: pérdida de retorno y ROE.
@@ -55,12 +56,12 @@ async function conectar() {
   try {
     driver = $('simulado').checked ? new DriverSimulado() : new DriverNanoVNAH();
     if (driver instanceof DriverSimulado) driver.antena = $('antena-sim').value || 'predeterminada';
-    if (!$('simulado').checked && !('serial' in navigator)) throw new Error('Este navegador no soporta Web Serial. Usa Chrome o Edge de escritorio.');
-    estado('Conectando…');
+    if (!$('simulado').checked && !('serial' in navigator)) throw new Error(T('Este navegador no soporta Web Serial. Usa Chrome o Edge de escritorio.'));
+    estado(T('Conectando…'));
     await driver.connect();
     driver.alPerder = m => perderConexion(m);
     $('medir').disabled = false;
-    $('conectar').textContent = 'Desconectar';
+    $('conectar').textContent = T('Desconectar');
     estado(`Conectado: ${driver.nombre}${driver.version ? ' · ' + driver.version : ''}${driver.aviso ? '. ' + driver.aviso : ''}`, !!driver.aviso);
     poblarObjetivo();
     cricky('conectado', { calibracionApp: !!calSeleccionada() });
@@ -76,7 +77,7 @@ function perderConexion(mensaje) {
   driver = null;
   d?.disconnect?.();
   $('medir').disabled = true;
-  $('conectar').textContent = 'Conectar';
+  $('conectar').textContent = T('Conectar');
   estado(mensaje, true);
   cricky('perdida');
 }
@@ -85,8 +86,8 @@ async function desconectar() {
   await driver?.disconnect();
   driver = null;
   $('medir').disabled = true;
-  $('conectar').textContent = 'Conectar';
-  estado('Desconectado');
+  $('conectar').textContent = T('Conectar');
+  estado(T('Desconectado'));
 }
 
 // ---------- Banda objetivo ----------
@@ -98,7 +99,7 @@ function poblarObjetivo() {
     .sort((a, b) => a.f_min - b.f_min);
   sel.innerHTML = '';
   listaObj.forEach((b, i) => sel.add(new Option(`${b.servicio.toUpperCase()} ${b.nombre} (${b.f_min}-${b.f_max} MHz)`, String(i))));
-  sel.add(new Option('Otra frecuencia…', 'custom'));
+  sel.add(new Option(T('Otra frecuencia…'), 'custom'));
   const igual = [...sel.options].find(o => o.textContent === previo);
   if (igual) sel.value = igual.value;
   else {
@@ -125,7 +126,7 @@ function objetivoActual() {
     return {
       fMin: seg.f_min * 1e6, fMax: seg.f_max * 1e6, segmento: seg, bandaCompleta: b,
       rango: { min: b.f_min * 1e6, max: b.f_max * 1e6 },
-      banda: { servicio: b.servicio, nombre: `${b.nombre} · ${seg.nombre}`, region: b.region, f_min: seg.f_min, f_max: seg.f_max },
+      banda: { servicio: b.servicio, nombre: `${b.nombre} · ${T(seg.nombre)}`, region: b.region, f_min: seg.f_min, f_max: seg.f_max },
     };
   }
   return { fMin: b.f_min * 1e6, fMax: b.f_max * 1e6, banda: b, bandaCompleta: b };
@@ -147,12 +148,12 @@ function poblarSegmentos() {
   sel.innerHTML = '';
   $('campo-segmento').hidden = !segActuales.length;
   if (!segActuales.length) return;
-  sel.add(new Option(`Toda la banda (${b.f_min}–${b.f_max} MHz)`, ''));
+  sel.add(new Option(T('Toda la banda ({0}–{1} MHz)', b.f_min, b.f_max), ''));
   for (const s of segActuales) {
     const rango = s.puntual ? `${+s.f_min.toFixed(4)} MHz` : `${s.f_min}–${s.f_max} MHz`;
     const corta = s.nota && !s.puntual && s.nota.length <= 70; // las notas largas van en el tooltip
-    const op = new Option(`${s.nombre} (${rango})${corta ? ' · ' + s.nota : ''}`, s.id);
-    if (s.nota) op.title = s.nota;
+    const op = new Option(`${T(s.nombre)} (${rango})${corta ? ' · ' + T(s.nota) : ''}`, s.id);
+    if (s.nota) op.title = T(s.nota);
     sel.add(op);
   }
   sel.value = [...sel.options].some(o => o.value === previo) ? previo : '';
@@ -165,8 +166,8 @@ const calSeleccionada = () => almacen.lista.find(j => j.id === $('cal-fuente').v
 function poblarCal(seleccionar) {
   const sel = $('cal-fuente'), previo = seleccionar ?? sel.value;
   sel.innerHTML = '';
-  sel.add(new Option('La del equipo (la que tenga activa)', 'equipo'));
-  for (const j of almacen.lista) sel.add(new Option(`App: ${j.nombre} (${j.segmentos.length} tramo${j.segmentos.length === 1 ? '' : 's'})`, j.id));
+  sel.add(new Option(T('La del equipo (la que tenga activa)'), 'equipo'));
+  for (const j of almacen.lista) sel.add(new Option(j.segmentos.length === 1 ? T('App: {0} (1 tramo)', j.nombre) : T('App: {0} ({1} tramos)', j.nombre, j.segmentos.length), j.id));
   sel.value = [...sel.options].some(o => o.value === previo) ? previo : 'equipo';
   resumenCal();
 }
@@ -176,15 +177,15 @@ function resumenCal() {
   $('cal-exportar').hidden = $('cal-borrar').hidden = !j;
   if (!j) {
     $('cal-cobertura').replaceChildren();
-    $('cal-resumen').textContent = 'Se usará la calibración que tenga guardada o activa el propio NanoVNA.';
+    $('cal-resumen').textContent = T('Se usará la calibración que tenga guardada o activa el propio NanoVNA.');
     return;
   }
   const lim = [driver?.fMinHz ?? 50e3, driver?.fMaxHz ?? 2.7e9];
   barraCobertura($('cal-cobertura'), j.segmentos, ...lim);
   const rango = rangoPlan();
   const huecos = faltante(j.segmentos, rango.fIni, rango.fFin);
-  $('cal-resumen').textContent = `${j.segmentos.length} tramo(s) · ${new Date(j.fecha).toLocaleDateString('es-ES')}. ` +
-    (huecos.length ? `Para la medida actual falta calibrar: ${huecos.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')}.` : 'Cubre la medida actual.');
+  $('cal-resumen').textContent = T('{0} tramo(s) · {1}. ', j.segmentos.length, new Date(j.fecha).toLocaleDateString(idiomaActual())) +
+    (huecos.length ? T('Para la medida actual falta calibrar: {0}.', huecos.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')) : T('Cubre la medida actual.'));
 }
 
 // Rango que se va a medir (se usa para proponer el rango del asistente y comprobar la cobertura)
@@ -195,11 +196,11 @@ function rangoPlan() {
     if (obj) {
       const m = Math.min(0.95, Math.max(0, +$('margen').value || 0) / 100);
       const base = obj.rango ?? { min: obj.fMin, max: obj.fMax };
-      return { fIni: Math.max(lim[0], base.min * (1 - m)), fFin: Math.min(lim[1], base.max * (1 + m)), desc: 'la banda objetivo con su margen lateral' };
+      return { fIni: Math.max(lim[0], base.min * (1 - m)), fFin: Math.min(lim[1], base.max * (1 + m)), desc: T('la banda objetivo con su margen lateral') };
     }
   }
-  if (modo === 'avanzado') return { fIni: Math.max(lim[0], +$('fini').value * 1e3), fFin: Math.min(lim[1], +$('ffin').value * 1e6), desc: 'el barrido general que has configurado' };
-  return { fIni: lim[0], fFin: lim[1], desc: 'todo el rango del equipo' };
+  if (modo === 'avanzado') return { fIni: Math.max(lim[0], +$('fini').value * 1e3), fFin: Math.min(lim[1], +$('ffin').value * 1e6), desc: T('el barrido general que has configurado') };
+  return { fIni: lim[0], fFin: lim[1], desc: T('todo el rango del equipo') };
 }
 
 // Escaneo con la calibracion elegida: la del equipo, o datos sin corregir + calibracion de la app
@@ -229,12 +230,12 @@ async function medir() {
   let umbral = umbralActual(), fIni, fFin, puntos, esp, afinar;
   if (estudio === 'banda') {
     // Una banda con margen lateral: borde inferior -X % y borde superior +X %, por si la antena no resuena justo en ella
-    if (!obj) return estado('Elige una banda objetivo', true);
+    if (!obj) return estado(T('Elige una banda objetivo'), true);
     const margen = Math.min(0.95, Math.max(0, +$('margen').value || 0) / 100);
     const base = obj.rango ?? { min: obj.fMin, max: obj.fMax }; // con un segmento se mide la banda entera
     fIni = Math.max(driver.fMinHz, base.min * (1 - margen));
     fFin = Math.min(driver.fMaxHz, base.max * (1 + margen));
-    if (fFin <= fIni * 1.05) return estado('La banda objetivo queda fuera del rango del equipo', true);
+    if (fFin <= fIni * 1.05) return estado(T('La banda objetivo queda fuera del rango del equipo'), true);
     puntos = 601; esp = 'log'; afinar = modo === 'simple' ? true : $('afinar').checked;
   } else if (modo === 'simple') {
     fIni = driver.fMinHz; fFin = driver.fMaxHz; puntos = 3000; esp = 'log'; afinar = true;
@@ -244,7 +245,7 @@ async function medir() {
     fFin = Math.min(driver.fMaxHz, +$('ffin').value * 1e6);
     esp = $('espaciado').value;
     afinar = $('afinar').checked;
-    if (!(puntos >= 2 && fFin > fIni)) return estado('Parámetros de barrido no válidos', true);
+    if (!(puntos >= 2 && fFin > fIni)) return estado(T('Parámetros de barrido no válidos'), true);
   }
 
   const juegoCal = calSeleccionada();
@@ -253,7 +254,7 @@ async function medir() {
     if (huecos.length) {
       resumenCal();
       cricky('falta-cal');
-      return estado(`La calibración «${juegoCal.nombre}» no cubre ${huecos.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')}. Calibra ese tramo con el asistente.`, true);
+      return estado(T('La calibración «{0}» no cubre {1}. Calibra ese tramo con el asistente.', juegoCal.nombre, huecos.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')), true);
     }
   }
 
@@ -261,20 +262,20 @@ async function medir() {
   try {
     if (+$('retardo').value > 0) cricky('cuenta-atras');
     for (let s = +$('retardo').value; s > 0; s--) {
-      estado(`Aléjate de la antena… medición en ${s} s`);
+      estado(T('Aléjate de la antena… medición en {0} s', s));
       if (s <= 3) pitido(s === 1 ? 1320 : 880);
       await new Promise(r => setTimeout(r, 1000));
     }
-    estado('Midiendo… no muevas el cable');
+    estado(T('Midiendo… no muevas el cable'));
     cricky('midiendo');
     const t0 = performance.now();
-    let crudo = await escanear(fIni, fFin, puntos, p => estado(`Midiendo… ${(p * 100).toFixed(0)} %`), esp);
+    let crudo = await escanear(fIni, fFin, puntos, p => estado(T('Midiendo… {0} %', (p * 100).toFixed(0))), esp);
     let medida = calcular(crudo), res = evaluarTodo(medida, umbral), afinado = false;
     if (afinar) {
       const ventanas = ventanasAfinado(res.picos, res.evaluacion, fIni, fFin);
       for (let k = 0; k < ventanas.length; k++) {
         const w = ventanas[k];
-        estado(`Afinando ${k + 1}/${ventanas.length}: ${w.motivo} (${fmtF(w.lo)} a ${fmtF(w.hi)})…`);
+        estado(T('Afinando {0}/{1}: {2} ({3} a {4})…', k + 1, ventanas.length, w.motivo, fmtF(w.lo), fmtF(w.hi)));
         crudo = fusionar(crudo, await escanear(w.lo, w.hi, w.puntos, () => {}, 'lineal'));
         afinado = true;
       }
@@ -291,14 +292,14 @@ async function medir() {
       idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo,
     };
     pitido(1320, 250);
-    estado(`Listo: ${crudo.freq.length} puntos en ${((performance.now() - t0) / 1000).toFixed(1)} s${afinado ? ' (con afinado)' : ''}`);
+    estado(T('Listo: {0} puntos en {1} s{2}', crudo.freq.length, ((performance.now() - t0) / 1000).toFixed(1), afinado ? T(' (con afinado)') : ''));
     mostrar();
     if (ultimo.reco) cricky('resultado', { reco: ultimo.reco, cobertura: ultimo.cobertura, segmento: ultimo.obj?.segmento });
   } catch (e) {
     if (e instanceof ErrorCalibracion && e.faltan.length) cricky('falta-cal');
     if (e.codigo === 'desconectado') perderConexion(e.message);
     else estado(e instanceof ErrorCalibracion && e.faltan.length
-      ? `${e.message}. Falta calibrar: ${e.faltan.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')}.`
+      ? T('{0}. Falta calibrar: {1}.', e.message, e.faltan.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; '))
       : e.message, true);
   } finally {
     $('medir').disabled = !driver;
@@ -310,10 +311,10 @@ async function medir() {
 function comparacionPrevia() {
   const p = ultimo.previo, e = ultimo.reco?.est;
   if (!p || !e) return null;
-  const hora = p.fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const hora = p.fecha.toLocaleTimeString(idiomaActual(), { hour: '2-digit', minute: '2-digit' });
   const d = e.roeMax - p.est.roeMax, rel = Math.abs(d) / p.est.roeMax;
-  const tend = rel < 0.05 ? 'prácticamente igual' : d < 0 ? 'mejor' : 'peor';
-  return `Respecto a la medida anterior (${hora}, línea gris del gráfico): ROE en el peor punto del objetivo ${fmtROE(p.est.roeMax)} → ${fmtROE(e.roeMax)} (${tend}); en el mejor punto ${fmtROE(p.est.roeMin)} → ${fmtROE(e.roeMin)}.`;
+  const tend = rel < 0.05 ? T('prácticamente igual') : d < 0 ? T('mejor') : T('peor');
+  return T('Respecto a la medida anterior ({0}, línea gris del gráfico): ROE en el peor punto del objetivo {1} → {2} ({3}); en el mejor punto {4} → {5}.', hora, fmtROE(p.est.roeMax), fmtROE(e.roeMax), tend, fmtROE(p.est.roeMin), fmtROE(e.roeMin));
 }
 
 // Tabla «cómo va la antena en cada parte de la banda» (CW, fonía, digitales, FT8...) para las bandas de HF
@@ -323,18 +324,18 @@ function mostrarModos() {
   if (!filas.length) return;
   const sel = ultimo.obj?.segmento?.id;
   const tb = $('modos');
-  tb.innerHTML = '<tr><th>Parte de la banda</th><th>Rango</th><th>ROE (mejor a peor)</th><th>Resultado</th><th>Qué hacer</th></tr>';
+  tb.innerHTML = `<tr><th>${T('Parte de la banda')}</th><th>${T('Rango')}</th><th>${T('ROE (mejor a peor)')}</th><th>${T('Resultado')}</th><th>${T('Qué hacer')}</th></tr>`;
   for (const f of filas) {
     const s = f.segmento, rango = s.puntual ? `${+s.f_min.toFixed(4)} MHz` : `${s.f_min} – ${s.f_max} MHz`;
-    if (!f.medido) { tb.innerHTML += `<tr><td>${s.nombre}</td><td>${rango}</td><td colspan="3">fuera de lo medido</td></tr>`; continue; }
-    const roe = f.est.sinPuntos || s.puntual ? fmtROE(f.est.roeMin) : `${fmtROE(f.est.roeMin)} a ${fmtROE(f.est.roeMax)}`;
-    tb.innerHTML += `<tr class="${s.id === sel ? 'fila-elegida' : ''}"><td>${s.nombre}${s.id === sel ? ' ◀ ajustando' : ''}</td><td>${rango}</td><td>${roe}</td>` +
+    if (!f.medido) { tb.innerHTML += `<tr><td>${T(s.nombre)}</td><td>${rango}</td><td colspan="3">${T('fuera de lo medido')}</td></tr>`; continue; }
+    const roe = f.est.sinPuntos || s.puntual || f.est.roeMin > ROE_MAX_MOSTRADO ? fmtROE(f.est.roeMin) : T('{0} a {1}', fmtROE(f.est.roeMin), fmtROE(f.est.roeMax));
+    tb.innerHTML += `<tr class="${s.id === sel ? 'fila-elegida' : ''}"><td>${T(s.nombre)}${s.id === sel ? T(' ◀ ajustando') : ''}</td><td>${rango}</td><td>${roe}</td>` +
       `<td><span class="nivel" style="--c:${f.nivel.color}">${f.nivel.etiqueta}</span></td><td>${f.nivel.consejo}</td></tr>`;
   }
-  const bien = filas.filter(f => f.medido && ['muy_bien', 'aceptable'].includes(f.nivel.id)).map(f => f.segmento.nombre);
-  const mal = filas.filter(f => f.medido && ['mejorable', 'mal'].includes(f.nivel.id)).map(f => f.segmento.nombre);
-  $('resumen-modos').innerHTML = `<p>${bien.length ? `<b>Puedes usarla con normalidad en:</b> ${bien.join(', ')}.` : '<b>Ahora mismo no está bien adaptada en ninguna parte de la banda.</b>'}` +
-    `${mal.length ? ` <b>Con cuidado o mejor no:</b> ${mal.join(', ')}.` : ''}</p>`;
+  const bien = filas.filter(f => f.medido && ['muy_bien', 'aceptable'].includes(f.nivel.id)).map(f => T(f.segmento.nombre));
+  const mal = filas.filter(f => f.medido && ['mejorable', 'mal'].includes(f.nivel.id)).map(f => T(f.segmento.nombre));
+  $('resumen-modos').innerHTML = `<p>${bien.length ? `<b>${T('Puedes usarla con normalidad en:')}</b> ${bien.join(', ')}.` : `<b>${T('Ahora mismo no está bien adaptada en ninguna parte de la banda.')}</b>`}` +
+    `${mal.length ? ` <b>${T('Con cuidado o mejor no:')}</b> ${mal.join(', ')}.` : ''}</p>`;
 }
 
 function mostrar() {
@@ -361,7 +362,7 @@ function mostrar() {
 
   // Resumen (avanzado)
   const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj });
-  $('titulo-grafico').textContent = unidad() === 'roe' ? 'ROE (relación de onda estacionaria)' : 'Pérdida de retorno';
+  $('titulo-grafico').textContent = unidad() === 'roe' ? T('ROE (relación de onda estacionaria)') : T('Pérdida de retorno');
   const ve = $('veredicto');
   ve.replaceChildren(Object.assign(document.createElement('b'), { textContent: v.titulo }));
   const ulv = document.createElement('ul');
@@ -377,30 +378,30 @@ function mostrar() {
 
 function tablas() {
   const tp = $('picos');
-  tp.innerHTML = '<tr><th>Mínimo de ROE</th><th>Pérdida de retorno</th><th>VSWR</th><th title="Frecuencia donde la reactancia X cruza por cero: la resonancia eléctrica. No siempre coincide con el mínimo de ROE.">Reactancia cero (X = 0)</th><th>Ancho de banda</th></tr>';
-  if (!ultimo.picos.length) tp.innerHTML += '<tr><td colspan="5">No se detectan resonancias claras en el rango medido.</td></tr>';
+  tp.innerHTML = `<tr><th>${T('Mínimo de ROE')}</th><th>${T('Pérdida de retorno')}</th><th>VSWR</th><th title="${T('Frecuencia donde la reactancia X cruza por cero: la resonancia eléctrica. No siempre coincide con el mínimo de ROE.')}">${T('Reactancia cero (X = 0)')}</th><th>${T('Ancho de banda')}</th></tr>`;
+  if (!ultimo.picos.length) tp.innerHTML += `<tr><td colspan="5">${T('No se detectan resonancias claras en el rango medido.')}</td></tr>`;
   // X = 0 cerca de cada mínimo; ⚠ si se aleja más de un 2,5 % (el porcentaje de longitud puede no ser fiable)
   const celdaX = p => {
     const rx = reactanciaCero(ultimo.medida, p.f);
     if (!rx) return '—';
     const d = `${rx.desv > 0 ? '+' : ''}${(rx.desv * 100).toFixed(1)} %`;
-    if (rx.tipo === 'paralelo') return `${fmtF(rx.fX)} (${d}, en paralelo)`;
-    return Math.abs(rx.desv) > DESV_REACTANCIA ? `⚠ ${fmtF(rx.fX)} (${d}): no coincide` : `${fmtF(rx.fX)} (${d})`;
+    if (rx.tipo === 'paralelo') return T('{0} ({1}, en paralelo)', fmtF(rx.fX), d);
+    return Math.abs(rx.desv) > DESV_REACTANCIA ? T('⚠ {0} ({1}): no coincide', fmtF(rx.fX), d) : `${fmtF(rx.fX)} (${d})`;
   };
   for (const p of ultimo.picos.slice(0, 8)) {
-    const bw = p.fLo != null ? `${fmtF(p.fHi - p.fLo)} (${fmtF(p.fLo)} – ${fmtF(p.fHi)})` : `no alcanza ${ultimo.umbral} dB`;
+    const bw = p.fLo != null ? `${fmtF(p.fHi - p.fLo)} (${fmtF(p.fLo)} – ${fmtF(p.fHi)})` : T('no alcanza {0} dB', ultimo.umbral);
     tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>${celdaX(p)}</td><td>${bw}</td></tr>`;
   }
   for (const p of ultimo.dudosos ?? []) {
-    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">posiblemente falsa</span></td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>—</td><td>${p.motivo}</td></tr>`;
+    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">${T('posiblemente falsa')}</span></td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>—</td><td>${p.motivo}</td></tr>`;
   }
   const tb = $('bandas');
-  tb.innerHTML = '<tr><th></th><th>Banda</th><th>Rango</th><th>Resultado</th><th>Mejor punto</th></tr>';
+  tb.innerHTML = `<tr><th></th><th>${T('Banda')}</th><th>${T('Rango')}</th><th>${T('Resultado')}</th><th>${T('Mejor punto')}</th></tr>`;
   const orden = { ok: 0, parcial: 1, no: 2, sin_datos: 3, fuera: 4 };
   const filas = [...ultimo.evaluacion].sort((a, b) => orden[a.estado] - orden[b.estado] || a.banda.f_min - b.banda.f_min);
   for (const e of filas) {
     const b = e.banda;
-    const mejor = e.fMejor ? `${unidad() === 'roe' ? `ROE ${fmtROE(e.vMejor)} a ${fmtROE(e.peorVswr)} (peor punto: ${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` : `${e.mejorRl.toFixed(1)} dB · VSWR ${fmtROE(e.vMejor)}`} @ ${fmtF(e.fMejor)}` : '';
+    const mejor = e.fMejor ? `${unidad() === 'roe' ? T('ROE {0} a {1} (peor punto: {2})', fmtROE(e.vMejor), fmtROE(e.peorVswr), nivelROE(e.peorVswr).etiqueta.toLowerCase()) : T('{0} dB · VSWR {1}', e.mejorRl.toFixed(1), fmtROE(e.vMejor))} @ ${fmtF(e.fMejor)}` : '';
     tb.innerHTML += `<tr class="${e.estado}"><td>${ICONO[e.estado]}</td><td>${b.servicio.toUpperCase()} ${b.nombre} <small>[${b.region.join('/')}]</small></td><td>${b.f_min} – ${b.f_max} MHz</td><td>${ETIQUETA[e.estado]}</td><td>${mejor}</td></tr>`;
   }
 }
@@ -429,18 +430,18 @@ function tablaCursor() {
   const m = ultimo.medida, i = ultimo.idx, f = m.freq[i];
   const eq = equivalenteReactivo(f, m.zx[i]);
   const eqTxt = !eq ? '—' : eq.tipo === 'L'
-    ? `bobina ${(eq.valor * 1e9).toFixed(2)} nH`
-    : `condensador ${(eq.valor * 1e12).toFixed(2)} pF`;
+    ? T('bobina {0} nH', (eq.valor * 1e9).toFixed(2))
+    : T('condensador {0} pF', (eq.valor * 1e12).toFixed(2));
   const filas = [
-    ['Frecuencia', fmtF(f)],
+    [T('Frecuencia'), fmtF(f)],
     ['|S11|', `${m.mag[i].toFixed(2)} dB`],
-    ['Pérdida de retorno', `${m.rl[i].toFixed(2)} dB`],
+    [T('Pérdida de retorno'), `${m.rl[i].toFixed(2)} dB`],
     ['VSWR', fmtROE(m.vswr[i])],
-    ['Fase de S11', `${m.fase[i].toFixed(1)}°`],
-    ['Impedancia Z', `${m.zr[i].toFixed(1)} ${m.zx[i] >= 0 ? '+' : '−'} j${Math.abs(m.zx[i]).toFixed(1)} Ω`],
+    [T('Fase de S11'), `${m.fase[i].toFixed(1)}°`],
+    [T('Impedancia Z'), `${m.zr[i].toFixed(1)} ${m.zx[i] >= 0 ? '+' : '−'} j${Math.abs(m.zx[i]).toFixed(1)} Ω`],
     ['|Z|', `${Math.hypot(m.zr[i], m.zx[i]).toFixed(1)} Ω`],
-    ['Equivalente serie', eqTxt],
-    ['Retardo de grupo', `${m.retardo[i].toFixed(2)} ns`],
+    [T('Equivalente serie'), eqTxt],
+    [T('Retardo de grupo'), `${m.retardo[i].toFixed(2)} ns`],
   ];
   $('tabla-cursor').innerHTML = filas.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
 }
@@ -509,7 +510,7 @@ async function iniciar() {
     bandasCfg = await (await fetch('./bandas.json')).json();
     try { segCfg = await (await fetch('./segmentos_hf.json')).json(); } catch { segCfg = null; } // sin él no hay selector de segmentos
   } catch (e) {
-    return estado('No se pudo cargar bandas.json (¿abierto sin servidor web?)', true);
+    return estado(T('No se pudo cargar bandas.json (¿abierto sin servidor web?)'), true);
   }
   try { $('multibanda').checked = localStorage.getItem('multibanda') === '1'; } catch {}
   $('multibanda').onchange = () => {
@@ -565,13 +566,13 @@ async function iniciar() {
     $('pdf').disabled = true;
     try {
       const nombre = await generarPDF(ultimo, {
-        equipo: driver ? `${driver.nombre}${driver.version ? ' (' + driver.version + ')' : ''}` : 'desconocido',
-        espaciado: modo === 'simple' || $('espaciado').value === 'log' ? 'logaritmico' : 'lineal',
+        equipo: driver ? `${driver.nombre}${driver.version ? ' (' + driver.version + ')' : ''}` : T('desconocido'),
+        espaciado: modo === 'simple' || $('espaciado').value === 'log' ? T('logarítmico') : T('lineal'),
         region: $('region').selectedOptions[0].textContent,
         unidad: unidad(),
         marcasX: marcasXActivas(),
       });
-      estado(`Informe guardado: ${nombre}`);
+      estado(T('Informe guardado: {0}', nombre));
     } catch (e) { estado(e.message, true); }
     $('pdf').disabled = false;
   };
@@ -579,7 +580,7 @@ async function iniciar() {
   asistente = crearAsistente({
     contenedor: $('asistente'),
     getDriver: () => {
-      if (driver?.perdido) perderConexion('Se perdió la conexión con el equipo. Vuelve a conectar.');
+      if (driver?.perdido) perderConexion(T('Se perdió la conexión con el equipo. Vuelve a conectar.'));
       return driver;
     },
     getRangoPlan: rangoPlan,
@@ -595,7 +596,7 @@ async function iniciar() {
   };
   $('cal-borrar').onclick = () => {
     const j = calSeleccionada();
-    if (!j || !confirm(`¿Borrar la calibración «${j.nombre}»? No se puede deshacer.`)) return;
+    if (!j || !confirm(T('¿Borrar la calibración «{0}»? No se puede deshacer.', j.nombre))) return;
     almacen.lista = almacen.lista.filter(x => x.id !== j.id);
     almacen.guardar();
     poblarCal('equipo');
@@ -604,13 +605,13 @@ async function iniciar() {
   $('cal-importar').onchange = async e => {
     try {
       const j = juegoDeJSON(JSON.parse(await e.target.files[0].text()));
-      if (!j.segmentos?.length) throw new Error('El archivo no contiene tramos de calibración');
+      if (!j.segmentos?.length) throw new Error(T('El archivo no contiene tramos de calibración'));
       j.id = 'cal' + Date.now();
       almacen.lista.push(j);
       almacen.guardar();
       poblarCal(j.id);
-      estado(`Calibración «${j.nombre}» importada`);
-    } catch (err) { estado('No se pudo importar: ' + err.message, true); }
+      estado(T('Calibración «{0}» importada', j.nombre));
+    } catch (err) { estado(T('No se pudo importar: ') + err.message, true); }
     e.target.value = '';
   };
   ['region', 'objetivo', 'margen', 'estudio', 'fini', 'ffin'].forEach(id => $(id).addEventListener('change', resumenCal));

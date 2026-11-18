@@ -1,3 +1,4 @@
+import { T } from './i18n.js';
 // Calibracion de un puerto (SOL, 3 terminos) con patrones ideales: OPEN = +1, SHORT = -1, LOAD = 0.
 // Mismo modelo y formulas que vna/calibracion.py de Chirptenna:
 //   Ed = L;  Es = (a + b) / (a - b);  Er = -2ab / (a - b)   con a = O - L, b = S - L
@@ -94,7 +95,7 @@ export function corregir(juego, { freq, re, im }) {
     [ore[i], oim[i]] = corregirPunto(seg, freq[i], re[i], im[i]);
   }
   if (sinCal.length) {
-    throw new ErrorCalibracion('Hay frecuencias sin calibrar en esa medida', faltante(juego.segmentos, freq[0], freq[n - 1]));
+    throw new ErrorCalibracion(T('Hay frecuencias sin calibrar en esa medida'), faltante(juego.segmentos, freq[0], freq[n - 1]));
   }
   return { freq, re: ore, im: oim };
 }
@@ -112,29 +113,29 @@ export function comprobarPatron(tipo, m, open) {
   const mm = media(mag(m));
   if (tipo === 'open') {
     return mm < 0.05
-      ? { ok: false, mensaje: `Casi no hay reflexión (|Γ| medio ${mm.toFixed(3)}). ¿Está conectado el OPEN y el cable bien apretado?` }
-      : { ok: true, mensaje: `Reflexión media |Γ| = ${mm.toFixed(2)}.` };
+      ? { ok: false, mensaje: T('Casi no hay reflexión (|Γ| medio {0}). ¿Está conectado el OPEN y el cable bien apretado?', mm.toFixed(3)) }
+      : { ok: true, mensaje: T('Reflexión media |Γ| = {0}.', mm.toFixed(2)) };
   }
   if (!open) return { ok: true, mensaje: '' };
   const mo = media(mag(open)), ratio = mo ? mm / mo : 0;
   if (tipo === 'short') {
-    if (ratio < 0.5) return { ok: false, mensaje: `Refleja mucho menos que el OPEN (${(ratio * 100).toFixed(0)} %). Parece que está puesta la carga: conecta el SHORT (cortocircuito).` };
+    if (ratio < 0.5) return { ok: false, mensaje: T('Refleja mucho menos que el OPEN ({0} %). Parece que está puesta la carga: conecta el SHORT (cortocircuito).', (ratio * 100).toFixed(0)) };
     let fase = 0;
     for (let i = 0; i < m.re.length; i++) {
       const p = cmul(par(m, i), [open.re[i], -open.im[i]]); // s * conj(o)
       fase += Math.abs(Math.atan2(p[1], p[0]));
     }
     fase = (fase / m.re.length) * 180 / Math.PI;
-    if (fase < 90) return { ok: false, mensaje: `Casi no cambia la fase respecto al OPEN (${fase.toFixed(0)}°, debería rondar 180°). Parece que sigue puesto el OPEN.` };
-    return { ok: true, mensaje: `Diferencia de fase con el OPEN: ${fase.toFixed(0)}°.` };
+    if (fase < 90) return { ok: false, mensaje: T('Casi no cambia la fase respecto al OPEN ({0}°, debería rondar 180°). Parece que sigue puesto el OPEN.', fase.toFixed(0)) };
+    return { ok: true, mensaje: T('Diferencia de fase con el OPEN: {0}°.', fase.toFixed(0)) };
   }
   if (tipo === 'load') {
     // 0,5 y no 0,3 (el de vna/calibrar.py, pensado para todo el rango): con el NanoVNA-H real, en tramos por encima
     // de ~1,6 GHz la carga buena llega al 31-36 % del OPEN en bruto (directividad y pérdidas del cable). Un OPEN o un
     // SHORT puestos por error dan ~100 %.
     return ratio > 0.5
-      ?{ ok: false, mensaje: `Refleja demasiado (${(ratio * 100).toFixed(0)} % del OPEN). Conecta la carga de 50 Ω (LOAD).` }
-      : { ok: true, mensaje: `Reflexión ${(ratio * 100).toFixed(0)} % de la del OPEN.` };
+      ?{ ok: false, mensaje: T('Refleja demasiado ({0} % del OPEN). Conecta la carga de 50 Ω (LOAD).', (ratio * 100).toFixed(0)) }
+      : { ok: true, mensaje: T('Reflexión {0} % de la del OPEN.', (ratio * 100).toFixed(0)) };
   }
   return { ok: true, mensaje: '' };
 }

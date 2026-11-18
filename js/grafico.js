@@ -1,5 +1,6 @@
 // Graficos en canvas: series vs frecuencia (eje X logaritmico), perdida de retorno y carta de Smith.
 import { NIVELES_ROE } from './analisis.js';
+import { T, idiomaActual } from './i18n.js';
 
 const COLOR_ESTADO = { ok: '#2e9e5b', parcial: '#d6a21a', no: '#c8453b', sin_datos: '#888888', fuera: '#888888' };
 export const MARGEN = { l: 52, r: 12, t: 30, b: 34 }; // el margen superior aloja el nombre y el marcador de la banda
@@ -150,7 +151,7 @@ export function dibujarSerie(canvas, freq, series, opts = {}) {
 export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
   dibujarSerie(canvas, medida.freq, [{ y: medida.rl }], {
     yMin: 0, yMax: 40, unidad: 'dB', umbral: umbralDb, evaluacion,
-    titulo: 'Pérdida de retorno (más alto = mejor adaptada)', ...opts,
+    titulo: T('Pérdida de retorno (más alto = mejor adaptada)'), ...opts,
   });
 }
 
@@ -158,13 +159,13 @@ export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
 // El criterio de «bien adaptada» (ROE 2) lo marca el límite entre las zonas «Aceptable» y «Mejorable»; umbralDb no se usa aquí.
 export function dibujarROE(canvas, medida, evaluacion, umbralDb, opts = {}) {
   let desde = 1;
-  const regionesY = NIVELES_ROE.map(n => { const r = { desde, hasta: n.max, color: n.color, etiqueta: `${n.etiqueta} (${n.max === Infinity ? `más de ${desde}` : `${desde}–${n.max}`})`.replace(/\./g, ',') }; desde = n.max; return r; });
+  const regionesY = NIVELES_ROE.map(n => { const r = { desde, hasta: n.max, color: n.color, etiqueta: `${n.etiqueta} (${n.max === Infinity ? T('más de {0}', desde) : `${desde}–${n.max}`})`.replace(/\./g, idiomaActual() === 'en' ? '.' : ',') }; desde = n.max; return r; });
   // opts.previo: ROE de la medida anterior ya remuestreada a medida.freq (línea gris discontinua) para ver el efecto de un ajuste
   const series = [{ y: medida.vswr, nombre: 'Ahora' }];
-  if (opts.previo) series.unshift({ y: opts.previo, color: '#9aa0a6', discontinua: true, nombre: 'Medida anterior' });
+  if (opts.previo) series.unshift({ y: opts.previo, color: '#9aa0a6', discontinua: true, nombre: T('Medida anterior') });
   dibujarSerie(canvas, medida.freq, series.length > 1 ? series : [{ y: medida.vswr }], {
     yMin: 1, yMax: 5, evaluacion, regionesY, // sin línea de umbral: el límite de «aceptable» (ROE 2) ya lo marcan las zonas
-    titulo: 'ROE (más bajo = mejor adaptada)', ...opts,
+    titulo: T('ROE (más bajo = mejor adaptada)'), ...opts,
   });
 }
 
@@ -206,8 +207,8 @@ export function dibujarSmith(canvas, medida, opts = {}) {
     const [x, y] = P(medida.re[i], medida.im[i]);
     c.fillStyle = col; c.beginPath(); c.arc(x, y, 3.5, 0, 2 * Math.PI); c.fill();
   }
-  c.fillStyle = '#2e7d32'; c.fillText('● inicio', w - 90, 14);
-  c.fillStyle = '#c62828'; c.fillText('● fin', w - 90, 28);
+  c.fillStyle = '#2e7d32'; c.fillText(T('● inicio'), w - 90, 14);
+  c.fillStyle = '#c62828'; c.fillText(T('● fin'), w - 90, 28);
   if (opts.marcadorIdx != null) {
     const [x, y] = P(medida.re[opts.marcadorIdx], medida.im[opts.marcadorIdx]);
     c.strokeStyle = t.texto; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 6, 0, 2 * Math.PI); c.stroke();

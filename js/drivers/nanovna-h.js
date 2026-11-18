@@ -1,3 +1,4 @@
+import { T } from '../i18n.js';
 // Controlador para NanoVNA-H / H4 con firmware DiSlord (protocolo serie de texto).
 // Interfaz comun de los controladores: connect(), disconnect(), scan(), info
 // Otros equipos (V2, LiteVNA...) se anaden como ficheros hermanos con la misma interfaz.
@@ -22,7 +23,7 @@ export class DriverNanoVNAH {
   aviso = '';            // texto si el equipo no parece un NanoVNA
 
   async connect() {
-    if (!('serial' in navigator)) throw new ErrorEquipo('sin_soporte', 'Este navegador no soporta Web Serial. Usa Chrome o Edge de escritorio.');
+    if (!('serial' in navigator)) throw new ErrorEquipo('sin_soporte', T('Este navegador no soporta Web Serial. Usa Chrome o Edge de escritorio.'));
     this.perdido = false;
     try {
       this.port = await navigator.serial.requestPort();
@@ -51,7 +52,7 @@ export class DriverNanoVNAH {
       let info = '';
       try { info = (await this._cmd('info', 3000)).split(/\r?\n/).map(s => s.trim()).filter(l => l && l !== 'info' && l !== 'ch>').join(' '); } catch (e) { if (e?.codigo === 'desconectado') throw e; }
       this.info = info;
-      this.aviso = /nano|vna|dislord/i.test(`${this.version} ${info}`) ? '' : 'El equipo no se identifica como NanoVNA; si las medidas salen raras, comprueba que has elegido el puerto correcto.';
+      this.aviso = /nano|vna|dislord/i.test(`${this.version} ${info}`) ? '' : T('El equipo no se identifica como NanoVNA; si las medidas salen raras, comprueba que has elegido el puerto correcto.');
     } catch (e) {
       await this.disconnect();
       throw e;
@@ -61,7 +62,7 @@ export class DriverNanoVNAH {
   async disconnect() {
     this._quitarEscucha?.();
     this.perdido = true;
-    this._rechazar?.(new ErrorEquipo('desconectado', 'Conexión cerrada.'));
+    this._rechazar?.(new ErrorEquipo('desconectado', T('Conexión cerrada.')));
     try { await this.reader?.cancel(); } catch {}
     try { this.reader?.releaseLock(); this.writer?.releaseLock(); } catch {}
     try { await this.port?.close(); } catch {}
@@ -70,16 +71,16 @@ export class DriverNanoVNAH {
 
   _errorApertura(e, paso) {
     const n = e?.name;
-    if (n === 'NotFoundError') return new ErrorEquipo('cancelado', 'No se eligió ningún equipo.');
-    if (n === 'SecurityError') return new ErrorEquipo('permiso', 'El navegador no permite acceder al puerto serie. Comprueba los permisos del sitio o abre la página desde https o localhost.');
+    if (n === 'NotFoundError') return new ErrorEquipo('cancelado', T('No se eligió ningún equipo.'));
+    if (n === 'SecurityError') return new ErrorEquipo('permiso', T('El navegador no permite acceder al puerto serie. Comprueba los permisos del sitio o abre la página desde https o localhost.'));
     if (n === 'InvalidStateError' || n === 'NetworkError') {
-      return new ErrorEquipo('ocupado', 'No se pudo abrir el puerto: otro programa (u otra pestaña) lo está usando. Cierra la app de Chirptenna, PuTTY, el monitor serie de Arduino u otras pestañas con el NanoVNA y vuelve a intentarlo.');
+      return new ErrorEquipo('ocupado', T('No se pudo abrir el puerto: otro programa (u otra pestaña) lo está usando. Cierra la app de Chirptenna, PuTTY, el monitor serie de Arduino u otras pestañas con el NanoVNA y vuelve a intentarlo.'));
     }
-    return new ErrorEquipo('ocupado', `No se pudo ${paso} el puerto serie: ${e?.message || e}`);
+    return new ErrorEquipo('ocupado', T('No se pudo {0} el puerto serie: {1}', paso, e?.message || e));
   }
 
   _escucharDesconexion() {
-    const f = ev => { if (!ev.target || ev.target === this.port || ev.port === this.port) this._perder('Se desconectó el cable USB del equipo.'); };
+    const f = ev => { if (!ev.target || ev.target === this.port || ev.port === this.port) this._perder(T('Se desconectó el cable USB del equipo.')); };
     navigator.serial.addEventListener?.('disconnect', f);
     this._quitarEscucha = () => navigator.serial.removeEventListener?.('disconnect', f);
   }
@@ -88,7 +89,7 @@ export class DriverNanoVNAH {
   _perder(mensaje) {
     if (this.perdido) return;
     this.perdido = true;
-    const e = new ErrorEquipo('desconectado', `${mensaje} Vuelve a conectar y repite la medida.`);
+    const e = new ErrorEquipo('desconectado', T('{0} Vuelve a conectar y repite la medida.', mensaje));
     if (this._rechazar) this._rechazar(e); else this.alPerder?.(e.message);
   }
 
@@ -101,13 +102,13 @@ export class DriverNanoVNAH {
         this._notify?.();
       }
     } catch { /* puerto cerrado o error de lectura */ }
-    this._perder('Se perdió la conexión con el equipo.');
+    this._perder(T('Se perdió la conexión con el equipo.'));
   }
 
   _cmd(cmd, timeoutMs = 10000) {
     return new Promise((resolve, reject) => {
-      if (this.perdido) return reject(new ErrorEquipo('desconectado', 'No hay conexión con el equipo. Vuelve a conectar.'));
-      if (this._rechazar) return reject(new ErrorEquipo('ocupado_interno', 'El equipo está ocupado con otra orden; espera a que termine.'));
+      if (this.perdido) return reject(new ErrorEquipo('desconectado', T('No hay conexión con el equipo. Vuelve a conectar.')));
+      if (this._rechazar) return reject(new ErrorEquipo('ocupado_interno', T('El equipo está ocupado con otra orden; espera a que termine.')));
       this.buf = '';
       const limpiar = () => { clearTimeout(t); this._notify = null; this._rechazar = null; };
       const t = setTimeout(async () => {
@@ -115,13 +116,13 @@ export class DriverNanoVNAH {
         // la respuesta tardia podria colarse en la orden siguiente: se descarta lo que llegue en un momento
         await new Promise(r => setTimeout(r, 150 * this.escalaTiempo));
         this.buf = '';
-        reject(new ErrorEquipo('sin_respuesta', `El equipo no responde${cmd ? ` a «${cmd.split(' ')[0]}»` : ''}. ¿Está encendido, con firmware DiSlord y sin otro programa usando el puerto?`));
+        reject(new ErrorEquipo('sin_respuesta', T('El equipo no responde{0}. ¿Está encendido, con firmware DiSlord y sin otro programa usando el puerto?', cmd ? ` a «${cmd.split(' ')[0]}»` : '')));
       }, timeoutMs * this.escalaTiempo);
       this._rechazar = e => { limpiar(); reject(e); };
       this._notify = () => {
         if (PROMPT.test(this.buf)) { limpiar(); resolve(this.buf); }
       };
-      this.writer.write(this.enc.encode(cmd + '\r')).catch(() => this._perder('No se pudo escribir en el equipo.'));
+      this.writer.write(this.enc.encode(cmd + '\r')).catch(() => this._perder(T('No se pudo escribir en el equipo.')));
     });
   }
 
@@ -174,7 +175,7 @@ export class DriverNanoVNAH {
         const m = l.trim().match(/^(\d+)\s+(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)(?:\s+-?[\d.eE+-]+\s+-?[\d.eE+-]+)?$/);
         if (m) filas.push([+m[1], +m[2], +m[3]]);
       }
-      if (filas.length !== n) throw new ErrorEquipo('respuesta', `Bloque ${f0}-${f1}: se esperaban ${n} puntos y llegaron ${filas.length}. Repite la medida; si se repite, prueba otro cable USB.`);
+      if (filas.length !== n) throw new ErrorEquipo('respuesta', T('Bloque {0}-{1}: se esperaban {2} puntos y llegaron {3}. Repite la medida; si se repite, prueba otro cable USB.', f0, f1, n, filas.length));
       for (let k = skip; k < n; k++) {
         const j = i0 + k;
         [freq[j], re[j], im[j]] = filas[k];

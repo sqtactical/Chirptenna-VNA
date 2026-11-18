@@ -32,6 +32,8 @@ de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirpten
 - **Cricky**, el grillo asistente (guiño a Clippy): una burbuja discreta que comenta lo importante (conexión, calibración, cuenta atrás, resultado). Solo en el modo Simple; se cierra de un clic y se puede silenciar para siempre.
 - Las resonancias poco marcadas (ruido, rizado en la falda de otra) no se mezclan con las reales: salen aparte como
   **«posiblemente falsa»**.
+- **Idiomas**: castellano, inglés, francés y alemán (selector en la cabecera; se elige solo según el navegador o con
+  `?idioma=en`). Las traducciones las ha hecho Claude y conviene que las revise alguien nativo.
 
 ## Equipos
 
@@ -59,7 +61,8 @@ medida en bruto restaura la calibración, y genera un informe de texto para pega
 ## Pruebas
 
 ```powershell
-node --test pruebas/
+npm test
+node herramientas/i18n.mjs faltan
 ```
 
 Node ≥ 20, sin dependencias. Cubren el driver contra un emulador del shell de DiSlord (`pruebas/emulador.mjs`), el análisis
@@ -76,6 +79,7 @@ js/calibracion.js  OSL de 3 términos por tramos, cobertura, comprobación de pa
 js/asistente.js    asistente de calibración paso a paso
 js/grafico.js      gráficos en canvas (RL, Smith, series)
 js/informe.js      informe PDF (jsPDF, cargado bajo demanda desde cdnjs)
+js/i18n.js         idiomas: T(), selector (catálogos en idiomas/*.json; herramienta en herramientas/i18n.mjs)
 js/drivers/        nanovna-h.js (Web Serial) y simulado.js
 pruebas/           node:test, emulador y datos reales
 ```

@@ -16,88 +16,42 @@
 <body>
 <header class="cabecera">
   <img src="img/grillo.svg" alt="" width="34" height="34">
-  <div class="marca"><b>Chirptenna</b><span>VNA · diagnóstico</span></div>
+  <div data-t class="marca"><b>Chirptenna</b><span>VNA · diagnóstico</span></div>
   <div class="espaciador"></div>
-  <a href="index.html">← Volver a medir</a>
-  <button id="btn-tema" class="boton-icono" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  <a data-t href="index.html">← Volver a medir</a>
+  <select id="idioma" class="selector-idioma" aria-label="Idioma / Language" title="Idioma / Language"></select>
+  <button data-t-attr="title aria-label" id="btn-tema" class="boton-icono" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
 </header>
 
 <main>
-  <div class="alpha"><b>Para probar el equipo real.</b> Comprueba lo que la app da por supuesto del NanoVNA y genera un informe de texto que puedes pegar en una incidencia. <b>Hazlo con el equipo delante</b>: no hace falta tocar nada, pero conviene que no haya nada conectado al puerto de medida mientras corre.</div>
-  <div id="aviso-nav" class="alpha" hidden>Este navegador no soporta conexión USB (Web Serial). Usa <b>Chrome o Edge de escritorio</b>.</div>
+  <div data-t class="alpha"><b>Para probar el equipo real.</b> Comprueba lo que la app da por supuesto del NanoVNA y genera un informe de texto que puedes pegar en una incidencia. <b>Hazlo con el equipo delante</b>: no hace falta tocar nada, pero conviene que no haya nada conectado al puerto de medida mientras corre.</div>
+  <div data-t id="aviso-nav" class="alpha" hidden>Este navegador no soporta conexión USB (Web Serial). Usa <b>Chrome o Edge de escritorio</b>.</div>
 
   <section class="tarjeta">
-    <h2>Ejecutar</h2>
-    <label class="fila"><input type="checkbox" id="bruto"> <span>Incluir la prueba <b>«ida y vuelta en bruto»</b>: envía <code>cal off</code>, mide, y restaura <code>cal on</code> y el barrido. Cambia <em>temporalmente</em> la calibración activa del equipo y la devuelve; <b>nunca envía <code>save</code></b>.</span></label>
-    <label class="fila"><input type="checkbox" id="simulado"> <span>Modo simulado (comprueba la propia página, sin equipo)</span></label>
+    <h2 data-t>Ejecutar</h2>
+    <label class="fila"><input type="checkbox" id="bruto"> <span data-t>Incluir la prueba <b>«ida y vuelta en bruto»</b>: envía <code>cal off</code>, mide, y restaura <code>cal on</code> y el barrido. Cambia <em>temporalmente</em> la calibración activa del equipo y la devuelve; <b>nunca envía <code>save</code></b>.</span></label>
+    <label class="fila"><input type="checkbox" id="simulado"> <span data-t>Modo simulado (comprueba la propia página, sin equipo)</span></label>
     <p>
-      <button id="conectar">Conectar</button>
-      <button id="ejecutar" class="primario" disabled>Ejecutar diagnóstico</button>
+      <button data-t id="conectar">Conectar</button>
+      <button data-t id="ejecutar" class="primario" disabled>Ejecutar diagnóstico</button>
     </p>
-    <p id="estado" role="status">Listo para conectar.</p>
+    <p data-t id="estado" role="status">Listo para conectar.</p>
   </section>
 
   <section class="tarjeta">
-    <h2>Informe</h2>
-    <div id="informe">(aún no se ha ejecutado)</div>
-    <p><button id="copiar" disabled>Copiar informe</button> <button id="descargar" disabled>Descargar .txt</button></p>
+    <h2 data-t>Informe</h2>
+    <div data-t id="informe">(aún no se ha ejecutado)</div>
+    <p><button data-t id="copiar" disabled>Copiar informe</button> <button data-t id="descargar" disabled>Descargar .txt</button></p>
   </section>
 </main>
 
-<footer class="pie">software libre · <a href="https://github.com/sqtactical/Chirptenna-VNA">código fuente</a></footer>
+<footer data-t class="pie">software libre · <a href="https://github.com/sqtactical/Chirptenna-VNA">código fuente</a></footer>
 <script type="module">
-import { DriverNanoVNAH } from './js/drivers/nanovna-h.js';
-import { DriverSimulado } from './js/drivers/simulado.js';
-import { ejecutarDiagnostico } from './js/diagnostico.js';
-
-const $ = id => document.getElementById(id);
-let drv = null, ultimo = '';
-const estado = (t, error = false) => { $('estado').textContent = t; $('estado').className = error ? 'msg-error' : ''; };
-
-if (!('serial' in navigator)) $('aviso-nav').hidden = false;
-
-$('btn-tema').onclick = () => {
-  const r = document.documentElement, oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
-  const act = r.dataset.theme || (oscuro ? 'dark' : 'light');
-  r.dataset.theme = act === 'dark' ? 'light' : 'dark';
-};
-
-$('conectar').onclick = async () => {
-  if (drv) { await drv.disconnect?.(); drv = null; $('conectar').textContent = 'Conectar'; $('ejecutar').disabled = true; return estado('Desconectado'); }
-  try {
-    drv = $('simulado').checked ? new DriverSimulado() : new DriverNanoVNAH();
-    estado('Conectando…');
-    await drv.connect();
-    drv.alPerder = m => { drv = null; $('conectar').textContent = 'Conectar'; $('ejecutar').disabled = true; estado(m, true); };
-    $('conectar').textContent = 'Desconectar'; $('ejecutar').disabled = false;
-    estado(`Conectado: ${drv.nombre}${drv.version ? ' · ' + drv.version : ''}`);
-  } catch (e) { drv = null; estado(e.message, e.codigo !== 'cancelado'); }
-};
-
-$('ejecutar').onclick = async () => {
-  if (!drv) return;
-  $('ejecutar').disabled = true; $('copiar').disabled = $('descargar').disabled = true;
-  $('informe').textContent = '';
-  try {
-    const r = await ejecutarDiagnostico(drv, {
-      bruto: $('bruto').checked,
-      onPaso: p => { estado(`Hecho: ${p.nombre}…`); $('informe').textContent += `${p.ok === true ? '✔' : p.ok === false ? '✖' : 'ℹ'} ${p.nombre}\n`; },
-    });
-    ultimo = r.resumen;
-    $('informe').textContent = ultimo;
-    $('copiar').disabled = $('descargar').disabled = false;
-    estado(r.pasos.some(p => p.ok === false) ? 'Terminado con fallos: copia el informe y compártelo.' : 'Terminado: todo correcto.', r.pasos.some(p => p.ok === false));
-  } catch (e) { estado(e.message, true); }
-  $('ejecutar').disabled = !drv;
-};
-
-$('copiar').onclick = async () => { try { await navigator.clipboard.writeText(ultimo); estado('Informe copiado'); } catch { estado('No se pudo copiar; usa «Descargar»', true); } };
-$('descargar').onclick = () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([ultimo], { type: 'text/plain;charset=utf-8' }));
-  a.download = `diagnostico_chirptenna_vna_${new Date().toISOString().slice(0, 10)}.txt`;
-  a.click(); URL.revokeObjectURL(a.href);
-};
+// El idioma se carga antes que la pagina: asi T() ya tiene su catalogo cuando los modulos se evaluan
+import { iniciarIdioma, montarSelector } from './js/i18n.js';
+await iniciarIdioma();
+const sel = document.getElementById('idioma'); if (sel) montarSelector(sel);
+await import('./js/diagnostico_pagina.js');
 </script>
 </body>
 </html>

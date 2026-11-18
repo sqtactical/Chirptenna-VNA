@@ -1,3 +1,4 @@
+import { T } from '../i18n.js';
 // Equipo simulado para desarrollar y probar sin hardware.
 // Antena de ejemplo: dos resonancias (~871 MHz como el Bowtie_Sierpinski_MT, y ~2.44 GHz).
 // Con { bruto: true } devuelve los datos "sin corregir": pasan por una red de errores (directividad,
@@ -46,8 +47,8 @@ function gammaTrampas(f) {
 }
 
 export const ANTENAS_SIMULADAS = {
-  predeterminada: 'Dipolo de ejemplo (868 MHz y 2,44 GHz)',
-  trampas: 'HF: dipolo multibanda con trampas y bobina de carga (40/20 m)',
+  predeterminada: T('Dipolo de ejemplo (868 MHz y 2,44 GHz)'),
+  trampas: T('HF: dipolo multibanda con trampas y bobina de carga (40/20 m)'),
 };
 
 // Red de errores de un puerto: medido = Ed + Er*G / (1 - Es*G)
@@ -61,7 +62,7 @@ function errores(f) {
 
 export class DriverSimulado {
   id = 'simulado';
-  nombre = 'Simulado (sin hardware)';
+  nombre = T('Simulado (sin hardware)');
   fMinHz = 50e3;
   fMaxHz = 6e9;
   version = 'simulado';
