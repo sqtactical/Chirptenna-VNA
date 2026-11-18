@@ -52,20 +52,24 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
 - [x] 🟢 **Calculadora de corte en mm** (18-11; el porcentaje de la recomendación pasa a mm con el largo que escribas y
       propone cortar primero el 70 %; no sale en antenas multibanda): introduces el largo actual del radiador (o del brazo del dipolo) y te dice cuántos
       mm cortar o añadir, no solo el %. Con aviso de cortar en pasos (cortar es irreversible). **S**
-- [~] 🟢 **Explicaciones en lenguaje llano** (18-11: glosario desplegable en el modo Simple y semáforo de niveles; falta un «?»
-      junto a cada término): «?» junto a ROE, pérdida de retorno, ancho de banda, Smith; semáforo
+- [x] 🟢 **Explicaciones en lenguaje llano** (18-11: glosario desplegable en el modo Simple, botón «?» que lo abre desde la
+      tarjeta de recomendaciones y semáforo de niveles): «?» junto a ROE, pérdida de retorno, ancho de banda, Smith; semáforo
       verde/ámbar/rojo con lo que significa para el alcance (p. ej. «ROE 2: pierdes ~11 % de la potencia»). **S**
-- [~] 🟢 **Avisos de medida mal hecha** (18-11: `avisosMedida` avisa de antena o cable sin conectar, carga de 50 Ω en vez de
-      antena y curva con mucho ruido, con umbrales calibrados con la antena real; faltan mano cerca entre dos barridos y
-      latiguillo largo sin calibrar): detectar curvas típicas de cable suelto, antena sin conectar (todo ≈ 0 dB), mano
+- [x] 🟢 **Avisos de medida mal hecha** (18-11: `avisosMedida` avisa de antena o cable sin conectar, carga de 50 Ω en vez de
+      antena y curva con mucho ruido, con umbrales calibrados con la antena real; `avisoInestable` avisa si entre dos
+      medidas seguidas la resonancia no se mueve pero la ROE cambia más de un 25 % (mano, cuerpo, cable). Falta, y necesita el
+      equipo real, detectar el latiguillo largo sin calibrar): detectar curvas típicas de cable suelto, antena sin conectar (todo ≈ 0 dB), mano
       cerca (la medida cambia mucho entre dos barridos seguidos), medir a través de un latiguillo largo sin calibrar en su
       extremo. **M**
-- [ ] 🟢🕸️ **Ilustraciones del montaje**: dónde poner el OPEN/SHORT/LOAD (en el extremo del cable, no en el equipo),
+- [x] 🟢🕸️ **Ilustraciones del montaje** (18-11: cinco dibujos SVG en `img/montaje/` en un desplegable del modo Simple y uno por
+      paso en el asistente de calibración; los adaptadores van en texto, sin dibujo): dónde poner el OPEN/SHORT/LOAD (en el extremo del cable, no en el equipo),
       adaptadores SMA/RP-SMA/u.FL, por qué no medir con la antena encima de la mesa. **S**
 - [x] 🟢 **Idiomas**: inglés, francés y alemán (traducidos por Claude, a revisar por hablantes nativos); catálogos JSON
       con el castellano como clave, como en Chirptenna. Falta: formato de números por idioma (hoy siempre con punto) y
       un idioma más (it, pt). **M**
-- [ ] 🟢 **Informe para compartir**: PDF actual + imagen PNG del veredicto lista para foros/Discord, y enlace con los datos
+- [x] 🟢 **Informe para compartir** (18-11: botones «Imagen PNG» (veredicto + gráfico) y «Copiar enlace»; el enlace lleva la
+      curva de ROE comprimida en la URL tras `#m=` (~1,7 kB, sin servidor, `js/compartir.js`) y quien lo abre ve el veredicto en
+      solo lectura; el contenido del enlace se valida y se limpia): PDF actual + imagen PNG del veredicto lista para foros/Discord, y enlace con los datos
       dentro de la URL (sin servidor) para que otro abra la misma medida. **S**
 - [~] 🟢 **Web instalable (PWA) y sin conexión** (18-11: `manifest.webmanifest` y `sw.js`, red primero y copia local si
       falla; **sin probar en un navegador real**: el panel de la app no deja registrar service workers; comprobar en Chrome

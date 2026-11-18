@@ -254,6 +254,15 @@ export function avisosMedida(medida) {
   return av;
 }
 
+// Dos medidas seguidas del mismo objetivo con la resonancia en el mismo sitio (< 0,3 %) pero con la ROE del peor punto muy distinta
+// (> 25 %) delatan que algo ajeno a la antena cambió entre ellas: la mano, el cuerpo, el cable o un conector flojo.
+export function avisoInestable(previoRoeMax, roeMax, fResPrevia, fRes) {
+  if (!(previoRoeMax > 0) || !(roeMax > 0) || !(fResPrevia > 0) || !(fRes > 0)) return null;
+  if (Math.abs(fRes / fResPrevia - 1) >= 0.003) return null;
+  if (Math.abs(roeMax / previoRoeMax - 1) <= 0.25) return null;
+  return { id: 'inestable', texto: T('Esta medida cambió bastante respecto a la anterior sin que la resonancia se moviera. Puede que influyan tu mano, tu cuerpo o el cable. Vuelve a medir alejándote de la antena para comprobar que sale igual.') };
+}
+
 // Cuántos milímetros mover para un cambio de longitud de pct % (positivo = alargar). Cortar es irreversible: el primer paso es el 70 %.
 export function calculoMm(largoMm, pct) {
   if (!(largoMm > 0) || !Number.isFinite(pct) || pct === 0) return null;

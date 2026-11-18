@@ -138,3 +138,42 @@ test('avisos de medida mal hecha: sin conectar, carga de 50 ohm, ruido, y la ant
   assert.ok(avisosMedida(ruidosa).some(a => a.id === 'ruido'));
   assert.deepEqual(avisosMedida(crear(f.slice(0, 5), new Float64Array(5), new Float64Array(5))), [], 'con pocos puntos no se opina');
 });
+
+import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from '../js/compartir.js';
+test('compartir: la medida viaja en la URL, ida y vuelta, y un enlace manipulado se rechaza o se limpia', async () => {
+  const f = Float64Array.from({ length: 300 }, (_, i) => 8.4e8 * Math.pow(9e8 / 8.4e8, i / 299));
+  const re = Float64Array.from(f, x => 0.3 * Math.cos((x - 8.6e8) / 2e7)), im = new Float64Array(300);
+  const medida = A.calcular({ freq: f, re, im });
+  const obj = { fMin: 863e6, fMax: 870e6, banda: { nombre: 'ISM 868 <b>x</b>' } };
+  const reg = registroParaEnlace({ medida, obj, umbral: 9.54 });
+  const codigo = await codificar(reg);
+  assert.match(codigo, /^[zj][A-Za-z0-9_-]+$/);
+  assert.ok(codigo.length < 2500, `el enlace cabe en una URL (${codigo.length})`);
+  const enlace = enlaceDe(codigo, 'https://x.test/');
+  assert.equal(codigoDeHash(new URL(enlace).hash), codigo);
+  const vuelta = validarRegistro(await decodificar(codigo));
+  assert.ok(vuelta, 'registro valido');
+  assert.ok(!/[<>]/.test(vuelta.o), 'sin marcas HTML en el nombre del objetivo');
+  assert.equal(vuelta.f.length, 160);
+  const m2 = A.calcular(medidaDeRegistro(vuelta));
+  const i = Math.floor(80);
+  assert.ok(Math.abs(m2.vswr[i] - vuelta.s[i]) < 0.02, 'el ROE se reconstruye desde |Γ|');
+  // entradas no validas
+  assert.equal(validarRegistro(null), null);
+  assert.equal(validarRegistro({ ...vuelta, f: vuelta.f.slice(1) }), null, 'longitudes distintas');
+  assert.equal(validarRegistro({ ...vuelta, s: vuelta.s.map(() => 0.5) }), null, 'ROE menor que 1');
+  assert.equal(validarRegistro({ ...vuelta, f: vuelta.f.map(() => 5) }), null, 'frecuencias no crecientes');
+  assert.equal(validarRegistro({ ...vuelta, v: 2 }), null);
+  assert.equal(codigoDeHash('#m=zAAA<script>'), null);
+  assert.equal(codigoDeHash('#otra=cosa'), null);
+  await assert.rejects(decodificar('x123'));
+});
+
+import { avisoInestable } from '../js/analisis.js';
+test('aviso de medida inestable: la ROE cambia mucho y la resonancia no se mueve', () => {
+  assert.equal(avisoInestable(2, 3, 868e6, 868.5e6)?.id, 'inestable');
+  assert.equal(avisoInestable(2, 2.2, 868e6, 868.5e6), null, 'cambio pequeno');
+  assert.equal(avisoInestable(2, 3, 868e6, 880e6), null, 'la resonancia se movio: has tocado la antena');
+  assert.equal(avisoInestable(0, 3, 868e6, 868e6), null);
+  assert.equal(avisoInestable(2, 3, undefined, 868e6), null);
+});

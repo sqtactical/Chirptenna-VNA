@@ -3,7 +3,7 @@ import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
 import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
-  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO, calculoMm, avisosMedida,
+  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO, calculoMm, avisosMedida, avisoInestable,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarROEvarias, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
 import { resumirMedida, cargarMedidas, guardarMedidas, ordenarMedidas, rejillaComun, curvaEnRejilla, valorOrden, PALETA, MAXIMO_EN_GRAFICO } from './comparar.js';
@@ -12,6 +12,7 @@ import { corregir, faltante, juegoAJSON, juegoDeJSON, ErrorCalibracion } from '.
 import { almacen, crearAsistente, barraCobertura } from './asistente.js';
 import { crearGrillo, elegirMensaje } from './grillo.js';
 import { REGIONES, PRESETS, calcularCanal } from './meshtastic.js';
+import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
 const $ = id => document.getElementById(id);
 const ETIQUETA = { ok: T('Cubre la banda'), parcial: T('Cubre parte'), no: T('No resuena aquí'), sin_datos: T('Sin puntos (ver resolución)'), fuera: T('Fuera del rango del equipo') };
@@ -136,7 +137,12 @@ function iniciarMesh() {
   for (const id of ['mesh-region', 'mesh-preset', 'mesh-nombre', 'mesh-slot']) $(id).onchange = () => { actualizarMesh(); resumenCal(); reanalizar(); };
 }
 
+// Medida abierta desde un enlace compartido: manda su objetivo hasta que el usuario cambie algo o mida
+let objetivoCompartido = null;
+function soltarCompartida() { objetivoCompartido = null; $('aviso-compartida').hidden = true; }
+
 function objetivoActual() {
+  if (objetivoCompartido) return objetivoCompartido;
   const v = $('objetivo').value;
   if (v === '') return null;
   if (v === 'custom') {
@@ -258,6 +264,7 @@ function evaluarTodo(medida, umbral) {
 }
 
 async function medir() {
+  soltarCompartida();
   const obj = estudio === 'banda' ? objetivoActual() : null;
   let umbral = umbralActual(), fIni, fFin, puntos, esp, afinar;
   if (estudio === 'banda') {
@@ -414,6 +421,62 @@ function renderComparar() {
   dibujarROEvarias($('cmp-grafico'), rejilla, mostradas.map((m, i) => ({ y: curvaEnRejilla(m, rejilla), nombre: m.nombre.slice(0, 12), color: PALETA[i % PALETA.length] })), { titulo: T('ROE de las antenas guardadas') });
 }
 
+// ---------- Compartir: imagen PNG del veredicto y enlace con los datos ----------
+function textoEnLineas(c, texto, x, y, ancho, alto) {
+  let linea = '';
+  for (const palabra of String(texto).split(' ')) {
+    const prueba = linea ? `${linea} ${palabra}` : palabra;
+    if (c.measureText(prueba).width > ancho && linea) { c.fillText(linea, x, y); y += alto; linea = palabra; } else linea = prueba;
+  }
+  if (linea) { c.fillText(linea, x, y); y += alto; }
+  return y;
+}
+
+function descargarPNG() {
+  if (!ultimo) return;
+  const W = 1000, H = 620, cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
+  c.fillStyle = '#14163a'; c.fillRect(0, 0, W, 64);
+  c.fillStyle = '#f2c14e'; c.font = 'bold 28px system-ui, sans-serif'; c.fillText('Chirptenna VNA', 24, 42);
+  const r = ultimo.reco, e = r?.est;
+  c.fillStyle = '#1f2a30'; c.font = 'bold 26px system-ui, sans-serif';
+  let y = textoEnLineas(c, r?.titulo ?? veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj }).titulo, 24, 106, W - 48, 32);
+  if (e) {
+    const nivel = nivelROE(e.n <= 3 || e.roeMax - e.roeMin < 1e-9 ? e.roeMin : e.roeMax);
+    c.font = '20px system-ui, sans-serif'; c.fillStyle = nivel.color;
+    c.fillText(`● ${nivel.etiqueta}  ·  ${T('ROE {0} a {1}', fmtROE(e.roeMin), fmtROE(e.roeMax))}`, 24, y + 4);
+  }
+  const g = document.createElement('canvas');
+  dibujarROE(g, ultimo.medida, ultimo.evaluacion, ultimo.umbral, { claro: true, ancho: W - 48, alto: 380, dpr: 1 });
+  c.drawImage(g, 24, 170);
+  c.fillStyle = '#5d6a73'; c.font = '16px system-ui, sans-serif';
+  c.fillText(`${ultimo.obj?.banda.nombre ?? ''} · ${ultimo.fecha.toLocaleDateString(idiomaActual())}`, 24, H - 20);
+  c.textAlign = 'right'; c.fillText('sqtactical.github.io/Chirptenna-VNA', W - 24, H - 20);
+  cv.toBlob(b => descargar(`veredicto_${ultimo.fecha.toISOString().slice(0, 10)}.png`, b, 'image/png'));
+}
+
+async function copiarEnlace() {
+  if (!ultimo?.obj) return estado(T('Elige una banda objetivo'), true);
+  const enlace = enlaceDe(await codificar(registroParaEnlace({ medida: ultimo.medida, obj: ultimo.obj, umbral: ultimo.umbral })));
+  try { await navigator.clipboard.writeText(enlace); estado(T('Enlace copiado ({0} caracteres). Quien lo abra verá tu curva de ROE y el veredicto.', enlace.length)); }
+  catch { prompt(T('Copia este enlace:'), enlace); }
+}
+
+async function abrirCompartida(codigo) {
+  try {
+    const reg = validarRegistro(await decodificar(codigo));
+    if (!reg) throw new Error('registro');
+    objetivoCompartido = { fMin: reg.a, fMax: reg.b, banda: { servicio: 'compartida', nombre: reg.o, region: [], f_min: reg.a / 1e6, f_max: reg.b / 1e6 } };
+    aplicarEstudio('banda');
+    const crudo = medidaDeRegistro(reg), medida = calcular(crudo), umbral = umbralActual(), res = evaluarTodo(medida, umbral);
+    ultimo = { crudo, medida, ...res, umbral, fecha: new Date(reg.t), afinado: false, calNombre: null, idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, (reg.a + reg.b) / 2), clave: null, previo: null };
+    $('aviso-compartida').hidden = false;
+    mostrar();
+  } catch { objetivoCompartido = null; estado(T('El enlace de la medida no es válido.'), true); }
+}
+
 function mostrar() {
   if (!ultimo) return;
   $('resultados').hidden = false;
@@ -438,6 +501,8 @@ function mostrar() {
   calculadoraMm();
   renderComparar();
   const avisos = avisosMedida(ultimo.medida);
+  const inestable = ultimo.previo && ultimo.reco?.est ? avisoInestable(ultimo.previo.est.roeMax, ultimo.reco.est.roeMax, ultimo.previo.fRes, ultimo.reco.fRes) : null;
+  if (inestable) avisos.push(inestable);
   const av = $('avisos-medida');
   av.hidden = !avisos.length;
   av.replaceChildren(...avisos.flatMap((a, i) => [...(i ? [document.createElement('br')] : []), document.createTextNode(`⚠ ${a.texto}`)]));
@@ -584,6 +649,9 @@ async function iniciar() {
   iniciarMesh();
   try { $('largo-mm').value = localStorage.getItem('largo-mm') ?? ''; } catch {}
   $('largo-mm').oninput = calculadoraMm;
+  $('png').onclick = descargarPNG;
+  $('enlace').onclick = copiarEnlace;
+  for (const b of document.querySelectorAll('[data-glosario]')) b.onclick = () => { const d = $('glosario'); d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   $('cmp-guardar').onclick = () => {
     if (!ultimo?.obj) return;
     const nombre = $('cmp-nombre').value.trim() || T('Antena {0}', guardadas.length + 1);
@@ -636,8 +704,8 @@ async function iniciar() {
   $('simulado').addEventListener('change', () => { $('campo-antena-sim').hidden = !$('simulado').checked; });
   $('campo-antena-sim').hidden = !$('simulado').checked;
   $('medir').onclick = medir;
-  $('region').onchange = () => { poblarObjetivo(); reanalizar(); };
-  $('objetivo').onchange = () => { $('campo-fobj').hidden = $('objetivo').value !== 'custom'; $('campo-mesh').hidden = $('objetivo').value !== 'meshtastic'; actualizarMesh(); poblarSegmentos(); reanalizar(); };
+  $('region').onchange = () => { soltarCompartida(); poblarObjetivo(); reanalizar(); };
+  $('objetivo').onchange = () => { soltarCompartida(); $('campo-fobj').hidden = $('objetivo').value !== 'custom'; $('campo-mesh').hidden = $('objetivo').value !== 'meshtastic'; actualizarMesh(); poblarSegmentos(); reanalizar(); };
   $('segmento').onchange = reanalizar; // se mide la banda entera, así que cambiar de segmento no obliga a medir otra vez
   $('fobj').onchange = reanalizar;
   $('umbral').onchange = () => { if (ultimo) ultimo.umbral = +$('umbral').value; reanalizar(); };
@@ -709,6 +777,9 @@ async function iniciar() {
     e.target.value = '';
   };
   ['region', 'objetivo', 'margen', 'estudio', 'fini', 'ffin'].forEach(id => $(id).addEventListener('change', resumenCal));
+
+  const codigo = codigoDeHash();
+  if (codigo) await abrirCompartida(codigo);
 
   enlazarCursor();
   window.addEventListener('resize', () => { redibujar(); renderComparar(); });

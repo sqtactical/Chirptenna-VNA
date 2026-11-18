@@ -129,7 +129,7 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
     contenedor.innerHTML = `
       <h3>${T('Tramo {0} de {1}: {2} a {3}', S.i + 1, S.tramos.length, fmtF(t.fIni), fmtF(t.fFin))}</h3>
       <ul class="pasos-cal">${lista}</ul>
-      <div class="instr"><b>${paso.titulo}</b><p>${esc(paso.instr)}</p></div>
+      <div class="instr"><b>${paso.titulo}</b><p>${esc(paso.instr)}</p><img class="fig-paso" src="img/montaje/${paso.id === 'verif' ? 'load' : paso.id}.svg" alt="" width="260" height="87"></div>
       ${S.ocupado ? `<progress max="1" value="${S.prog}"></progress><p class="leyenda">${T('Midiendo… no toques el cable.')}</p>` : ''}
       ${S.msg ? `<p class="${S.msgError ? 'msg-error' : 'msg-ok'}">${esc(S.msg)}</p>` : ''}
       <div class="botones">

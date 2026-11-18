@@ -25,6 +25,8 @@
   <div data-t class="alpha"><b>Alpha.</b> Mide la antena que has fabricado y comprueba si resuena donde quieres.</div>
   <div data-t id="aviso-nav" class="alpha" hidden>Este navegador no soporta conexión USB (Web Serial). Usa <b>Chrome o Edge de escritorio</b>, o prueba el modo simulado.</div>
 
+  <div data-t id="aviso-compartida" class="alpha" hidden>Estás viendo una medida compartida (solo la curva de ROE y el veredicto). Para medir tu antena, conecta tu NanoVNA y pulsa Medir.</div>
+
   <div data-t-attr="aria-label" class="modos" role="tablist" aria-label="Modo">
     <button data-t id="modo-simple" class="activo" role="tab">Simple</button>
     <button data-t id="modo-avanzado" role="tab">Avanzado</button>
@@ -38,6 +40,17 @@
       <li data-t>Elige la <b>banda objetivo</b>, conecta la antena, pulsa <b>Medir</b> y aléjate durante la cuenta atrás.</li>
       <li data-t>Te diré si debes <b>alargar o cortar</b> la antena y cuánto.</li>
     </ol>
+    <details class="solo-simple ayuda">
+      <summary data-t>Cómo montar la medida (con dibujos)</summary>
+      <div class="figuras">
+        <figure><img src="img/montaje/cadena.svg" alt="" width="420" height="140"><figcaption data-t>Calibra y mide en el extremo del cable, donde luego irá la antena, no en el equipo. Usa siempre el mismo cable.</figcaption></figure>
+        <figure><img src="img/montaje/open.svg" alt="" width="420" height="140"><figcaption data-t>OPEN: el conector al aire, sin nada conectado.</figcaption></figure>
+        <figure><img src="img/montaje/short.svg" alt="" width="420" height="140"><figcaption data-t>SHORT: el conector con el cortocircuito puesto.</figcaption></figure>
+        <figure><img src="img/montaje/load.svg" alt="" width="420" height="140"><figcaption data-t>LOAD: la carga de 50 Ω puesta en el conector.</figcaption></figure>
+        <figure><img src="img/montaje/mesa.svg" alt="" width="420" height="140"><figcaption data-t>Mide con la antena en el aire, lo más lejos posible de la mesa, las paredes, los metales y de ti: todo lo que está cerca cambia la medida.</figcaption></figure>
+      </div>
+      <p data-t class="leyenda">Adaptadores: el SMA y el RP-SMA parecen iguales pero no encajan (en el RP-SMA el pin y el agujero están cambiados). El u.FL (IPEX) es diminuto y aguanta pocas conexiones: úsalo solo con un latiguillo hacia SMA.</p>
+    </details>
     <ol class="solo-avanzado">
       <li data-t>Conecta el NanoVNA por USB y calíbralo en el extremo del cable.</li>
       <li data-t>Ajusta el rango, los puntos y el espaciado, y pulsa <b>Medir</b>.</li>
@@ -108,7 +121,7 @@
     <div id="avisos-medida" class="alpha" hidden></div>
 
     <section id="tarjeta-reco" class="tarjeta reco" hidden>
-      <h2 data-t>Qué hacer con la antena</h2>
+      <h2><span data-t>Qué hacer con la antena</span> <button data-t-attr="title" type="button" class="boton-ayuda solo-simple" data-glosario title="Abrir el glosario">?</button></h2>
       <div id="reco"></div>
       <div id="calc-mm" class="subcampos" hidden>
         <label><span data-t>Largo actual del radiador o del brazo (mm)</span><input id="largo-mm" type="number" min="1" step="any"></label>
@@ -137,7 +150,7 @@
         <li><i style="background:#f0a30a"></i><span data-t><b>Mejorable</b> · de 2 a 3 · transmitir poco y a potencia reducida</span></li>
         <li><i style="background:#d9534f"></i><span data-t><b>Mal acoplada</b> · más de 3 · no transmitir salvo emergencias</span></li>
       </ul>
-      <details class="solo-simple ayuda">
+      <details id="glosario" class="solo-simple ayuda">
         <summary data-t>¿Qué significan estos términos?</summary>
         <dl>
           <dt data-t>ROE (o SWR)</dt><dd data-t>Mide cuánta potencia vuelve al equipo en vez de salir por la antena. 1 es perfecto; con 2 se refleja el 11 %, con 3 el 25 % y con 5 el 44 %.</dd>
@@ -194,6 +207,8 @@
       <h2 data-t>Descargar</h2>
       <div class="botones">
         <button data-t id="pdf" class="primario">Informe PDF</button>
+        <button data-t id="png">Imagen PNG</button>
+        <button data-t id="enlace">Copiar enlace</button>
         <button data-t id="csv" class="solo-avanzado">CSV</button>
         <button data-t id="s1p" class="solo-avanzado">Touchstone (.s1p)</button>
       </div>

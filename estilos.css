@@ -151,3 +151,9 @@ body[data-modo="simple"] #grillo[data-activo="1"] { display: flex; }
 .ayuda summary { cursor: pointer; font-weight: 600; }
 .ayuda dt { font-weight: 600; margin-top: .5rem; }
 .ayuda dd { margin: .1rem 0 0 0; color: var(--suave); }
+.figuras { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; margin-top: .6rem; }
+.figuras figure { margin: 0; }
+.figuras img, .fig-paso { width: 100%; height: auto; max-width: 420px; }
+.figuras figcaption { font-size: .85rem; color: var(--suave); }
+.fig-paso { display: block; margin-top: .5rem; max-width: 260px; }
+.boton-ayuda { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid var(--borde); background: transparent; color: var(--suave); font-size: .8rem; cursor: pointer; vertical-align: middle; }
