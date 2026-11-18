@@ -1,0 +1,14 @@
+{
+  "name": "Chirptenna VNA",
+  "short_name": "Chirptenna VNA",
+  "description": "Mide cualquier antena con un NanoVNA desde el navegador",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14163a",
+  "theme_color": "#14163a",
+  "icons": [
+    { "src": "img/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

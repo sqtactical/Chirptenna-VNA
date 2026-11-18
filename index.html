@@ -6,6 +6,8 @@
 <title>Chirptenna VNA</title>
 <meta name="description" content="Mide tu antena con un NanoVNA, descubre si debes alargarla o cortarla y consulta todos sus parámetros. Todo se calcula en tu navegador.">
 <link rel="icon" type="image/png" href="img/grillo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14163a">
 <link rel="stylesheet" href="estilos.css">
 </head>
 <body data-modo="simple" data-estudio="banda">
@@ -133,6 +135,16 @@
         <li><i style="background:#f0a30a"></i><span data-t><b>Mejorable</b> · de 2 a 3 · transmitir poco y a potencia reducida</span></li>
         <li><i style="background:#d9534f"></i><span data-t><b>Mal acoplada</b> · más de 3 · no transmitir salvo emergencias</span></li>
       </ul>
+      <details class="solo-simple ayuda">
+        <summary data-t>¿Qué significan estos términos?</summary>
+        <dl>
+          <dt data-t>ROE (o SWR)</dt><dd data-t>Mide cuánta potencia vuelve al equipo en vez de salir por la antena. 1 es perfecto; con 2 se refleja el 11 %, con 3 el 25 % y con 5 el 44 %.</dd>
+          <dt data-t>Pérdida de retorno</dt><dd data-t>Lo mismo en decibelios: cuanto más alta, menos se refleja. Una ROE de 2 equivale a 9,5 dB.</dd>
+          <dt data-t>Resonancia</dt><dd data-t>La frecuencia en la que la antena mejor se adapta. Si no es la que usas, hay que alargarla o acortarla.</dd>
+          <dt data-t>Ancho de banda</dt><dd data-t>El margen de frecuencias en el que la ROE se mantiene en 2 o menos.</dd>
+          <dt data-t>Carta de Smith</dt><dd data-t>Un gráfico de la impedancia de la antena. Está en el modo Avanzado.</dd>
+        </dl>
+      </details>
       <label class="solo-simple fila-toggle"><input type="checkbox" id="ver-x"> <span data-t>Mostrar la resonancia eléctrica (X = 0)</span></label>
       <div data-t class="leyenda solo-simple" id="ayuda-x" hidden>La línea violeta marca dónde la antena resuena eléctricamente (su reactancia se anula). Si no coincide con el punto más bajo de la curva, el porcentaje de longitud puede no ser fiable.</div>
       <div data-t class="leyenda solo-simple">ROE 1 es la adaptación perfecta. Se da por buena una antena con <b>ROE 2 o menos</b>: con ROE 2 se refleja solo el 11 % de la potencia, algo que casi no se nota en el alcance. Cuanto más abajo llegue la curva, mejor.</div>
@@ -191,6 +203,7 @@
 import { iniciarIdioma, montarSelector } from './js/i18n.js';
 await iniciarIdioma();
 const sel = document.getElementById('idioma'); if (sel) montarSelector(sel);
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); // sin conexión
 await import('./js/app.js');
 </script>
 </body>

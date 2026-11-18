@@ -315,9 +315,11 @@ async function medir() {
     const centro = obj ? (obj.fMin + obj.fMax) / 2 : medida.freq[0];
     // Medida anterior del mismo objetivo y del mismo rango: se superpone en el gráfico y se compara en el texto (asistente de ajuste)
     const clave = obj ? `${(obj.bandaCompleta ?? obj.banda).nombre}|${fIni.toFixed(0)}|${fFin.toFixed(0)}|${driver.id}` : null;
+    const ultimoRes = ultimo?.reco?.fRes;
     const previo = ultimo && clave && ultimo.clave === clave
       ? { freq: ultimo.medida.freq, vswr: ultimo.medida.vswr, fecha: ultimo.fecha, est: estadisticaBanda(ultimo.medida, obj.fMin, obj.fMax, umbral) }
       : null;
+    if (previo) previo.fRes = ultimoRes;
     ultimo = {
       crudo, medida, ...res, umbral, fecha: new Date(), afinado, calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null,
       idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo,
@@ -345,7 +347,9 @@ function comparacionPrevia() {
   const hora = p.fecha.toLocaleTimeString(idiomaActual(), { hour: '2-digit', minute: '2-digit' });
   const d = e.roeMax - p.est.roeMax, rel = Math.abs(d) / p.est.roeMax;
   const tend = rel < 0.05 ? T('prácticamente igual') : d < 0 ? T('mejor') : T('peor');
-  return T('Respecto a la medida anterior ({0}, línea gris del gráfico): ROE en el peor punto del objetivo {1} → {2} ({3}); en el mejor punto {4} → {5}.', hora, fmtROE(p.est.roeMax), fmtROE(e.roeMax), tend, fmtROE(p.est.roeMin), fmtROE(e.roeMin));
+  const fr = ultimo.reco.fRes, movida = p.fRes && fr && Math.abs(fr / p.fRes - 1) > 0.0005
+    ? ' ' + T('Has movido la resonancia de {0} a {1}.', fmtF(p.fRes), fmtF(fr)) : '';
+  return T('Respecto a la medida anterior ({0}, línea gris del gráfico): ROE en el peor punto del objetivo {1} → {2} ({3}); en el mejor punto {4} → {5}.', hora, fmtROE(p.est.roeMax), fmtROE(e.roeMax), tend, fmtROE(p.est.roeMin), fmtROE(e.roeMin)) + movida;
 }
 
 // Tabla «cómo va la antena en cada parte de la banda» (CW, fonía, digitales, FT8...) para las bandas de HF

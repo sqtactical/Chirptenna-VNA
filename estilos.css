@@ -147,3 +147,7 @@ body[data-modo="simple"] #grillo[data-activo="1"] { display: flex; }
 .subcampos { grid-column: 1 / -1; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); padding: .6rem; border: 1px dashed var(--borde); border-radius: 10px; }
 .subcampos[hidden] { display: none; }
 .subcampos .leyenda { grid-column: 1 / -1; }
+.ayuda { margin: .6rem 0; padding: .5rem .8rem; border: 1px solid var(--borde); border-radius: 10px; font-size: .9rem; }
+.ayuda summary { cursor: pointer; font-weight: 600; }
+.ayuda dt { font-weight: 600; margin-top: .5rem; }
+.ayuda dd { margin: .1rem 0 0 0; color: var(--suave); }

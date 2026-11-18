@@ -37,18 +37,22 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       CNAF (España) sigue pendiente. **S**
 ## Fase 1 — Que cualquiera lo use (🟢, 🕸️) — lo que más gente va a notar
 
-- [ ] 🟢🕸️ **Perfil «Mi nodo Meshtastic»**: eliges región (EU_868, EU_433, US, y luego ANZ, IN…) y preset (LongFast…) y la
+- [~] 🟢🕸️ **Perfil «Mi nodo Meshtastic»** (18-11, primera versión: regiones US, EU_433, EU_868 y ANZ; presets de LongFast a
+      ShortTurbo; nombre de canal y slot opcionales; fórmula de `js/meshtastic.js` de memoria, coincide con los canales por
+      defecto publicados 906,875 / 433,875 / 869,525 MHz; faltan el resto de regiones y comprobarla con el firmware): eliges región (EU_868, EU_433, US, y luego ANZ, IN…) y preset (LongFast…) y la
       app calcula la **frecuencia real del canal** con la misma fórmula que el firmware (frecuencia del slot por defecto o el
       que pongas), mide alrededor y da el veredicto **en esa frecuencia**, no solo en la banda. Útil porque la región EU_868 de
       Meshtastic es solo **869,4–869,65 MHz** (250 kHz, 10 % de ciclo; verificado en sus docs el 18-11) y una antena centrada
       en 868 MHz puede ir justa. Las ITU 2 m / 70 cm / 1,25 m solo se eligen en modo con licencia de radioaficionado. **M**
 - [ ] 🟢🕸️ **Comparar antenas («shootout»)**: guardar varias medidas con nombre (la de serie del T-Beam/Heltec/RAK, la
       comprada, la casera) y ver una tabla ordenada por ROE en el canal y ancho de banda, con las curvas superpuestas. **M**
-- [ ] 🟢 **Antes / después**: al medir tras cortar, se superpone la medida anterior y dice «has movido la resonancia de 892
-      a 871 MHz; te falta un 0,5 %». **S**
-- [ ] 🟢 **Calculadora de corte en mm**: introduces el largo actual del radiador (o del brazo del dipolo) y te dice cuántos
+- [x] 🟢 **Antes / después** (18-11): al medir tras cortar se superpone la medida anterior (línea gris) y dice «has movido la
+      resonancia de X a Y» junto a la ROE antes y después. **S**
+- [x] 🟢 **Calculadora de corte en mm** (18-11; el porcentaje de la recomendación pasa a mm con el largo que escribas y
+      propone cortar primero el 70 %; no sale en antenas multibanda): introduces el largo actual del radiador (o del brazo del dipolo) y te dice cuántos
       mm cortar o añadir, no solo el %. Con aviso de cortar en pasos (cortar es irreversible). **S**
-- [ ] 🟢 **Explicaciones en lenguaje llano**: «?» junto a ROE, pérdida de retorno, ancho de banda, Smith; semáforo
+- [~] 🟢 **Explicaciones en lenguaje llano** (18-11: glosario desplegable en el modo Simple y semáforo de niveles; falta un «?»
+      junto a cada término): «?» junto a ROE, pérdida de retorno, ancho de banda, Smith; semáforo
       verde/ámbar/rojo con lo que significa para el alcance (p. ej. «ROE 2: pierdes ~11 % de la potencia»). **S**
 - [ ] 🟢 **Avisos de medida mal hecha**: detectar curvas típicas de cable suelto, antena sin conectar (todo ≈ 0 dB), mano
       cerca (la medida cambia mucho entre dos barridos seguidos), medir a través de un latiguillo largo sin calibrar en su
@@ -60,7 +64,9 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       un idioma más (it, pt). **M**
 - [ ] 🟢 **Informe para compartir**: PDF actual + imagen PNG del veredicto lista para foros/Discord, y enlace con los datos
       dentro de la URL (sin servidor) para que otro abra la misma medida. **S**
-- [ ] 🟢 **Web instalable (PWA) y sin conexión**: para medir en el monte sin cobertura. **S**
+- [~] 🟢 **Web instalable (PWA) y sin conexión** (18-11: `manifest.webmanifest` y `sw.js`, red primero y copia local si
+      falla; **sin probar en un navegador real**: el panel de la app no deja registrar service workers; comprobar en Chrome
+      desde https o localhost). **S**
 
 ## Fase 2 — Radioaficionados (📡, 🟡)
 
