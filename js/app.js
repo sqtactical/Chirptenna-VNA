@@ -4,7 +4,7 @@ import {
   calcular, resonancias, resonanciasDudosas,bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo,
 } from './analisis.js';
-import { dibujar, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
+import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
 import { generarPDF } from './informe.js';
 import { corregir, faltante, juegoAJSON, juegoDeJSON, ErrorCalibracion } from './calibracion.js';
 import { almacen, crearAsistente, barraCobertura } from './asistente.js';
@@ -13,6 +13,8 @@ const $ = id => document.getElementById(id);
 const ETIQUETA = { ok: 'Cubre la banda', parcial: 'Cubre parte', no: 'No resuena aquí', sin_datos: 'Sin puntos (ver resolución)', fuera: 'Fuera del rango del equipo' };
 const ICONO = { ok: '✔', parcial: '◐', no: '✘', sin_datos: '?', fuera: '–' };
 const CANVAS_CLICK = ['grafico', 'g-z', 'g-fase', 'g-vswr', 'g-retardo'];
+// Modo Simple: la adaptación se da en ROE (lo que conoce todo el mundo); Avanzado: pérdida de retorno y ROE.
+const unidad = () => (modo === 'simple' ? 'roe' : 'rl');
 
 let bandasCfg = null, driver = null, ultimo = null, modo = 'simple', estudio = 'banda', listaObj = [];
 
@@ -165,7 +167,7 @@ function evaluarTodo(medida, umbral) {
   const evaluacion = evaluarBandas(medida, bandas, umbral, fMaxActual());
   const picos = resonancias(medida, umbral);
   const dudosos = resonanciasDudosas(medida, picos);
-  const reco = obj ? recomendacion(medida, picos, obj, umbral) : null;
+  const reco = obj ? recomendacion(medida, picos, obj, umbral, unidad()) : null;
   return { evaluacion, picos, dudosos, reco, obj };
 }
 
@@ -258,7 +260,8 @@ function mostrar() {
   }
 
   // Resumen (avanzado)
-  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral);
+  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad());
+  $('titulo-grafico').textContent = unidad() === 'roe' ? 'ROE (relación de onda estacionaria)' : 'Pérdida de retorno';
   const ve = $('veredicto');
   ve.replaceChildren(Object.assign(document.createElement('b'), { textContent: v.titulo }));
   const ulv = document.createElement('ul');
@@ -289,7 +292,7 @@ function tablas() {
   const filas = [...ultimo.evaluacion].sort((a, b) => orden[a.estado] - orden[b.estado] || a.banda.f_min - b.banda.f_min);
   for (const e of filas) {
     const b = e.banda;
-    const mejor = e.fMejor ? `${e.mejorRl.toFixed(1)} dB · VSWR ${e.vMejor.toFixed(2)} @ ${fmtF(e.fMejor)}` : '';
+    const mejor = e.fMejor ? `${unidad() === 'roe' ? `ROE ${e.vMejor.toFixed(2)}` : `${e.mejorRl.toFixed(1)} dB · VSWR ${e.vMejor.toFixed(2)}`} @ ${fmtF(e.fMejor)}` : '';
     tb.innerHTML += `<tr class="${e.estado}"><td>${ICONO[e.estado]}</td><td>${b.servicio.toUpperCase()} ${b.nombre} <small>[${b.region.join('/')}]</small></td><td>${b.f_min} – ${b.f_max} MHz</td><td>${ETIQUETA[e.estado]}</td><td>${mejor}</td></tr>`;
   }
 }
@@ -297,7 +300,7 @@ function tablas() {
 function redibujar() {
   if (!ultimo) return;
   const { medida, idx } = ultimo, fm = medida.freq[idx];
-  dibujar($('grafico'), medida, ultimo.evaluacion, ultimo.umbral, { marcadorF: fm });
+  (unidad() === 'roe' ? dibujarROE : dibujar)($('grafico'), medida, ultimo.evaluacion, ultimo.umbral, { marcadorF: fm });
   if (modo !== 'avanzado') return;
   dibujarSmith($('smith'), medida, { marcadorIdx: idx });
   dibujarSerie($('g-z'), medida.freq, [{ y: medida.zr, nombre: 'R' }, { y: medida.zx, nombre: 'X', color: '#ef6c00' }], { unidad: 'Ω', marcadorF: fm });
@@ -424,6 +427,7 @@ async function iniciar() {
         equipo: driver ? `${driver.nombre}${driver.version ? ' (' + driver.version + ')' : ''}` : 'desconocido',
         espaciado: modo === 'simple' || $('espaciado').value === 'log' ? 'logaritmico' : 'lineal',
         region: $('region').selectedOptions[0].textContent,
+        unidad: unidad(),
       });
       estado(`Informe guardado: ${nombre}`);
     } catch (e) { estado(e.message, true); }

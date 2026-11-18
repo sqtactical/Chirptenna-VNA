@@ -458,3 +458,28 @@ test('bandas.json: las regiones de Meshtastic caen dentro de la banda libre que 
   // 9 cm de EE.UU.: 3300-3450 (el acceso a 3450-3500 terminó en 2022)
   assert.equal(cfg.bandas.find(b => b.nombre === '9 cm' && b.region.includes('R2')).f_max, 3450);
 });
+
+test('modo Simple: la recomendacion y el veredicto hablan en ROE, sin dB; el modo Avanzado mantiene dB y VSWR', async () => {
+  const med = await barrido(776.7e6, 957e6, 601);
+  const picos = A.resonancias(med);
+  const obj = { fMin: 863e6, fMax: 870e6 };
+  const reco = A.recomendacion(med, picos, obj, 10, 'roe'), vere = A.veredicto(picos, [], 10, 'roe');
+  const txtSimple = [reco.titulo, ...reco.lineas, vere.titulo, ...vere.lineas].join('\n');
+  assert.match(txtSimple, /ROE \d\.\d\d/);
+  assert.ok(!/\bdB\b/.test(txtSimple), `aparece dB en modo simple:\n${txtSimple}`);
+  assert.match(vere.lineas.join(' '), /ROE de 1\.92 o mejor/);
+  const txtAvz = [...A.recomendacion(med, picos, obj, 10).lineas, ...A.veredicto(picos, [], 10).lineas].join('\n');
+  assert.match(txtAvz, /dB/);
+  assert.match(txtAvz, /VSWR/);
+  // la conversion es la de siempre: 10 dB de perdida de retorno son ROE 1,92
+  cercano(A.roeDeRl(10), 1.925, 0.005);
+  cercano(A.roeDeRl(20), 1.222, 0.005);
+});
+
+test('modo Simple: una antena mal adaptada se explica en ROE', async () => {
+  const med = await barrido(2000e6, 2900e6, 401); // la simulada resuena a 2440 con gmin 0,22 (RL ~13 dB): se exige 20 dB
+  const picos = A.resonancias(med, 20);
+  const v = A.veredicto(picos, [], 20, 'roe');
+  assert.match(v.lineas.join(' ') + v.titulo, /ROE/);
+  assert.ok(!/ dB\b/.test(v.titulo + v.lineas.join(' ')), v.titulo + v.lineas.join(' '));
+});

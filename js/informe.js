@@ -1,6 +1,6 @@
 // Informe PDF generado en el navegador con jsPDF (se carga bajo demanda desde cdnjs).
-import { dibujar } from './grafico.js';
-import { veredicto } from './analisis.js';
+import { dibujar, dibujarROE } from './grafico.js';
+import { veredicto, roeDeRl } from './analisis.js';
 
 async function cargarJsPDF() {
   if (window.jspdf) return window.jspdf.jsPDF;
@@ -45,14 +45,15 @@ export async function generarPDF(ultimo, meta) {
     for (const l of ultimo.reco.lineas) texto('- ' + l, { size: 9.5, gap: 1 });
     y += 3;
   }
-  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral);
+  const roe = meta.unidad === 'roe';
+  const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, meta.unidad);
   texto(v.titulo, { size: 13, bold: true, gap: 2 });
   for (const l of v.lineas) texto('- ' + l, { size: 10, gap: 1 });
   y += 2;
 
   // Grafico (siempre en colores claros para imprimir)
   const cv = document.createElement('canvas');
-  dibujar(cv, ultimo.medida, ultimo.evaluacion, ultimo.umbral, { claro: true, ancho: 900, alto: 380, dpr: 2 });
+  (roe ? dibujarROE : dibujar)(cv, ultimo.medida, ultimo.evaluacion, ultimo.umbral, { claro: true, ancho: 900, alto: 380, dpr: 2 });
   const alto = (W * 380) / 900;
   salto(alto + 6);
   doc.addImage(cv.toDataURL('image/png'), 'PNG', M, y, W, alto);
@@ -66,7 +67,9 @@ export async function generarPDF(ultimo, meta) {
     `Equipo: ${meta.equipo}`,
     `Calibracion: ${ultimo.calNombre ?? 'la del equipo'}`,
     `Rango: ${fmtF(ultimo.medida.freq[0])} a ${fmtF(ultimo.medida.freq[ultimo.medida.freq.length - 1])}, ${ultimo.medida.freq.length} puntos, espaciado ${meta.espaciado}${ultimo.afinado ? ', con afinado alrededor de resonancias y bandas' : ''}`,
-    `Minimo exigido: perdida de retorno >= ${ultimo.umbral} dB (VSWR <= ${((1 + 10 ** (-ultimo.umbral / 20)) / (1 - 10 ** (-ultimo.umbral / 20))).toFixed(2)})`,
+    roe
+      ? `Maximo aceptable: ROE <= ${roeDeRl(ultimo.umbral).toFixed(2)}`
+      : `Minimo exigido: perdida de retorno >= ${ultimo.umbral} dB (VSWR <= ${roeDeRl(ultimo.umbral).toFixed(2)})`,
     `Region de bandas: ${meta.region}`,
   ].join('\n'), { size: 9, gap: 4 });
 
@@ -74,11 +77,11 @@ export async function generarPDF(ultimo, meta) {
   texto('Resonancias detectadas', { size: 11, bold: true });
   if (!ultimo.picos.length) texto('No se detectan resonancias claras en el rango medido.', { size: 9 });
   for (const p of ultimo.picos.slice(0, 8)) {
-    const bw = p.fLo != null ? `ancho de banda ${fmtF(p.fHi - p.fLo)}` : `no alcanza ${ultimo.umbral} dB`;
-    texto(`${fmtF(p.f)}  -  ${p.rl.toFixed(1)} dB  -  VSWR ${p.vswr.toFixed(2)}  -  ${bw}`, { size: 9, gap: 0.5 });
+    const bw = p.fLo != null ? `ancho de banda ${fmtF(p.fHi - p.fLo)}` : `no alcanza ${roe ? `ROE ${roeDeRl(ultimo.umbral).toFixed(2)}` : `${ultimo.umbral} dB`}`;
+    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB  -  VSWR ${p.vswr.toFixed(2)}`}  -  ${bw}`, { size: 9, gap: 0.5 });
   }
   for (const p of ultimo.dudosos ?? []) {
-    texto(`${fmtF(p.f)}  -  ${p.rl.toFixed(1)} dB  -  POSIBLEMENTE FALSA: ${p.motivo}`, { size: 8, gap: 0.5 });
+    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`}  -  POSIBLEMENTE FALSA: ${p.motivo}`, { size: 8, gap: 0.5 });
   }
   y += 3;
 
@@ -95,7 +98,7 @@ export async function generarPDF(ultimo, meta) {
     doc.setTextColor(31, 42, 48); doc.setFont('helvetica', 'normal');
     doc.text(`${b.servicio.toUpperCase()} ${b.nombre} [${b.region.join('/')}]`, M + 28, y + 4);
     doc.text(`${b.f_min} - ${b.f_max} MHz`, M + 100, y + 4);
-    if (e.fMejor) doc.text(`${e.mejorRl.toFixed(1)} dB, VSWR ${e.vMejor.toFixed(2)}`, M + 140, y + 4);
+    if (e.fMejor) doc.text(roe ? `ROE ${e.vMejor.toFixed(2)}` : `${e.mejorRl.toFixed(1)} dB, VSWR ${e.vMejor.toFixed(2)}`, M + 140, y + 4);
     y += 5;
   }
   y += 4;

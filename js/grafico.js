@@ -113,6 +113,16 @@ export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
   });
 }
 
+// Gráfico de ROE (VSWR) con bandas y umbral: el modo Simple lo usa en lugar de la pérdida de retorno.
+// El umbral se da en dB de pérdida de retorno (como el resto de la app) y aquí se convierte a ROE.
+export function dibujarROE(canvas, medida, evaluacion, umbralDb, opts = {}) {
+  const roeUmbral = (1 + 10 ** (-umbralDb / 20)) / (1 - 10 ** (-umbralDb / 20));
+  dibujarSerie(canvas, medida.freq, [{ y: medida.vswr }], {
+    yMin: 1, yMax: 5, umbral: roeUmbral, evaluacion,
+    titulo: 'ROE (más bajo = mejor adaptada; la línea discontinua es el máximo aceptable)', ...opts,
+  });
+}
+
 // Carta de Smith (Z0 normalizada). Traza del coeficiente de reflexion; marcador opcional.
 export function dibujarSmith(canvas, medida, opts = {}) {
   const { c, w, h, t } = preparar(canvas, opts);

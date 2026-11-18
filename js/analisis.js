@@ -49,8 +49,14 @@ export function equivalenteReactivo(f, x) {
   return x > 0 ? { tipo: 'L', valor: x / (2 * Math.PI * f) } : { tipo: 'C', valor: -1 / (2 * Math.PI * f * x) };
 }
 
+// ROE (VSWR) equivalente a una pérdida de retorno en dB.
+export const roeDeRl = db => (1 + 10 ** (-db / 20)) / (1 - 10 ** (-db / 20));
+// Cómo se muestra la adaptación de un punto: 'roe' (modo Simple: lo que conoce todo el mundo) o 'rl' (pérdida de retorno y ROE).
+export const textoAdaptacion = (p, unidad = 'rl') => unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB, VSWR ${p.vswr.toFixed(2)}`;
+export const textoUmbral = (umbralDb, unidad = 'rl') => unidad === 'roe' ? `ROE de ${roeDeRl(umbralDb).toFixed(2)} o mejor` : `pérdida de retorno de al menos ${umbralDb} dB`;
+
 // Indica si hay que alargar o cortar la antena para centrar su resonancia en la banda objetivo (Hz).
-export function recomendacion(medida, picos, { fMin, fMax }, umbralDb) {
+export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 'rl') {
   const fmt = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(2)} MHz` : `${(hz / 1e3).toFixed(1)} kHz`;
   const fc = (fMin + fMax) / 2;
   const ic = indiceMasCercano(medida.freq, fc);
@@ -76,7 +82,7 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb) {
   const pct = (p.f / fc - 1) * 100;
   const bien = p.rl >= umbralDb;
   const cubre = p.fLo != null && p.fLo <= fMin && p.fHi >= fMax;
-  const lineas = [`Resonancia más cercana: ${fmt(p.f)} (${p.rl.toFixed(1)} dB, VSWR ${p.vswr.toFixed(2)}). Objetivo: ${fmt(fc)}.`];
+  const lineas = [`Resonancia más cercana: ${fmt(p.f)} (${textoAdaptacion(p, unidad)}). Objetivo: ${fmt(fc)}.`];
   let accion, titulo;
   if (bien && cubre) {
     accion = 'ok';
@@ -103,7 +109,7 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb) {
     lineas.push(`Resuena demasiado bajo: la antena es eléctricamente larga. Multiplica sus dimensiones por ${(p.f / fc).toFixed(3)}.`);
   }
   if (accion === 'alargar' || accion === 'cortar') {
-    if (!bien) lineas.push(`La adaptación en la resonancia es baja (${p.rl.toFixed(1)} dB): tras ajustar la longitud, revisa también la alimentación.`);
+    if (!bien) lineas.push(`La adaptación en la resonancia es baja (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`}): tras ajustar la longitud, revisa también la alimentación.`);
     const inductiva = zx > 0;
     const coincide = (accion === 'cortar') === inductiva;
     lineas.push(`A ${fmt(fc)} la antena presenta Z = ${zr.toFixed(1)} ${zx >= 0 ? '+' : '-'} j${Math.abs(zx).toFixed(1)} Ω (${inductiva ? 'inductiva' : 'capacitiva'}): ${coincide ? 'coincide con ese diagnóstico.' : 'no coincide con el diagnóstico; es normal en antenas que no son tipo dipolo o monopolo. Fíate más de la frecuencia de resonancia.'}`);
@@ -203,7 +209,7 @@ export function fusionar(crudo, nuevo) {
 }
 
 // Resumen en lenguaje sencillo para la UI y el PDF.
-export function veredicto(picos, evaluacion, umbralDb) {
+export function veredicto(picos, evaluacion, umbralDb, unidad = 'rl') {
   const fmt = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(2)} MHz` : `${(hz / 1e3).toFixed(1)} kHz`;
   const buenos = evaluacion.filter(e => e.estado === 'ok');
   const parciales = evaluacion.filter(e => e.estado === 'parcial');
@@ -213,13 +219,13 @@ export function veredicto(picos, evaluacion, umbralDb) {
   const mejor = picos[0];
   if (!mejor || mejor.rl < umbralDb) {
     titulo = 'La antena no está bien adaptada en ninguna frecuencia del rango medido.';
-    if (mejor) lineas.push(`La mejor adaptación es ${mejor.rl.toFixed(1)} dB (VSWR ${mejor.vswr.toFixed(2)}) a ${fmt(mejor.f)}, por debajo del mínimo de ${umbralDb} dB.`);
+    if (mejor) lineas.push(`La mejor adaptación es ${textoAdaptacion(mejor, unidad)} a ${fmt(mejor.f)}, peor que el mínimo exigido (${textoUmbral(umbralDb, unidad)}).`);
     lineas.push('Revisa el conector, el cable y la calibración antes de concluir que la antena es defectuosa.');
   } else {
-    titulo = `Resuena a ${fmt(mejor.f)} (VSWR ${mejor.vswr.toFixed(2)}, ${mejor.rl.toFixed(1)} dB).`;
-    if (mejor.fLo != null) lineas.push(`Ancho de banda con pérdida de retorno de al menos ${umbralDb} dB: ${fmt(mejor.fHi - mejor.fLo)} (${fmt(mejor.fLo)} a ${fmt(mejor.fHi)}).`);
+    titulo = `Resuena a ${fmt(mejor.f)} (${textoAdaptacion(mejor, unidad)}).`;
+    if (mejor.fLo != null) lineas.push(`Ancho de banda con ${textoUmbral(umbralDb, unidad)}:${fmt(mejor.fHi - mejor.fLo)} (${fmt(mejor.fLo)} a ${fmt(mejor.fHi)}).`);
     const otros = picos.slice(1).filter(p => p.rl >= umbralDb);
-    if (otros.length) lineas.push(`Otras resonancias: ${otros.slice(0, 4).map(p => `${fmt(p.f)} (${p.rl.toFixed(1)} dB)`).join(', ')}.`);
+    if (otros.length) lineas.push(`Otras resonancias: ${otros.slice(0, 4).map(p => `${fmt(p.f)} (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`})`).join(', ')}.`);
   }
   lineas.push(buenos.length ? `Cubre por completo: ${buenos.map(nombre).join(', ')}.` : 'No cubre por completo ninguna banda de la lista.');
   if (parciales.length) lineas.push(`Cubre parte de: ${parciales.map(nombre).join(', ')}.`);
