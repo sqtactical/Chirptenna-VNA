@@ -1,6 +1,7 @@
-# Logo
+# Logo y grillo
 
 - `grillo.svg` / `grillo.png`: el grillo de **Chirptenna** (un grillo visto desde arriba con las antenas en curva de Koch, del color del cobre de una PCB). Es una copia de `docs/logo/` del proyecto [Chirptenna](https://github.com/sqtactical/chirptenna), que lo genera con `docs/logo/generar_logo.py`; este repo lo usa en local para no depender de la web de Chirptenna. Mismo autor y misma licencia (AGPL-3.0) que el resto del código.
-- `grillo-cable.svg` / `grillo-cable.png`: variante de este proyecto, el mismo grillo enrollado en un cable coaxial y sujetando un conector SMA. La genera `node img/generar_variante.mjs` a partir de `grillo.svg` (inyecta el cable por detrás y por delante del grillo y el conector); para cambiarla, se edita ese script. El PNG se obtiene abriendo el SVG a 800 × 800 px.
+- `variantes/*.svg` y `galeria.html`: **23 ilustraciones** del grillo para Chirptenna VNA (niveles de ROE, calibración OSL, pantallas de estado, tipos de usuario y de antena, ideas técnicas). Se generan con `node img/generar_variantes.mjs` a partir de `grillo.svg`: el script le añade piezas por detrás y por delante (caras, cables, conectores, accesorios). Para cambiar una o añadir otra, se edita ese script (cada variante es una entrada de `VARIANTES`) y se vuelve a ejecutar. `galeria.html` las muestra todas (se abre con un servidor local).
+- `grillo-cable.svg` / `grillo-cable.png`: la variante «estado-conecta» (el grillo enrollado en un cable coaxial y sujetando un conector SMA), que es la imagen del README. El SVG lo escribe el mismo script; el PNG se saca abriendo el SVG a 800 × 800 px (p. ej. con Edge sin ventana).
 
-Usos previstos: `grillo.svg` como logo y favicon de la web y de los informes; `grillo-cable.svg` como ilustración (cabecera del README, imagen para compartir el repositorio, pantallas vacías o de error).
+Usos previstos: `grillo.svg` como logo y favicon de la web y de los informes; el resto como ilustraciones (README, vista previa del repo, pantallas vacías o de error, avisos de la interfaz).
