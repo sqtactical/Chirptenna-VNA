@@ -131,7 +131,7 @@ function iniciarMesh() {
   for (const [id, r] of Object.entries(REGIONES)) $('mesh-region').add(new Option(T(r.nombre), id));
   for (const id of Object.keys(PRESETS)) $('mesh-preset').add(new Option(id, id));
   try { const g = JSON.parse(localStorage.getItem('mesh') || 'null'); if (g) { $('mesh-region').value = g.r; $('mesh-preset').value = g.p; $('mesh-nombre').value = g.n ?? ''; $('mesh-slot').value = g.s ?? ''; } } catch {}
-  if (!$('mesh-region').value) $('mesh-region').value = $('region').value === 'us' ? 'US' : 'EU_868';
+  if (!$('mesh-region').value) $('mesh-region').value = $('region').value === 'us' ? 'US' : $('region').value === 'ap' ? 'ANZ' : 'EU_868';
   for (const id of ['mesh-region', 'mesh-preset', 'mesh-nombre', 'mesh-slot']) $(id).onchange = () => { actualizarMesh(); resumenCal(); reanalizar(); };
 }
 

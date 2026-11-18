@@ -1,8 +1,9 @@
-﻿// Idiomas: los catalogos estan completos y coherentes con el codigo, y T() sustituye las marcas.
+// Idiomas: los catalogos estan completos y coherentes con el codigo, y T() sustituye las marcas.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { todasLasClaves } from '../herramientas/i18n.mjs';
+import * as A from '../js/analisis.js';
 import { T, usarCatalogo, IDIOMAS, idiomaElegido } from '../js/i18n.js';
 
 const idiomas = IDIOMAS.map(i => i[0]).filter(c => c !== 'es');
@@ -77,4 +78,21 @@ test('calculadora de corte: porcentaje a milimetros, cortar en pasos y datos no 
   const a = calculoMm(160, 1.25);
   assert.equal(a.accion, 'alargar'); assert.equal(a.mm, 2); assert.equal(a.primerPaso, null);
   assert.equal(calculoMm(0, 3), null); assert.equal(calculoMm(100, 0), null); assert.equal(calculoMm(NaN, 3), null); assert.equal(calculoMm(100, NaN), null);
+});
+
+test('Region 3 de la IARU: bandas de HF, VHF y UHF, Meshtastic de Asia-Pacifico y solo FT8/FT4/WSPR por modos', () => {
+  const cfg = JSON.parse(fs.readFileSync(new URL('../bandas.json', import.meta.url), 'utf8'));
+  const ap = A.bandasDeRegion(cfg.bandas, 'ap');
+  const nombres = ap.map(b => `${b.servicio} ${b.nombre}`);
+  for (const n of ['ham 80 m', 'ham 40 m', 'ham 20 m', 'ham 6 m', 'ham 2 m', 'ham 70 cm', 'meshtastic ANZ (915-928)', 'meshtastic JP (920.5-923.5)']) assert.ok(nombres.includes(n), `falta ${n}`);
+  assert.ok(!nombres.includes('ham 4 m'), 'la banda de 4 m no es de R3');
+  assert.ok(!nombres.some(n => n.includes('EU_868')), 'EU_868 no es de Asia-Pacifico');
+  const m = (n, r) => ap.find(b => b.nombre === n && b.region.includes(r));
+  assert.deepEqual([m('2 m', 'R3').f_min, m('2 m', 'R3').f_max], [144, 148]);
+  assert.deepEqual([m('40 m', 'R3').f_min, m('40 m', 'R3').f_max], [7, 7.2]);
+  // por modos: R3 no tiene segmentos propios, solo los digitales de WSJT-X (iguales en todo el mundo)
+  const seg = JSON.parse(fs.readFileSync(new URL('../segmentos_hf.json', import.meta.url), 'utf8'));
+  const s40 = A.segmentosDeBanda(seg, m('40 m', 'R3'), 'ap');
+  assert.deepEqual(s40.map(s => s.id).sort(), ['ft4', 'ft8', 'wspr']);
+  assert.ok(A.segmentosDeBanda(seg, m('40 m', 'R3'), 'eu').length > 3, 'con R1 sigue habiendo segmentos de CW, fonía...');
 });

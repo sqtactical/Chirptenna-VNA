@@ -174,11 +174,11 @@ function lineasBanda(est, fMin, fMax, umbralDb) {
 }
 
 // ---------- Segmentos por modo en HF (CW, fonía, digitales, FT8...) ----------
-// cfg = contenido de segmentos_hf.json. region = valor del selector ('eu' | 'us' | 'todas'). Devuelve [] si la banda no tiene segmentos.
+// cfg = contenido de segmentos_hf.json. region = valor del selector ('eu' | 'us' | 'ap' | 'todas'). Devuelve [] si la banda no tiene segmentos.
 export function segmentosDeBanda(cfg, banda, region) {
   const datos = cfg?.bandas?.[banda?.nombre];
   if (!datos) return [];
-  const clave = region === 'eu' ? 'R1' : region === 'us' ? 'US' : (banda.region.includes('R1') || banda.region.includes('global') ? 'R1' : 'US');
+  const clave = region === 'eu' ? 'R1' : region === 'us' ? 'US' : region === 'ap' ? 'R3' : (banda.region.includes('R1') || banda.region.includes('global') ? 'R1' : 'US');
   const lista = (datos[clave] ?? []).map(s => ({ ...s }));
   const dig = cfg.digitales?.[banda.nombre] ?? {}, ancho = cfg.ancho_senal_digital_MHz ?? 0.003;
   const nombres = { ft8: 'FT8', ft4: 'FT4', wspr: 'WSPR', msk144: 'MSK144' };
@@ -471,6 +471,7 @@ export function veredicto(picos, evaluacion, umbralDb, unidad = 'rl', ctx = null
 const REGIONES = {
   eu: ['R1', 'EU', 'global'],
   us: ['R2', 'US', 'global'],
+  ap: ['R3', 'AP', 'global'],
   todas: null,
 };
 
