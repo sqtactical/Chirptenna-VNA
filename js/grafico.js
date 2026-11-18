@@ -1,0 +1,160 @@
+// Graficos en canvas: series vs frecuencia (eje X logaritmico), perdida de retorno y carta de Smith.
+
+const COLOR_ESTADO = { ok: '#2e9e5b', parcial: '#d6a21a', no: '#c8453b', sin_datos: '#888888', fuera: '#888888' };
+export const MARGEN = { l: 52, r: 12, t: 12, b: 34 };
+
+function tema(opts) {
+  if (opts.claro) return { texto: '#1f2a30', rejilla: '#e1e6e9', linea: '#1565c0', fondo: '#ffffff', alerta: '#c62828' };
+  const css = getComputedStyle(document.documentElement);
+  const g = (n, f) => css.getPropertyValue(n).trim() || f;
+  return { texto: g('--texto', '#222'), rejilla: g('--rejilla', '#ccc'), linea: g('--linea', '#1565c0'), fondo: null, alerta: g('--error', '#c62828') };
+}
+
+function preparar(canvas, opts) {
+  const dpr = opts.dpr ?? (window.devicePixelRatio || 1);
+  const w = opts.ancho ?? canvas.clientWidth, h = opts.alto ?? canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const c = canvas.getContext('2d');
+  c.scale(dpr, dpr);
+  const t = tema(opts);
+  if (t.fondo) { c.fillStyle = t.fondo; c.fillRect(0, 0, w, h); } else c.clearRect(0, 0, w, h);
+  c.font = '11px system-ui, sans-serif';
+  return { c, w, h, t };
+}
+
+function pasoBonito(rango, objetivo = 5) {
+  const crudo = rango / objetivo, mag = 10 ** Math.floor(Math.log10(crudo)), r = crudo / mag;
+  return (r < 1.5 ? 1 : r < 3.5 ? 2 : r < 7.5 ? 5 : 10) * mag;
+}
+
+function rangoAuto(series) {
+  const v = [];
+  for (const s of series) for (const y of s.y) if (Number.isFinite(y)) v.push(y);
+  v.sort((a, b) => a - b);
+  if (!v.length) return [0, 1];
+  let lo = v[Math.floor(v.length * 0.02)], hi = v[Math.ceil(v.length * 0.98) - 1];
+  if (hi - lo < 1e-9) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.08;
+  return [lo - pad, hi + pad];
+}
+
+// Frecuencia (Hz) correspondiente a una coordenada X (en px CSS) de un canvas dibujado con dibujarSerie.
+export function xAFrecuencia(canvas, freq, px) {
+  const w = canvas.clientWidth, fmin = freq[0], fmax = freq[freq.length - 1];
+  const u = Math.min(1, Math.max(0, (px - MARGEN.l) / (w - MARGEN.l - MARGEN.r)));
+  return 10 ** (Math.log10(fmin) + u * (Math.log10(fmax) - Math.log10(fmin)));
+}
+
+// series: [{ y: ArrayLike<number>, color?: string, nombre?: string }]
+// opts: { yMin, yMax, unidad, titulo, umbral, evaluacion, marcadorF, claro, ancho, alto, dpr }
+export function dibujarSerie(canvas, freq, series, opts = {}) {
+  const { c, w, h, t } = preparar(canvas, opts);
+  const m = MARGEN;
+  const fmin = freq[0], fmax = freq[freq.length - 1];
+  let [yMin, yMax] = opts.yMin != null && opts.yMax != null ? [opts.yMin, opts.yMax] : rangoAuto(series);
+  const X = f => m.l + ((Math.log10(f) - Math.log10(fmin)) / (Math.log10(fmax) - Math.log10(fmin))) * (w - m.l - m.r);
+  const Y = v => m.t + (1 - (Math.min(Math.max(v, yMin), yMax) - yMin) / (yMax - yMin)) * (h - m.t - m.b);
+
+  // bandas sombreadas
+  for (const e of opts.evaluacion ?? []) {
+    if (e.estado === 'fuera') continue;
+    const x0 = X(Math.max(e.banda.f_min * 1e6, fmin)), x1 = X(Math.min(e.banda.f_max * 1e6, fmax));
+    c.globalAlpha = 0.22; c.fillStyle = COLOR_ESTADO[e.estado];
+    c.fillRect(x0, m.t, Math.max(2, x1 - x0), h - m.t - m.b);
+  }
+  c.globalAlpha = 1;
+
+  c.strokeStyle = t.rejilla; c.lineWidth = 1; c.fillStyle = t.texto;
+  const paso = pasoBonito(yMax - yMin);
+  for (let v = Math.ceil(yMin / paso) * paso; v <= yMax + 1e-9; v += paso) {
+    c.beginPath(); c.moveTo(m.l, Y(v)); c.lineTo(w - m.r, Y(v)); c.stroke();
+    c.fillText(`${+v.toPrecision(4)}${opts.unidad ? ' ' + opts.unidad : ''}`, 4, Y(v) + 4);
+  }
+  for (let d = Math.floor(Math.log10(fmin)); d <= Math.ceil(Math.log10(fmax)); d++) {
+    for (const k of [1, 2, 5]) {
+      const f = k * 10 ** d;
+      if (f < fmin || f > fmax) continue;
+      c.beginPath(); c.moveTo(X(f), m.t); c.lineTo(X(f), h - m.b); c.stroke();
+      c.fillText(f >= 1e9 ? `${f / 1e9}G` : f >= 1e6 ? `${f / 1e6}M` : `${f / 1e3}k`, X(f) - 8, h - m.b + 14);
+    }
+  }
+  if (opts.umbral != null) {
+    c.strokeStyle = t.alerta; c.setLineDash([5, 4]);
+    c.beginPath(); c.moveTo(m.l, Y(opts.umbral)); c.lineTo(w - m.r, Y(opts.umbral)); c.stroke();
+    c.setLineDash([]);
+  }
+  // curvas
+  series.forEach((s, k) => {
+    c.strokeStyle = s.color ?? t.linea; c.lineWidth = 1.6; c.beginPath();
+    for (let i = 0; i < freq.length; i++) {
+      const x = X(freq[i]), y = Y(s.y[i]);
+      i ? c.lineTo(x, y) : c.moveTo(x, y);
+    }
+    c.stroke();
+    if (series.length > 1 && s.nombre) {
+      c.fillStyle = s.color ?? t.linea; c.fillText('— ' + s.nombre, m.l + 8 + k * 90, m.t + 24);
+    }
+  });
+  // cursor
+  if (opts.marcadorF != null && opts.marcadorF >= fmin && opts.marcadorF <= fmax) {
+    c.strokeStyle = t.texto; c.lineWidth = 1; c.globalAlpha = 0.6;
+    c.beginPath(); c.moveTo(X(opts.marcadorF), m.t); c.lineTo(X(opts.marcadorF), h - m.b); c.stroke();
+    c.globalAlpha = 1;
+  }
+  c.fillStyle = t.texto;
+  if (opts.titulo) c.fillText(opts.titulo, m.l + 8, m.t + 12);
+}
+
+// Compatibilidad: grafico de perdida de retorno con bandas y umbral.
+export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
+  dibujarSerie(canvas, medida.freq, [{ y: medida.rl }], {
+    yMin: 0, yMax: 40, unidad: 'dB', umbral: umbralDb, evaluacion,
+    titulo: 'Pérdida de retorno (más alto = mejor adaptada)', ...opts,
+  });
+}
+
+// Carta de Smith (Z0 normalizada). Traza del coeficiente de reflexion; marcador opcional.
+export function dibujarSmith(canvas, medida, opts = {}) {
+  const { c, w, h, t } = preparar(canvas, opts);
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 16;
+  const P = (re, im) => [cx + re * R, cy - im * R];
+
+  c.strokeStyle = t.rejilla; c.lineWidth = 1; c.fillStyle = t.texto;
+  c.beginPath(); c.arc(cx, cy, R, 0, 2 * Math.PI); c.stroke();
+  c.beginPath(); c.moveTo(cx - R, cy); c.lineTo(cx + R, cy); c.stroke();
+  c.save();
+  c.beginPath(); c.arc(cx, cy, R, 0, 2 * Math.PI); c.clip();
+  for (const r of [0.2, 0.5, 1, 2, 5]) { // circulos de resistencia constante
+    const [x, y] = P(r / (1 + r), 0);
+    c.beginPath(); c.arc(x, y, R / (1 + r), 0, 2 * Math.PI); c.stroke();
+  }
+  for (const x0 of [0.2, 0.5, 1, 2, 5]) { // arcos de reactancia constante
+    for (const s of [1, -1]) {
+      const [x, y] = P(1, s / x0);
+      c.beginPath(); c.arc(x, y, R / x0, 0, 2 * Math.PI); c.stroke();
+    }
+  }
+  c.restore();
+  c.font = '10px system-ui, sans-serif';
+  for (const r of [0.2, 0.5, 1, 2, 5]) { const [x, y] = P((r - 1) / (r + 1), 0); c.fillText(String(r), x + 2, y - 3); }
+  c.fillText('Z₀ = 50 Ω', 6, 14);
+
+  // traza
+  c.strokeStyle = t.linea; c.lineWidth = 1.8; c.beginPath();
+  for (let i = 0; i < medida.freq.length; i++) {
+    const [x, y] = P(medida.re[i], medida.im[i]);
+    i ? c.lineTo(x, y) : c.moveTo(x, y);
+  }
+  c.stroke();
+  const n = medida.freq.length - 1;
+  for (const [i, col] of [[0, '#2e7d32'], [n, '#c62828']]) {
+    const [x, y] = P(medida.re[i], medida.im[i]);
+    c.fillStyle = col; c.beginPath(); c.arc(x, y, 3.5, 0, 2 * Math.PI); c.fill();
+  }
+  c.fillStyle = '#2e7d32'; c.fillText('● inicio', w - 90, 14);
+  c.fillStyle = '#c62828'; c.fillText('● fin', w - 90, 28);
+  if (opts.marcadorIdx != null) {
+    const [x, y] = P(medida.re[opts.marcadorIdx], medida.im[opts.marcadorIdx]);
+    c.strokeStyle = t.texto; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 6, 0, 2 * Math.PI); c.stroke();
+  }
+}

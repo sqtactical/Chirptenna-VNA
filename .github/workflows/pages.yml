@@ -1,0 +1,31 @@
+# Publica la web (es estática: no hay compilación) en GitHub Pages.
+# En un repositorio privado hace falta un plan de GitHub que permita Pages privadas; si no, hazlo público
+# o descarta este workflow. Se lanza a mano o al publicar una release.
+name: Publicar web
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir _sitio
+          cp -r index.html estilos.css bandas.json js _sitio/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _sitio
+      - id: despliegue
+        uses: actions/deploy-pages@v4

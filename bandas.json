@@ -1,0 +1,68 @@
+{
+  "_aviso": "Borrador. Bordes de banda segun planes IARU R1/R2 y reglamentos tipo FCC/ETSI; varian por pais y licencia. Verificar contra el plan de bandas nacional antes de dar un veredicto 'apta para transmitir'. Frecuencias en MHz. Rango medible: depende del dispositivo (ver 'dispositivos'); la web debe marcar como 'no medible' las bandas fuera del f_max de la unidad conectada.",
+  "criterio_por_defecto": { "metrica": "perdida_retorno_dB", "umbral": 10, "equivalente_vswr": 1.92 },
+  "regiones": {
+    "R1": "IARU Region 1 (Europa, Africa, Oriente Medio)",
+    "R2": "IARU Region 2 (America)",
+    "EU": "Union Europea (ETSI/CEPT SRD)",
+    "US": "EE.UU. (FCC)",
+    "global": "ITU, todas las regiones"
+  },
+  "bandas": [
+    { "servicio": "ham", "nombre": "2200 m", "region": ["R1"], "f_min": 0.1357, "f_max": 0.1378, "nota": "Solo en algunos paises" },
+    { "servicio": "ham", "nombre": "630 m", "region": ["R1", "R2"], "f_min": 0.472, "f_max": 0.479, "nota": "Segun pais" },
+    { "servicio": "ham", "nombre": "160 m", "region": ["R1", "R2"], "f_min": 1.8, "f_max": 2.0, "nota": "R1: 1.810-2.000 en muchos paises" },
+    { "servicio": "ham", "nombre": "80 m", "region": ["R1"], "f_min": 3.5, "f_max": 3.8 },
+    { "servicio": "ham", "nombre": "80 m", "region": ["R2"], "f_min": 3.5, "f_max": 4.0 },
+    { "servicio": "ham", "nombre": "60 m", "region": ["R1", "R2"], "f_min": 5.3515, "f_max": 5.3665, "nota": "Secundaria. EE.UU. historicamente por canales (5.332, 5.348, 5.3585, 5.373, 5.405)" },
+    { "servicio": "ham", "nombre": "40 m", "region": ["R1"], "f_min": 7.0, "f_max": 7.2 },
+    { "servicio": "ham", "nombre": "40 m", "region": ["R2"], "f_min": 7.0, "f_max": 7.3 },
+    { "servicio": "ham", "nombre": "30 m", "region": ["global"], "f_min": 10.1, "f_max": 10.15 },
+    { "servicio": "ham", "nombre": "20 m", "region": ["global"], "f_min": 14.0, "f_max": 14.35 },
+    { "servicio": "ham", "nombre": "17 m", "region": ["global"], "f_min": 18.068, "f_max": 18.168 },
+    { "servicio": "ham", "nombre": "15 m", "region": ["global"], "f_min": 21.0, "f_max": 21.45 },
+    { "servicio": "ham", "nombre": "12 m", "region": ["global"], "f_min": 24.89, "f_max": 24.99 },
+    { "servicio": "ham", "nombre": "10 m", "region": ["global"], "f_min": 28.0, "f_max": 29.7 },
+    { "servicio": "ham", "nombre": "6 m", "region": ["R1"], "f_min": 50.0, "f_max": 52.0, "nota": "Varia mucho por pais" },
+    { "servicio": "ham", "nombre": "6 m", "region": ["R2"], "f_min": 50.0, "f_max": 54.0 },
+    { "servicio": "ham", "nombre": "4 m", "region": ["R1"], "f_min": 70.0, "f_max": 70.5, "nota": "Solo algunos paises" },
+    { "servicio": "ham", "nombre": "2 m", "region": ["R1"], "f_min": 144.0, "f_max": 146.0 },
+    { "servicio": "ham", "nombre": "2 m", "region": ["R2"], "f_min": 144.0, "f_max": 148.0 },
+    { "servicio": "ham", "nombre": "1.25 m", "region": ["R2"], "f_min": 222.0, "f_max": 225.0, "nota": "Solo R2 (EE.UU.)" },
+    { "servicio": "ham", "nombre": "70 cm", "region": ["R1"], "f_min": 430.0, "f_max": 440.0 },
+    { "servicio": "ham", "nombre": "70 cm", "region": ["R2"], "f_min": 420.0, "f_max": 450.0 },
+    { "servicio": "ham", "nombre": "33 cm", "region": ["R2"], "f_min": 902.0, "f_max": 928.0, "nota": "Solo R2. Coincide con ISM de EE.UU." },
+    { "servicio": "ham", "nombre": "23 cm", "region": ["R1", "R2"], "f_min": 1240.0, "f_max": 1300.0 },
+    { "servicio": "ham", "nombre": "13 cm", "region": ["R1"], "f_min": 2300.0, "f_max": 2450.0, "nota": "Parte compartida con ISM 2.4 GHz" },
+    { "servicio": "ham", "nombre": "13 cm", "region": ["R2"], "f_min": 2300.0, "f_max": 2310.0, "nota": "EE.UU.: 2300-2310 y 2390-2450" },
+    { "servicio": "ham", "nombre": "13 cm", "region": ["R2"], "f_min": 2390.0, "f_max": 2450.0 },
+    { "servicio": "ham", "nombre": "9 cm", "region": ["R1"], "f_min": 3400.0, "f_max": 3475.0, "nota": "R1: solo algunos paises y secundaria" },
+    { "servicio": "ham", "nombre": "9 cm", "region": ["R2"], "f_min": 3300.0, "f_max": 3500.0, "nota": "EE.UU.: 3300-3500, con restricciones" },
+    { "servicio": "ham", "nombre": "5 cm", "region": ["R1"], "f_min": 5650.0, "f_max": 5850.0 },
+    { "servicio": "ham", "nombre": "5 cm", "region": ["R2"], "f_min": 5650.0, "f_max": 5925.0 },
+
+    { "servicio": "ism", "nombre": "6.78 MHz", "region": ["global"], "f_min": 6.765, "f_max": 6.795, "nota": "Sujeto a aprobacion nacional" },
+    { "servicio": "ism", "nombre": "13.56 MHz (NFC/RFID)", "region": ["global"], "f_min": 13.553, "f_max": 13.567 },
+    { "servicio": "ism", "nombre": "27 MHz (CB/ISM)", "region": ["global"], "f_min": 26.957, "f_max": 27.283 },
+    { "servicio": "ism", "nombre": "40.68 MHz", "region": ["global"], "f_min": 40.66, "f_max": 40.7 },
+    { "servicio": "ism", "nombre": "433 MHz", "region": ["R1", "EU"], "f_min": 433.05, "f_max": 434.79 },
+    { "servicio": "ism", "nombre": "868 MHz SRD (LoRa/SigFox)", "region": ["EU"], "f_min": 863.0, "f_max": 870.0, "nota": "No es ISM estricta (SRD). Sub-bandas con duty cycle; LoRa EU usa 868.1-868.5 y 869.525. Objetivo actual Chirptenna: 869.6 MHz +/-3.5" },
+    { "servicio": "ism", "nombre": "915 MHz (LoRa/ISM US)", "region": ["US", "R2"], "f_min": 902.0, "f_max": 928.0 },
+    { "servicio": "ism", "nombre": "2.4 GHz (WiFi/BT/Zigbee)", "region": ["global"], "f_min": 2400.0, "f_max": 2483.5, "nota": "Borde superior cerca del limite de 2.7 GHz del equipo; precision menor (armonicos)" },
+    { "servicio": "ism", "nombre": "5.8 GHz ISM", "region": ["global"], "f_min": 5725.0, "f_max": 5875.0 },
+    { "servicio": "ism", "nombre": "WiFi 5 GHz (RLAN)", "region": ["EU"], "f_min": 5150.0, "f_max": 5350.0, "nota": "No es ISM estricta; sub-bandas con DFS/TPC" },
+    { "servicio": "ism", "nombre": "WiFi 5 GHz (RLAN)", "region": ["EU"], "f_min": 5470.0, "f_max": 5725.0 },
+    { "servicio": "ism", "nombre": "WiFi 5 GHz (U-NII)", "region": ["US"], "f_min": 5150.0, "f_max": 5850.0, "nota": "Aproximado: varias sub-bandas U-NII con reglas distintas" }
+  ],
+  "fuera_de_rango": [
+    "Por encima de 6 GHz (ISM 24 GHz, WiFi 6E/7, 10 GHz, etc.) no se cubre con los equipos contemplados."
+  ],
+  "dispositivos": [
+    { "id": "nanovna-h", "nombre": "NanoVNA-H / H4 (firmware DiSlord)", "f_max_MHz": 2700, "nota": "Oficial ~1500 MHz; por encima usa armonicos del Si5351, con menos precision. Protocolo serie de texto (scan, data)." },
+    { "id": "nanovna-v2", "nombre": "NanoVNA V2 / SAA-2N", "f_max_MHz": 3000, "nota": "Protocolo propio (binario), distinto del H." },
+    { "id": "nanovna-v2-plus4", "nombre": "NanoVNA V2 Plus4 / Plus4 Pro", "f_max_MHz": 4400, "nota": "Protocolo V2." },
+    { "id": "nanovna-f-v3", "nombre": "NanoVNA-F V3", "f_max_MHz": 6000, "nota": "Protocolo por confirmar." },
+    { "id": "litevna-64", "nombre": "LiteVNA 64", "f_max_MHz": 6300, "nota": "Protocolo tipo V2. Hasta 63 MHz de resolucion mejorada por modo de barrido propio." },
+    { "_aviso": "Los rangos y protocolos de arriba son orientativos (de memoria, clones varian). Confirmar con el comando de version/info de cada unidad." }
+  ]
+}
