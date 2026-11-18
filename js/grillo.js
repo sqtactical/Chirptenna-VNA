@@ -53,8 +53,10 @@ export function resumenHF(cobertura, segmento) {
   return partes.join(' ');
 }
 
-export function mensajeResultado({ reco, cobertura, segmento }) {
+export function mensajeResultado({ reco, cobertura, segmento, avisos }) {
   if (!reco) return null;
+  const aviso = (avisos ?? []).find(a => a.id === 'carga' || a.id === 'ruido');
+  if (aviso) return { id: `aviso-${aviso.id}`, img: aviso.id === 'ruido' ? 'estado-desconectado' : 'estado-sin-resonancia', texto: aviso.texto };
   if (reco.accion === 'sin_resonancia') {
     if (reco.est && reco.est.roeMin > ROE_MAX_MOSTRADO) {
       return { id: 'sin-resonancia-abierto', img: 'estado-sin-resonancia', texto: T('ROE {0} en toda la banda: no entra casi nada de potencia. Un circuito abierto o un cable suelto salen igual, así que mira primero que la antena esté conectada. Si lo está, no resuena en esta banda.', fmtROE(reco.est.roeMin)) };

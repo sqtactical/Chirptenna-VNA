@@ -3,7 +3,7 @@ import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
 import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
-  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO, calculoMm,
+  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO, calculoMm, avisosMedida,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarROEvarias, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
 import { resumirMedida, cargarMedidas, guardarMedidas, ordenarMedidas, rejillaComun, curvaEnRejilla, valorOrden, PALETA, MAXIMO_EN_GRAFICO } from './comparar.js';
@@ -328,7 +328,7 @@ async function medir() {
     pitido(1320, 250);
     estado(T('Listo: {0} puntos en {1} s{2}', crudo.freq.length, ((performance.now() - t0) / 1000).toFixed(1), afinado ? T(' (con afinado)') : ''));
     mostrar();
-    if (ultimo.reco) cricky('resultado', { reco: ultimo.reco, cobertura: ultimo.cobertura, segmento: ultimo.obj?.segmento });
+    if (ultimo.reco) cricky('resultado', { reco: ultimo.reco, cobertura: ultimo.cobertura, segmento: ultimo.obj?.segmento, avisos: avisosMedida(ultimo.medida) });
   } catch (e) {
     if (e instanceof ErrorCalibracion && e.faltan.length) cricky('falta-cal');
     if (e.codigo === 'desconectado') perderConexion(e.message);
@@ -437,6 +437,10 @@ function mostrar() {
   mostrarModos();
   calculadoraMm();
   renderComparar();
+  const avisos = avisosMedida(ultimo.medida);
+  const av = $('avisos-medida');
+  av.hidden = !avisos.length;
+  av.replaceChildren(...avisos.flatMap((a, i) => [...(i ? [document.createElement('br')] : []), document.createTextNode(`⚠ ${a.texto}`)]));
 
   // Resumen (avanzado)
   const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj });

@@ -113,3 +113,28 @@ test('comparar antenas: resumen compacto, orden por el peor punto del objetivo y
   assert.equal(rej.length, 100); assert.equal(c.length, 100);
   assert.ok(Math.abs(c[50] - mala.est.roeMax) < 0.2, 'la curva remuestreada conserva el valor');
 });
+
+import { avisosMedida } from '../js/analisis.js';
+test('avisos de medida mal hecha: sin conectar, carga de 50 ohm, ruido, y la antena real no avisa', () => {
+  const rejilla = (a, b, n) => Float64Array.from({ length: n }, (_, i) => a * Math.pow(b / a, i / (n - 1)));
+  const crear = (f, re, im) => A.calcular({ freq: f, re, im });
+  const f = rejilla(7.5e8, 9.5e8, 101);
+  // antena real grabada
+  const L = fs.readFileSync(new URL('./datos/antena_868_real.s1p', import.meta.url), 'utf8').split(/\r?\n/).filter(l => l && !/^[!#]/.test(l)).map(l => l.trim().split(/\s+/).map(Number));
+  const real = crear(Float64Array.from(L.map(x => x[0])), Float64Array.from(L.map(x => x[1])), Float64Array.from(L.map(x => x[2])));
+  assert.deepEqual(avisosMedida(real), [], 'la antena real no debe dar avisos');
+  // circuito abierto: Γ ≈ 1 en todo el rango
+  const abierta = crear(f, new Float64Array(101).fill(0.999), new Float64Array(101).fill(0.01));
+  assert.deepEqual(avisosMedida(abierta).map(a => a.id), ['sin_conectar']);
+  // carga de 50 Ω: Γ ≈ 0
+  const carga = crear(f, new Float64Array(101).fill(0.02), new Float64Array(101).fill(0.01));
+  assert.deepEqual(avisosMedida(carga).map(a => a.id), ['carga']);
+  // la misma carga en un rango estrecho no se toma por carga (podria ser una antena muy buena en su banda)
+  const estrecha = crear(rejilla(8.6e8, 8.7e8, 101), new Float64Array(101).fill(0.02), new Float64Array(101).fill(0.01));
+  assert.deepEqual(avisosMedida(estrecha), []);
+  // ruido fuerte sobre la antena real
+  let s = 12345; const alea = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 2 ** 32 - 0.5; };
+  const ruidosa = crear(real.freq, Float64Array.from(L.map(x => x[1] + alea() * 0.06)), Float64Array.from(L.map(x => x[2] + alea() * 0.06)));
+  assert.ok(avisosMedida(ruidosa).some(a => a.id === 'ruido'));
+  assert.deepEqual(avisosMedida(crear(f.slice(0, 5), new Float64Array(5), new Float64Array(5))), [], 'con pocos puntos no se opina');
+});

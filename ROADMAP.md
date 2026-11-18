@@ -55,7 +55,9 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
 - [~] 🟢 **Explicaciones en lenguaje llano** (18-11: glosario desplegable en el modo Simple y semáforo de niveles; falta un «?»
       junto a cada término): «?» junto a ROE, pérdida de retorno, ancho de banda, Smith; semáforo
       verde/ámbar/rojo con lo que significa para el alcance (p. ej. «ROE 2: pierdes ~11 % de la potencia»). **S**
-- [ ] 🟢 **Avisos de medida mal hecha**: detectar curvas típicas de cable suelto, antena sin conectar (todo ≈ 0 dB), mano
+- [~] 🟢 **Avisos de medida mal hecha** (18-11: `avisosMedida` avisa de antena o cable sin conectar, carga de 50 Ω en vez de
+      antena y curva con mucho ruido, con umbrales calibrados con la antena real; faltan mano cerca entre dos barridos y
+      latiguillo largo sin calibrar): detectar curvas típicas de cable suelto, antena sin conectar (todo ≈ 0 dB), mano
       cerca (la medida cambia mucho entre dos barridos seguidos), medir a través de un latiguillo largo sin calibrar en su
       extremo. **M**
 - [ ] 🟢🕸️ **Ilustraciones del montaje**: dónde poner el OPEN/SHORT/LOAD (en el extremo del cable, no en el equipo),

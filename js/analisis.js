@@ -228,6 +228,32 @@ export function infoMultibanda(picos, fc, indicado = false) {
   return { otras, indicado: !otras.length, posicion: arriba && abajo ? 'media' : arriba ? 'baja' : abajo ? 'alta' : null };
 }
 
+// Avisos de una medida mal hecha, mirando la curva entera (no solo la banda objetivo): [{ id, texto }].
+//  - sin_conectar: casi todo se refleja en todo el rango (antena o cable sin conectar, conector flojo)
+//  - carga: adaptación casi perfecta en un rango ancho (una carga de 50 Ω en vez de la antena)
+//  - ruido: la pérdida de retorno salta de un punto a otro (mal contacto, interferencias, mano cerca del cable)
+// Umbrales calibrados con la antena real de 868 MHz (ruido mediano 0,04 dB) y con una copia con ruido añadido (0,7 dB).
+export function avisosMedida(medida) {
+  const n = medida.freq.length;
+  if (n < 20) return [];
+  const mediana = a => Array.from(a).sort((x, y) => x - y)[a.length >> 1];
+  const av = [];
+  if (mediana(medida.rl) < 0.5) {
+    av.push({ id: 'sin_conectar', texto: T('Casi todo se refleja en todo el rango medido. Es lo normal si la antena o el cable no están conectados, o si el conector está flojo.') });
+  } else {
+    const v90 = Array.from(medida.vswr).sort((a, b) => a - b)[Math.floor(n * 0.9)];
+    if (v90 < 1.25 && medida.freq[n - 1] / medida.freq[0] > 1.2) {
+      av.push({ id: 'carga', texto: T('La adaptación es casi perfecta en todo el rango. Una antena real no hace eso: parece que hay una carga de 50 Ω conectada en vez de la antena.') });
+    }
+  }
+  const saltos = [];
+  for (let i = 1; i < n - 1; i++) saltos.push(Math.abs(medida.rl[i] - (medida.rl[i - 1] + medida.rl[i + 1]) / 2));
+  if (mediana(saltos) > 0.4) {
+    av.push({ id: 'ruido', texto: T('La curva tiene mucho ruido (saltos sueltos entre puntos). Revisa el conector y el cable, aléjate de la antena y no toques el cable mientras mide.') });
+  }
+  return av;
+}
+
 // Cuántos milímetros mover para un cambio de longitud de pct % (positivo = alargar). Cortar es irreversible: el primer paso es el 70 %.
 export function calculoMm(largoMm, pct) {
   if (!(largoMm > 0) || !Number.isFinite(pct) || pct === 0) return null;
