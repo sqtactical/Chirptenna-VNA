@@ -1,4 +1,7 @@
-<p align="center"><img src="img/grillo-cable.svg" alt="El grillo de Chirptenna peleándose con un cable coaxial" width="200"></p>
+<p align="center"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/logo-vna-oscuro.png">
+  <img src="img/logo-vna.png" alt="Chirptenna VNA" width="560">
+</picture></p>
 
 # Chirptenna VNA
 
