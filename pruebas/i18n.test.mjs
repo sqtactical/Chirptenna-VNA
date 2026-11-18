@@ -177,3 +177,23 @@ test('aviso de medida inestable: la ROE cambia mucho y la resonancia no se mueve
   assert.equal(avisoInestable(0, 3, 868e6, 868e6), null);
   assert.equal(avisoInestable(2, 3, undefined, 868e6), null);
 });
+
+import { DriverSimulado, ANTENAS_SIMULADAS, PISTAS_SIMULADAS } from '../js/drivers/simulado.js';
+test('antenas simuladas de ejemplo: cada una ensena su diagnostico y los dos errores tipicos dan su aviso', async () => {
+  const U = 20 * Math.log10(3);
+  const esperado = {
+    meshtastic_buena: [[863e6, 870e6], 'ok', []], meshtastic_serie: [[869.4e6, 869.65e6], 'cortar', []], meshtastic_casera: [[869.4e6, 869.65e6], 'alargar', []],
+    mal_adaptada: [[863e6, 870e6], 'adaptacion', []], irregular: [[863e6, 870e6], 'irregular', []], wifi_estrecha: [[2400e6, 2483.5e6], 'estrecha', []],
+    uhf_433: [[433.05e6, 434.79e6], 'ok', []], vhf_2m: [[144e6, 146e6], 'alargar', []], hf_40m: [[7e6, 7.2e6], 'alargar', []],
+    abierta: [[863e6, 870e6], 'sin_resonancia', ['sin_conectar']], carga: [[863e6, 870e6], 'sin_resonancia', ['carga']],
+  };
+  assert.deepEqual(Object.keys(ANTENAS_SIMULADAS).filter(k => !(k in esperado)).sort(), ['predeterminada', 'trampas']);
+  for (const k of Object.keys(ANTENAS_SIMULADAS)) assert.ok(PISTAS_SIMULADAS[k], `${k} sin banda sugerida`);
+  for (const [id, [[a, b], accion, avisos]] of Object.entries(esperado)) {
+    const d = new DriverSimulado(); d.antena = id;
+    const m = A.calcular(await d.scan(a * 0.9, b * 1.1, 601, () => {}, 'log'));
+    const r = A.recomendacion(m, A.resonancias(m, U), { fMin: a, fMax: b }, U, 'roe', {});
+    assert.equal(r.accion, accion, `${id}: ${r.titulo}`);
+    assert.deepEqual(A.avisosMedida(m).map(x => x.id), avisos, `${id}: avisos`);
+  }
+});

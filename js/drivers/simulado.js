@@ -13,9 +13,9 @@ const polar = (m, fase) => [m * Math.cos(fase), m * Math.sin(fase)];
 const cmul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
 const cdiv = (a, b) => { const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; };
 
-function gammaAntena(f) {
-  let absorb = 0;
-  for (const r of RESONANCIAS) {
+function gammaAntena(f, resonancias = RESONANCIAS, techo = 0) {
+  let absorb = techo; // techo: potencia que una antena real siempre absorbe fuera de su resonancia (0 = el modelo ideal)
+  for (const r of resonancias) {
     const x = (2 * r.q * (f - r.f0)) / r.f0;
     absorb = Math.max(absorb, (1 - r.gmin ** 2) / (1 + x * x));
   }
@@ -46,9 +46,39 @@ function gammaTrampas(f) {
   return cdiv([Zf[0] - 50, Zf[1]], [Zf[0] + 50, Zf[1]]);
 }
 
+// Antenas de ejemplo de una o varias resonancias (cada una: frecuencia, factor de calidad y |Γ| mínimo en la resonancia).
+// Sirven para ver cada diagnóstico de la app: alargar, acortar, mal adaptada, estrecha, curva irregular y los dos errores típicos de medida.
+const EJEMPLOS = {
+  meshtastic_serie: [{ f0: 842e6, q: 14, gmin: 0.17 }],
+  meshtastic_casera: [{ f0: 905e6, q: 14, gmin: 0.15 }],
+  meshtastic_buena: [{ f0: 869.5e6, q: 9, gmin: 0.07 }],
+  mal_adaptada: [{ f0: 868e6, q: 12, gmin: 0.62 }],
+  wifi_estrecha: [{ f0: 2441e6, q: 70, gmin: 0.08 }],
+  vhf_2m: [{ f0: 147.4e6, q: 22, gmin: 0.1 }],
+  uhf_433: [{ f0: 433.9e6, q: 10, gmin: 0.1 }],
+  hf_40m: [{ f0: 7.28e6, q: 9, gmin: 0.1 }],
+  irregular: [{ f0: 852e6, q: 45, gmin: 0.3 }, { f0: 861e6, q: 50, gmin: 0.45 }, { f0: 872e6, q: 45, gmin: 0.2 }, { f0: 884e6, q: 50, gmin: 0.5 }],
+};
+// Orden y nombres de la lista; `pista` elige la banda objetivo que mejor enseña cada ejemplo
 export const ANTENAS_SIMULADAS = {
   predeterminada: T('Dipolo de ejemplo (868 MHz y 2,44 GHz)'),
   trampas: T('HF: dipolo multibanda con trampas y bobina de carga (40/20 m)'),
+  meshtastic_buena: T('Meshtastic 868: antena bien centrada'),
+  meshtastic_serie: T('Meshtastic 868: antena de serie, resuena baja (hay que acortar)'),
+  meshtastic_casera: T('Meshtastic 868: antena casera, resuena alta (hay que alargar)'),
+  mal_adaptada: T('868 MHz: resuena donde toca pero está mal adaptada'),
+  irregular: T('868 MHz: antena compleja con varias resonancias (curva irregular)'),
+  wifi_estrecha: T('2,4 GHz: antena centrada pero estrecha'),
+  uhf_433: T('UHF: antena de 433 MHz bien ajustada'),
+  vhf_2m: T('VHF: dipolo de 2 m que resuena alto (hay que alargar)'),
+  hf_40m: T('HF: dipolo de 40 m que resuena alto (hay que alargar)'),
+  abierta: T('Error típico: sin antena (cable abierto)'),
+  carga: T('Error típico: una carga de 50 Ω en vez de antena'),
+};
+export const PISTAS_SIMULADAS = {
+  predeterminada: 'ISM 868', trampas: 'HAM 40 m', meshtastic_buena: 'MESHTASTIC EU_868', meshtastic_serie: 'MESHTASTIC EU_868',
+  meshtastic_casera: 'MESHTASTIC EU_868', mal_adaptada: 'ISM 868', irregular: 'ISM 868', wifi_estrecha: 'ISM 2.4 GHz',
+  uhf_433: 'ISM 433', vhf_2m: 'HAM 2 m', hf_40m: 'HAM 40 m', abierta: 'ISM 868', carga: 'ISM 868',
 };
 
 // Red de errores de un puerto: medido = Ed + Er*G / (1 - Es*G)
@@ -79,7 +109,12 @@ export class DriverSimulado {
       case 'open': return [1, 0];
       case 'short': return [-1, 0];
       case 'load': return polar(0.02, 0.7 + f / 3e9); // carga real: no es perfecta
-      default: return this.antena === 'trampas' ? gammaTrampas(f) : gammaAntena(f);
+      default: {
+        if (this.antena === 'trampas') return gammaTrampas(f);
+        if (this.antena === 'abierta') return polar(0.995, -2 * Math.PI * f * 4e-10); // cable sin antena: se refleja casi todo
+        if (this.antena === 'carga') return polar(0.07, 0.4 + f / 2e9); // una carga de 50 Ω casi perfecta
+        return gammaAntena(f, EJEMPLOS[this.antena], 0.2);
+      }
     }
   }
 

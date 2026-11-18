@@ -32,6 +32,9 @@ de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirpten
 - **Cricky**, el grillo asistente (guiño a Clippy): una burbuja discreta que comenta lo importante (conexión, calibración, cuenta atrás, resultado). Solo en el modo Simple; se cierra de un clic y se puede silenciar para siempre.
 - Las resonancias poco marcadas (ruido, rizado en la falda de otra) no se mezclan con las reales: salen aparte como
   **«posiblemente falsa»**.
+- **Modo simulado con 13 antenas de ejemplo** (sin equipo): bien centrada, resuena baja o alta, mal adaptada, estrecha,
+  curva irregular, trampas de HF y los dos errores típicos (cable abierto y carga de 50 Ω). Al elegir una, la app selecciona
+  la banda que mejor la enseña.
 - **Mi nodo Meshtastic**: eliges región y preset y la app calcula la frecuencia real de tu canal y juzga la antena ahí.
 - **Comparar antenas**: guarda varias medidas con nombre y compáralas en una tabla y un gráfico.
 - **Regiones**: Europa (R1), América (R2) y Asia-Pacífico (R3, con bandas ITU sin contrastar por país).

@@ -1,6 +1,6 @@
 import { T, idiomaActual } from './i18n.js';
 import { DriverNanoVNAH } from './drivers/nanovna-h.js';
-import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
+import { DriverSimulado, ANTENAS_SIMULADAS, PISTAS_SIMULADAS } from './drivers/simulado.js';
 import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO, calculoMm, avisosMedida, avisoInestable,
@@ -701,6 +701,13 @@ async function iniciar() {
   $('conectar').onclick = () => (driver ? desconectar() : conectar());
   // antenas de ejemplo del modo simulado (solo se ve el selector con el modo simulado activado)
   for (const [id, nombre] of Object.entries(ANTENAS_SIMULADAS)) $('antena-sim').add(new Option(nombre, id));
+  // al elegir una antena simulada se aplica al momento (aunque ya estés conectado) y se elige la banda que mejor la enseña
+  $('antena-sim').onchange = () => {
+    const id = $('antena-sim').value;
+    if (driver instanceof DriverSimulado) driver.antena = id;
+    const pista = PISTAS_SIMULADAS[id], op = pista && [...$('objetivo').options].find(o => o.text.includes(pista));
+    if (op) { $('objetivo').value = op.value; $('objetivo').onchange(); }
+  };
   $('simulado').addEventListener('change', () => { $('campo-antena-sim').hidden = !$('simulado').checked; });
   $('campo-antena-sim').hidden = !$('simulado').checked;
   $('medir').onclick = medir;
