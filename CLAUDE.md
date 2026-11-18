@@ -47,7 +47,12 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    En Simple hay un interruptor «Mostrar la resonancia eléctrica (X = 0)» (apagado por defecto, se recuerda en `localStorage` como
    `ver-x`): dibuja una línea violeta discontinua con su frecuencia en el gráfico de ROE (`marcasReactancia`, `opts.marcasX` de
    `dibujarSerie`) y también en el PDF.
-9. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
+9. **Antenas simuladas** (`ANTENAS_SIMULADAS` en `drivers/simulado.js`, selector «Antena simulada» con el modo simulado): `predeterminada`
+   (868 MHz y 2,44 GHz) y `trampas` (HF: dipolo de 2 brazos con trampa LC y bobina de carga, modelo de líneas de transmisión; mínimos de
+   ROE a ~6,95 / ~14,33 / ~18,5 MHz y máximos entre medias; por encima de 40 MHz queda descuadrada a propósito). Sirve para ver cómo
+   trata la app una antena multibanda cargada: 40 m sale «acorta», 20 m «alarga», y ninguna banda queda entera en ROE 2. **Limitación
+   conocida**: el consejo «multiplica sus dimensiones por X» vale para antenas de una banda; en una multibanda cada banda la manda un tramo.
+10. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 
 ## Pendiente

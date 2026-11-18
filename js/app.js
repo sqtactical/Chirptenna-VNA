@@ -1,5 +1,5 @@
 import { DriverNanoVNAH } from './drivers/nanovna-h.js';
-import { DriverSimulado } from './drivers/simulado.js';
+import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
 import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo,
@@ -50,6 +50,7 @@ function descargar(nombre, contenido, tipo) {
 async function conectar() {
   try {
     driver = $('simulado').checked ? new DriverSimulado() : new DriverNanoVNAH();
+    if (driver instanceof DriverSimulado) driver.antena = $('antena-sim').value || 'predeterminada';
     if (!$('simulado').checked && !('serial' in navigator)) throw new Error('Este navegador no soporta Web Serial. Usa Chrome o Edge de escritorio.');
     estado('Conectando…');
     await driver.connect();
@@ -426,6 +427,10 @@ async function iniciar() {
   $('modo-simple').onclick = () => aplicarModo('simple');
   $('modo-avanzado').onclick = () => aplicarModo('avanzado');
   $('conectar').onclick = () => (driver ? desconectar() : conectar());
+  // antenas de ejemplo del modo simulado (solo se ve el selector con el modo simulado activado)
+  for (const [id, nombre] of Object.entries(ANTENAS_SIMULADAS)) $('antena-sim').add(new Option(nombre, id));
+  $('simulado').addEventListener('change', () => { $('campo-antena-sim').hidden = !$('simulado').checked; });
+  $('campo-antena-sim').hidden = !$('simulado').checked;
   $('medir').onclick = medir;
   $('region').onchange = () => { poblarObjetivo(); reanalizar(); };
   $('objetivo').onchange = () => { $('campo-fobj').hidden = $('objetivo').value !== 'custom'; reanalizar(); };

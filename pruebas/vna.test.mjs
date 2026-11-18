@@ -667,3 +667,28 @@ test('marcasReactancia: devuelve los cruces X = 0 junto a los minimos de ROE, si
   const doble = [picos[0], { ...picos[0], f: picos[0].f * 1.01 }];
   assert.equal(A.marcasReactancia(med, doble).length, 1);
 });
+
+test('antena simulada con trampas y bobina de carga (HF): minimos a ~6,9 / ~14,3 / ~18,5 MHz y consejos distintos por banda', async () => {
+  const d = new DriverSimulado(); d.antena = 'trampas';
+  const med = async (a, b) => A.calcular(await d.scan(a * 0.9e6, b * 1.1e6, 601, () => {}, 'log'));
+  const juzgar = async (nombre, a, b) => {
+    const m = await med(a, b), banda = { servicio: 'ham', nombre, region: ['R1'], f_min: a, f_max: b }, obj = { fMin: a * 1e6, fMax: b * 1e6, banda };
+    const picos = A.resonancias(m, U_SIMPLE);
+    return { picos, reco: A.recomendacion(m, picos, obj, U_SIMPLE, 'roe'), ver: A.veredicto(picos, A.evaluarBandas(m, [banda], U_SIMPLE, 2.7e9), U_SIMPLE, 'roe', { medida: m, obj }) };
+  };
+  const b40 = await juzgar('40 m', 7.0, 7.2), b20 = await juzgar('20 m', 14.0, 14.35), b17 = await juzgar('17 m', 18.068, 18.168);
+  cercano(b40.picos[0].f, 6.95e6, 0.1e6, 'minimo 40 m');
+  cercano(b20.picos[0].f, 14.33e6, 0.1e6, 'minimo 20 m');
+  cercano(b17.picos[0].f, 18.52e6, 0.15e6, 'armonico cerca de 17 m');
+  // 40 m: resuena por debajo -> acortar; 20 m: resuena por encima -> alargar (consejos opuestos en una misma antena)
+  assert.equal(b40.reco.accion, 'cortar');
+  assert.equal(b20.reco.accion, 'alargar');
+  // en ninguna de las tres la banda completa es utilizable (resonancias estrechas por la carga): nunca "se puede usar con normalidad" sin motivo
+  for (const b of [b40, b20, b17]) assert.ok(b.ver.lineas.some(l => /No transmitir|Transmitir poco/.test(l)), b.ver.lineas.join('\n'));
+  // 17 m: el minimo de ROE esta fuera de la banda y lo dice
+  assert.match(b17.ver.lineas.join('\n'), /fuera de esta banda/);
+  // la antena predeterminada no cambia
+  const d2 = new DriverSimulado();
+  const m2 = A.calcular(await d2.scan(776.7e6, 957e6, 601, () => {}, 'log'));
+  cercano(A.resonancias(m2, U_SIMPLE)[0].f, 871e6, 3e6);
+});

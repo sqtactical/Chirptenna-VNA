@@ -21,6 +21,35 @@ function gammaAntena(f) {
   return polar(Math.sqrt(Math.max(0, 1 - absorb)), -2 * Math.PI * f * 2e-10);
 }
 
+// Antena de ejemplo COMPLEJA (HF): dipolo multibanda con una trampa LC y una bobina de carga, modelado como líneas de transmisión
+// (cada brazo: tramo interior -> trampa paralela LC -> tramo exterior -> bobina de carga -> punta; la radiación se aproxima con
+// una atenuación uniforme). La trampa (resonante a ~14 MHz) aísla el tramo exterior en 20 m y lo suma, alargado por la bobina, en 40 m.
+// Resultado: mínimos de ROE a ~6,9 MHz (40 m), ~14,3 MHz (20 m) y ~18,5 MHz (armónico, cae cerca de 17 m), con máximos de ROE
+// (resonancia en paralelo de la trampa) entre medias. Es un modelo cualitativo, no un diseño.
+const ca = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const ctanh = z => { const e = Math.exp(2 * z[0]), p = [e * Math.cos(2 * z[1]), e * Math.sin(2 * z[1])]; return cdiv([p[0] - 1, p[1]], [p[0] + 1, p[1]]); };
+const TR = { vf: 0.95, zc: 480, alfa: 0.0045, cPunta: 8e-12, l1: 4.9, l2: 2.2, l3: 0.8, lBobina: 6e-6, rBobina: 2, lTrampa: 2.6e-6, cTrampa: 48e-12, rTrampa: 1.2 };
+function gammaTrampas(f) {
+  // por encima de ~40 MHz el modelo de líneas de transmisión repetiría resonancias sin sentido físico para este ejemplo: se deja una antena descuadrada
+  if (f > 40e6) return polar(0.97, -2 * Math.PI * f * 2e-10);
+  const w = 2 * Math.PI * f, beta = w / (3e8 * TR.vf);
+  const linea = (Z, len) => { const t = ctanh([TR.alfa * len, beta * len]), zc = [TR.zc, 0]; return cmul(zc, cdiv(ca(Z, cmul(zc, t)), ca(zc, cmul(Z, t)))); };
+  let Z = cdiv([1, 0], [0, w * TR.cPunta]);                      // capacidad de la punta
+  Z = linea(Z, TR.l3);
+  Z = ca(Z, [TR.rBobina, w * TR.lBobina]);                       // bobina de carga en serie
+  Z = linea(Z, TR.l2);
+  const yt = ca([0, w * TR.cTrampa], cdiv([1, 0], [TR.rTrampa, w * TR.lTrampa])); // trampa: L (con pérdidas) en paralelo con C
+  Z = ca(Z, cdiv([1, 0], yt));
+  Z = linea(Z, TR.l1);
+  const Zf = [2 * Z[0], 2 * Z[1]];                               // dos brazos
+  return cdiv([Zf[0] - 50, Zf[1]], [Zf[0] + 50, Zf[1]]);
+}
+
+export const ANTENAS_SIMULADAS = {
+  predeterminada: 'Dipolo de ejemplo (868 MHz y 2,44 GHz)',
+  trampas: 'HF: dipolo multibanda con trampas y bobina de carga (40/20 m)',
+};
+
 // Red de errores de un puerto: medido = Ed + Er*G / (1 - Es*G)
 function errores(f) {
   return {
@@ -37,6 +66,7 @@ export class DriverSimulado {
   fMaxHz = 6e9;
   version = 'simulado';
   estandar = 'antena';
+  antena = 'predeterminada'; // ver ANTENAS_SIMULADAS
 
   async connect() {}
   async disconnect() {}
@@ -48,7 +78,7 @@ export class DriverSimulado {
       case 'open': return [1, 0];
       case 'short': return [-1, 0];
       case 'load': return polar(0.02, 0.7 + f / 3e9); // carga real: no es perfecta
-      default: return gammaAntena(f);
+      default: return this.antena === 'trampas' ? gammaTrampas(f) : gammaAntena(f);
     }
   }
 

@@ -76,6 +76,8 @@ export function dibujarSerie(canvas, freq, series, opts = {}) {
     const x0 = X(Math.max(e.banda.f_min * 1e6, fmin)), x1 = X(Math.min(e.banda.f_max * 1e6, fmax));
     const ancho = Math.max(6, x1 - x0), xc = (x0 + x1) / 2, xa = xc - ancho / 2;
     c.globalAlpha = 0.2; c.fillStyle = color; c.fillRect(xa, m.t, ancho, h - m.t - m.b);
+    // con muchas bandas (barrido general) solo se dibujan bordes y marcador en las que cubren algo; las rojas, solo el relleno
+    if (bandas.length > 3 && e.estado === 'no') continue;
     c.globalAlpha = 1; c.strokeStyle = color; c.lineWidth = 1.6; c.setLineDash([]);
     c.beginPath(); c.moveTo(xa, m.t - 2); c.lineTo(xa, h - m.b); c.moveTo(xa + ancho, m.t - 2); c.lineTo(xa + ancho, h - m.b); c.stroke();
     c.fillStyle = color; c.beginPath(); c.moveTo(xc - 5, m.t - 8); c.lineTo(xc + 5, m.t - 8); c.lineTo(xc, m.t - 1); c.closePath(); c.fill();
