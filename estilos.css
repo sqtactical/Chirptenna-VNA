@@ -139,4 +139,6 @@ body[data-modo="simple"] #grillo[data-activo="1"] { display: flex; }
   #grillo-burbuja:not([hidden]) { animation: grillo-entra .25s ease-out; }
   @keyframes grillo-entra { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
 }
+#grillo-img { width: 120px; height: 120px; }
+@media (min-width: 900px) { #grillo { max-width: 380px; } #grillo-burbuja { font-size: 1rem; } }
 @media (max-width: 560px) { #grillo-img { width: 64px; height: 64px; } }
