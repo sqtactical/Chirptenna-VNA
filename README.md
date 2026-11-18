@@ -76,6 +76,10 @@ pruebas/           node:test, emulador y datos reales
 - Máximo 101 puntos por `scan` del equipo; los barridos largos se encadenan y tardan.
 - El retardo de grupo sale ruidoso (derivada de la fase).
 
+## Hoja de ruta
+
+Funciones previstas para principiantes, Meshtastic, radioaficionados y expertos en RF: [ROADMAP.md](ROADMAP.md).
+
 ## Licencia
 
 [AGPL-3.0](LICENSE), como Chirptenna.
