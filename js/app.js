@@ -15,6 +15,10 @@ const ICONO = { ok: '✔', parcial: '◐', no: '✘', sin_datos: '?', fuera: '�
 const CANVAS_CLICK = ['grafico', 'g-z', 'g-fase', 'g-vswr', 'g-retardo'];
 // Modo Simple: la adaptación se da en ROE (lo que conoce todo el mundo); Avanzado: pérdida de retorno y ROE.
 const unidad = () => (modo === 'simple' ? 'roe' : 'rl');
+// Criterio de "bien adaptada": Simple exige ROE 2 (pérdida de retorno de 9,54 dB: se refleja el 11 % de la potencia),
+// que es el valor que todo el mundo conoce; Avanzado usa el mínimo en dB que fije el usuario (10 dB por defecto, ROE 1,92).
+const UMBRAL_SIMPLE_DB = 20 * Math.log10(3);
+const umbralActual = () => (modo === 'avanzado' ? +$('umbral').value : UMBRAL_SIMPLE_DB);
 
 let bandasCfg = null, driver = null, ultimo = null, modo = 'simple', estudio = 'banda', listaObj = [];
 
@@ -173,7 +177,7 @@ function evaluarTodo(medida, umbral) {
 
 async function medir() {
   const obj = estudio === 'banda' ? objetivoActual() : null;
-  let umbral = modo === 'avanzado' ? +$('umbral').value : 10, fIni, fFin, puntos, esp, afinar;
+  let umbral = umbralActual(), fIni, fFin, puntos, esp, afinar;
   if (estudio === 'banda') {
     // Una banda con margen lateral: borde inferior -X % y borde superior +X %, por si la antena no resuena justo en ella
     if (!obj) return estado('Elige una banda objetivo', true);
@@ -339,6 +343,7 @@ function aplicarModo(m) {
   try { localStorage.setItem('modo', m); } catch {}
   if (bandasCfg) poblarObjetivo();
   if (ultimo) {
+    ultimo.umbral = umbralActual(); // cada modo tiene su criterio
     Object.assign(ultimo, evaluarTodo(ultimo.medida, ultimo.umbral));
     mostrar();
   }

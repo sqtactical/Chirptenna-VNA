@@ -483,3 +483,17 @@ test('modo Simple: una antena mal adaptada se explica en ROE', async () => {
   assert.match(v.lineas.join(' ') + v.titulo, /ROE/);
   assert.ok(!/ dB\b/.test(v.titulo + v.lineas.join(' ')), v.titulo + v.lineas.join(' '));
 });
+
+test('modo Simple: el criterio es ROE 2 (9,54 dB) y se explica con el porcentaje de potencia reflejada', async () => {
+  const u = 20 * Math.log10(3);
+  cercano(A.roeDeRl(u), 2, 1e-9);
+  const med = await barrido(776.7e6, 957e6, 601);
+  const v = A.veredicto(A.resonancias(med, u), [], u, 'roe');
+  const t = [v.titulo, ...v.lineas].join('\n');
+  assert.match(t, /ROE de 2 o mejor: \d/);          // con espacio tras los dos puntos
+  assert.match(t, /Criterio: ROE de 2 o mejor\. Con ese valor se refleja como máximo un 11 % de la potencia/);
+  assert.ok(!/\bdB\b/.test(t), t);
+  // ROE 2 es un criterio algo mas laxo que 10 dB: el ancho de banda sale igual o mayor
+  const a2 = A.resonancias(med, u)[0], a10 = A.resonancias(med, 10)[0];
+  assert.ok(a2.fHi - a2.fLo >= a10.fHi - a10.fLo);
+});

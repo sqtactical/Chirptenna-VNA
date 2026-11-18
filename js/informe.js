@@ -68,7 +68,7 @@ export async function generarPDF(ultimo, meta) {
     `Calibracion: ${ultimo.calNombre ?? 'la del equipo'}`,
     `Rango: ${fmtF(ultimo.medida.freq[0])} a ${fmtF(ultimo.medida.freq[ultimo.medida.freq.length - 1])}, ${ultimo.medida.freq.length} puntos, espaciado ${meta.espaciado}${ultimo.afinado ? ', con afinado alrededor de resonancias y bandas' : ''}`,
     roe
-      ? `Maximo aceptable: ROE <= ${roeDeRl(ultimo.umbral).toFixed(2)}`
+      ? `Maximo aceptable: ROE <= ${+roeDeRl(ultimo.umbral).toFixed(2)} (se refleja como maximo un ${(100 * 10 ** (-ultimo.umbral / 10)).toFixed(0)} % de la potencia)`
       : `Minimo exigido: perdida de retorno >= ${ultimo.umbral} dB (VSWR <= ${roeDeRl(ultimo.umbral).toFixed(2)})`,
     `Region de bandas: ${meta.region}`,
   ].join('\n'), { size: 9, gap: 4 });

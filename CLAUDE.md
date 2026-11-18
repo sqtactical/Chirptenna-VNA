@@ -27,7 +27,11 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
 4. Medir bien una banda estrecha con barrido logarítmico: se encadenan barridos lineales de ≤101 puntos y se **afina**
    (ventanas de ±3 % con 201 puntos alrededor de los 4 mejores picos) fusionando con `fusionar`.
 5. Los fallos del equipo (cable fuera, puerto ocupado, equipo mudo) son `ErrorEquipo` con `codigo`; el cable cortado se detecta por el fin de lectura o el evento `disconnect` y rechaza la orden pendiente al instante. La interfaz lo trata en `perderConexion`.
-6. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
+6. **Modo Simple = ROE; Avanzado = pérdida de retorno y VSWR.** El criterio de «bien adaptada» también cambia: Simple usa ROE 2
+   (9,54 dB, `UMBRAL_SIMPLE_DB` en `app.js`; se refleja el 11 % de la potencia) y se explica en pantalla y en el PDF; Avanzado usa el
+   campo en dB (10 por defecto = ROE 1,92). Cada modo fija `ultimo.umbral` al cambiar de modo. Los textos reciben `unidad` ('roe'|'rl')
+   (`textoAdaptacion`, `textoUmbral`, `explicacionROE` en `analisis.js`); en Simple no debe aparecer ningún «dB» (hay un test).
+7. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 
 ## Pendiente
