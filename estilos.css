@@ -122,3 +122,21 @@ progress { width: 100%; }
 /* Cobertura por modo (HF) */
 .nivel { display: inline-block; padding: 0 .5em; border-radius: 4px; border-left: 6px solid var(--c, #888); background: color-mix(in srgb, var(--c, #888) 18%, transparent); white-space: nowrap; }
 tr.fila-elegida td { font-weight: 600; background: color-mix(in srgb, var(--primario) 10%, transparent); }
+
+/* Cricky, el grillo asistente: abajo a la derecha, solo en modo Simple, sin tapar nada importante */
+#grillo { display: none; position: fixed; right: 14px; bottom: 14px; z-index: 30; align-items: flex-end; gap: 6px; flex-direction: column; max-width: min(320px, calc(100vw - 28px)); pointer-events: none; }
+body[data-modo="simple"] #grillo[data-activo="1"] { display: flex; }
+#grillo > * { pointer-events: auto; }
+#grillo-img { cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); background: color-mix(in srgb, var(--tarjeta) 88%, transparent); border-radius: 14px; padding: 2px; }
+#grillo-img:focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; }
+#grillo-burbuja { position: relative; background: var(--tarjeta); color: var(--texto); border: 1px solid var(--borde); border-left: 5px solid var(--primario); border-radius: 12px; padding: .6rem .8rem .5rem; box-shadow: 0 4px 14px rgba(0,0,0,.35); font-size: .9rem; }
+#grillo-burbuja::after { content: ""; position: absolute; right: 30px; bottom: -8px; width: 14px; height: 14px; background: var(--tarjeta); border-right: 1px solid var(--borde); border-bottom: 1px solid var(--borde); transform: rotate(45deg); }
+#grillo-burbuja p { margin: 0 0 .4rem; line-height: 1.35; }
+.grillo-botones { display: flex; gap: .4rem; justify-content: flex-end; align-items: center; }
+.grillo-botones button { padding: .2rem .6rem; font-size: .8rem; }
+.grillo-botones button.enlace { border-color: transparent; text-decoration: underline; color: var(--suave); }
+@media (prefers-reduced-motion: no-preference) {
+  #grillo-burbuja:not([hidden]) { animation: grillo-entra .25s ease-out; }
+  @keyframes grillo-entra { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+}
+@media (max-width: 560px) { #grillo-img { width: 64px; height: 64px; } }

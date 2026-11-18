@@ -163,8 +163,16 @@
   </div>
 </main>
 
+<div id="grillo" data-activo="1">
+  <div id="grillo-burbuja" role="status" aria-live="polite" hidden>
+    <p id="grillo-texto"></p>
+    <div class="grillo-botones"><button id="grillo-vale" type="button">Vale</button><button id="grillo-no" type="button" class="enlace">No volver a mostrar</button></div>
+  </div>
+  <img id="grillo-img" src="img/variantes/estado-conecta.svg" alt="Cricky, el grillo asistente" width="84" height="84" tabindex="0" title="Cricky, el grillo asistente (clic para ver su último consejo)">
+</div>
+
 <footer class="pie">
-  software libre · <a href="https://github.com/sqtactical/Chirptenna-VNA">código fuente</a> · <a href="https://github.com/sqtactical/Chirptenna-VNA/blob/main/LICENSE">AGPL-3.0</a> · del proyecto <a href="https://sqtactical.github.io/chirptenna/">Chirptenna</a> · funciona con cualquier antena · todo se calcula en tu navegador · <a href="diagnostico.html">diagnóstico del equipo</a>
+  software libre · <a href="https://github.com/sqtactical/Chirptenna-VNA">código fuente</a> · <a href="https://github.com/sqtactical/Chirptenna-VNA/blob/main/LICENSE">AGPL-3.0</a> · del proyecto <a href="https://sqtactical.github.io/chirptenna/">Chirptenna</a> · funciona con cualquier antena · todo se calcula en tu navegador · <a href="diagnostico.html">diagnóstico del equipo</a> · <label class="fila-toggle" style="display:inline-flex;margin:0"><input type="checkbox" id="ver-grillo" checked> Mostrar a Cricky (solo en modo Simple)</label>
 </footer>
 <script type="module" src="js/app.js"></script>
 </body>

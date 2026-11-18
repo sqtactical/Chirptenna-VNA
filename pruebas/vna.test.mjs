@@ -836,3 +836,61 @@ test('60 m, 4 m y 8 m: segmentos por region, canales de EE. UU. y banda experime
   assert.ok(A.bandasDeRegion(cfg.bandas, 'eu').includes(b8) && !A.bandasDeRegion(cfg.bandas, 'us').includes(b8));
   assert.deepEqual(A.segmentosDeBanda(segCfg, b8, 'eu'), []);
 });
+
+// ---------- Cricky, el grillo asistente ----------
+import { elegirMensaje, mensajeResultado, NOMBRE as NOMBRE_GRILLO } from '../js/grillo.js';
+
+test('grillo: el nombre esta en un solo sitio y el mensaje de inicio lo usa', () => {
+  assert.equal(NOMBRE_GRILLO, 'Cricky');
+  assert.match(elegirMensaje('inicio').texto, /^Soy Cricky\./);
+  assert.equal(elegirMensaje('evento-que-no-existe'), null);
+});
+
+test('grillo: cada evento de conexion y medida tiene su ilustracion y todas existen en img/variantes', () => {
+  const eventos = ['inicio', 'conectado', 'cuenta-atras', 'midiendo', 'perdida', 'falta-cal'];
+  for (const ev of eventos) {
+    const m = elegirMensaje(ev);
+    assert.ok(m && m.texto.length > 10, ev);
+    assert.ok(fs.existsSync(new URL(`../img/variantes/${m.img}.svg`, import.meta.url)), `${ev}: falta img/variantes/${m.img}.svg`);
+  }
+  assert.equal(elegirMensaje('conectado', { calibracionApp: true }).id, 'conectado-cal');
+});
+
+test('grillo: el resultado comenta el PEOR punto de la banda, con su consejo, y las prioridades son sin resonancia > irregular > nivel', async () => {
+  const d = new DriverSimulado(); d.antena = 'trampas';
+  const med = A.calcular(await d.scan(6.3e6, 7.9e6, 801, () => {}, 'log'));
+  const picos = A.resonancias(med, U_SIMPLE);
+  const reco = (a, b) => A.recomendacion(med, picos, { fMin: a * 1e6, fMax: b * 1e6 }, U_SIMPLE, 'roe');
+  // CW (7,000-7,040): aceptable; fonia (7,060-7,200): mal acoplada
+  const cw = mensajeResultado({ reco: reco(7.0, 7.04) }), fonia = mensajeResultado({ reco: reco(7.06, 7.2) });
+  assert.match(cw.id, /^resultado-(muy_bien|aceptable)/);
+  assert.match(cw.texto, /se puede usar con normalidad/);
+  assert.equal(fonia.nivel, 'mal');
+  assert.equal(fonia.img, 'roe-mal');
+  assert.match(fonia.texto, /^Mal acoplada\. ROE entre \d\.\d\d y \d+\.\d\d: no transmitir salvo emergencias\./);
+  assert.ok(!/\bdB\b/.test(fonia.texto + cw.texto), 'en Simple no debe haber dB');
+  // sin resonancia
+  const sin = mensajeResultado({ reco: A.recomendacion(med, [], { fMin: 40e6, fMax: 41e6 }, U_SIMPLE, 'roe') });
+  assert.equal(sin.id, 'sin-resonancia');
+  // irregular gana a cualquier nivel
+  const irr = mensajeResultado({ reco: { accion: 'irregular', est: { n: 10, roeMin: 1.2, roeMax: 4 } } });
+  assert.equal(irr.id, 'irregular'); assert.equal(irr.img, 'tec-curva-real');
+  // sin reco o sin estadistica: nada
+  assert.equal(mensajeResultado({ reco: null }), null);
+  assert.equal(mensajeResultado({ reco: { accion: 'ok' } }), null);
+});
+
+test('grillo: multibanda y X=0 aparecen como frases extra y el objetivo puntual se juzga por un valor', () => {
+  const base = { accion: 'cortar', titulo: 'Acorta un 2.1 % el tramo que gobierna esta banda', est: { n: 40, roeMin: 1.4, roeMax: 2.5 } };
+  const mb = mensajeResultado({ reco: { ...base, multibanda: { posicion: 'baja' } } });
+  assert.equal(mb.img, 'tipo-multibanda');
+  assert.match(mb.texto, /Parece una multibanda/);
+  assert.ok(!/Acorta/.test(mb.texto), 'con multibanda no repite el titulo de corte');
+  const normal = mensajeResultado({ reco: { ...base, titulo: 'Acorta la antena un 2.1 %' } });
+  assert.match(normal.texto, /Acorta la antena un 2\.1 %\./);
+  assert.match(normal.texto, /^Mejorable\. ROE entre 1\.40 y 2\.50: transmitir poco y a potencia reducida\./);
+  const x0 = mensajeResultado({ reco: { ...base, rx: { tipo: 'serie', desv: -0.1 } } });
+  assert.match(x0.texto, /no coinciden/);
+  const puntual = mensajeResultado({ reco: { accion: 'ok', est: { n: 2, roeMin: 2.18, roeMax: 2.2 } } });
+  assert.match(puntual.texto, /^Mejorable\. ROE 2\.18:/);
+});

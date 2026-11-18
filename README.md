@@ -24,6 +24,7 @@ de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirpten
 - **Calibración guiada OSL por tramos**: puedes calibrar todo el rango de una vez o «a cachos», parar y seguir otro día;
   los juegos se guardan en el navegador y se exportan/importan en JSON. La calibración de la app corrige los datos en bruto
   y no toca los slots del equipo.
+- **Cricky**, el grillo asistente (guiño a Clippy): una burbuja discreta que comenta lo importante (conexión, calibración, cuenta atrás, resultado). Solo en el modo Simple; se cierra de un clic y se puede silenciar para siempre.
 - Las resonancias poco marcadas (ruido, rizado en la falda de otra) no se mezclan con las reales: salen aparte como
   **«posiblemente falsa»**.
 

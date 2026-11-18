@@ -8,6 +8,7 @@ import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from '.
 import { generarPDF } from './informe.js';
 import { corregir, faltante, juegoAJSON, juegoDeJSON, ErrorCalibracion } from './calibracion.js';
 import { almacen, crearAsistente, barraCobertura } from './asistente.js';
+import { crearGrillo, elegirMensaje } from './grillo.js';
 
 const $ = id => document.getElementById(id);
 const ETIQUETA = { ok: 'Cubre la banda', parcial: 'Cubre parte', no: 'No resuena aquí', sin_datos: 'Sin puntos (ver resolución)', fuera: 'Fuera del rango del equipo' };
@@ -21,6 +22,9 @@ const UMBRAL_SIMPLE_DB = 20 * Math.log10(3);
 const umbralActual = () => (modo === 'avanzado' ? +$('umbral').value : UMBRAL_SIMPLE_DB);
 
 let bandasCfg = null, driver = null, ultimo = null, modo = 'simple', estudio = 'banda', listaObj = [];
+// Cricky, el grillo asistente: comenta los eventos importantes (solo en el modo Simple)
+let grillo = null;
+const cricky = (evento, datos) => { if (modo === 'simple') grillo?.decir(elegirMensaje(evento, datos)); };
 
 const fmtF = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(3)} MHz` : `${(hz / 1e3).toFixed(1)} kHz`;
 const fMaxActual = () => driver?.fMaxHz ?? 2.7e9;
@@ -59,6 +63,7 @@ async function conectar() {
     $('conectar').textContent = 'Desconectar';
     estado(`Conectado: ${driver.nombre}${driver.version ? ' · ' + driver.version : ''}${driver.aviso ? '. ' + driver.aviso : ''}`, !!driver.aviso);
     poblarObjetivo();
+    cricky('conectado', { calibracionApp: !!calSeleccionada() });
   } catch (e) {
     driver = null;
     estado(e.message, e.codigo !== 'cancelado'); // cancelar el selector no es un error
@@ -73,6 +78,7 @@ function perderConexion(mensaje) {
   $('medir').disabled = true;
   $('conectar').textContent = 'Conectar';
   estado(mensaje, true);
+  cricky('perdida');
 }
 
 async function desconectar() {
@@ -246,18 +252,21 @@ async function medir() {
     const huecos = faltante(juegoCal.segmentos, fIni, fFin);
     if (huecos.length) {
       resumenCal();
+      cricky('falta-cal');
       return estado(`La calibración «${juegoCal.nombre}» no cubre ${huecos.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')}. Calibra ese tramo con el asistente.`, true);
     }
   }
 
   $('medir').disabled = true;
   try {
+    if (+$('retardo').value > 0) cricky('cuenta-atras');
     for (let s = +$('retardo').value; s > 0; s--) {
       estado(`Aléjate de la antena… medición en ${s} s`);
       if (s <= 3) pitido(s === 1 ? 1320 : 880);
       await new Promise(r => setTimeout(r, 1000));
     }
     estado('Midiendo… no muevas el cable');
+    cricky('midiendo');
     const t0 = performance.now();
     let crudo = await escanear(fIni, fFin, puntos, p => estado(`Midiendo… ${(p * 100).toFixed(0)} %`), esp);
     let medida = calcular(crudo), res = evaluarTodo(medida, umbral), afinado = false;
@@ -284,7 +293,9 @@ async function medir() {
     pitido(1320, 250);
     estado(`Listo: ${crudo.freq.length} puntos en ${((performance.now() - t0) / 1000).toFixed(1)} s${afinado ? ' (con afinado)' : ''}`);
     mostrar();
+    if (ultimo.reco) cricky('resultado', { reco: ultimo.reco });
   } catch (e) {
+    if (e instanceof ErrorCalibracion && e.faltan.length) cricky('falta-cal');
     if (e.codigo === 'desconectado') perderConexion(e.message);
     else estado(e instanceof ErrorCalibracion && e.faltan.length
       ? `${e.message}. Falta calibrar: ${e.faltan.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')}.`
@@ -487,6 +498,12 @@ function enlazarCursor() {
 
 async function iniciar() {
   iniciarTema();
+  grillo = crearGrillo({
+    raiz: $('grillo'), img: $('grillo-img'), burbuja: $('grillo-burbuja'), texto: $('grillo-texto'), vale: $('grillo-vale'), no: $('grillo-no'),
+    alCambiar: activo => { $('ver-grillo').checked = activo; },
+  });
+  $('ver-grillo').checked = grillo.estaActivo();
+  $('ver-grillo').onchange = () => { grillo.silenciar(!$('ver-grillo').checked); if (grillo.estaActivo()) cricky('inicio'); };
   if (!('serial' in navigator)) $('aviso-nav').hidden = false;
   try {
     bandasCfg = await (await fetch('./bandas.json')).json();
@@ -509,6 +526,7 @@ async function iniciar() {
   let guardado = 'simple';
   try { guardado = localStorage.getItem('modo') || 'simple'; } catch {}
   aplicarModo(guardado === 'avanzado' ? 'avanzado' : 'simple');
+  cricky('inicio');
 
   let e0 = 'banda';
   try { e0 = localStorage.getItem('estudio') || 'banda'; } catch {}
