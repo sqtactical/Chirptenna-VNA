@@ -161,9 +161,20 @@ function lineasBanda(est, fMin, fMax, umbralDb) {
   return l;
 }
 
+// ¿Es una antena multibanda? Sí si el usuario lo ha indicado o si, en lo medido, hay otra resonancia clara (ROE ≲ 3) al menos un 40 %
+// por encima o por debajo de la frecuencia objetivo. `posicion` dice qué banda es la objetivo: 'baja' (hay otras por encima),
+// 'alta' (hay otras por debajo), 'media' (hay a ambos lados) o null (indicado por el usuario, sin otras a la vista).
+export function infoMultibanda(picos, fc, indicado = false) {
+  const otras = picos.filter(q => q.rl >= 6 && Math.abs(Math.log(q.f / fc)) >= Math.log(1.4));
+  const arriba = otras.some(q => q.f > fc), abajo = otras.some(q => q.f < fc);
+  if (!otras.length && !indicado) return null;
+  return { otras, indicado: !otras.length, posicion: arriba && abajo ? 'media' : arriba ? 'baja' : abajo ? 'alta' : null };
+}
+
 // Indica si hay que alargar o cortar la antena para centrar su resonancia en la banda objetivo (Hz).
 // En modo 'roe' (Simple) juzga la banda objetivo (peor punto) y avisa si la curva es irregular.
-export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 'rl') {
+// opts.multibanda: el usuario ha dicho que la antena es multibanda (trampas, abanico...): no se da un factor global de dimensiones.
+export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 'rl', opts = {}) {
   const fmt = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(2)} MHz` : `${(hz / 1e3).toFixed(1)} kHz`;
   const fc = (fMin + fMax) / 2;
   const ic = indiceMasCercano(medida.freq, fc);
@@ -224,6 +235,24 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
     titulo = `Acorta la antena un ${(-pct).toFixed(1)} %`;
     lineas.push(`Resuena demasiado bajo: la antena es eléctricamente larga. Multiplica sus dimensiones por ${(p.f / fc).toFixed(3)}.`);
   }
+  const mb = accion === 'alargar' || accion === 'cortar' ? infoMultibanda(picos, fc, !!opts.multibanda) : null;
+  if (mb) {
+    // En una antena multibanda cada banda la manda un tramo: un factor global movería todas las bandas a la vez.
+    const verbo = accion === 'alargar' ? 'Alarga' : 'Acorta', verboIng = accion === 'alargar' ? 'alargar' : 'acortar', pctTxt = Math.abs(pct).toFixed(1);
+    titulo = `${verbo} un ${pctTxt} % el tramo que gobierna esta banda`;
+    const quien = mb.posicion === 'baja'
+      ? `Es la banda más baja: la gobiernan el tramo exterior (el que queda más allá de la trampa o del elemento de las bandas altas) y las bobinas de carga. Hay que ${verboIng} ese tramo una longitud equivalente al ${pctTxt} % de lo que mide el brazo entero.`
+      : mb.posicion === 'alta'
+        ? `Es una banda alta: la gobierna el tramo interior, el que va desde el alimentador hasta la primera trampa. Hay que ${verboIng} ese tramo un ${pctTxt} % de su propia longitud.`
+        : mb.posicion === 'media'
+          ? `Es una banda intermedia: la gobierna el tramo que queda entre dos trampas (o elementos). Hay que ${verboIng} ese tramo un ${pctTxt} % de su propia longitud.`
+          : `Ajusta el tramo que gobierna esta banda (el que resuena en ella) un ${pctTxt} % de su longitud efectiva.`;
+    const aviso = mb.indicado
+      ? 'Has indicado que la antena es multibanda: el factor «multiplica todas las dimensiones» no sirve, porque cambiar todo mueve todas las bandas a la vez.'
+      : `La antena parece multibanda (otras resonancias en ${mb.otras.slice(0, 3).map(q => fmt(q.f)).join(', ')}): el factor «multiplica todas las dimensiones» no sirve, porque cambiar todo mueve todas las bandas a la vez.`;
+    const i = lineas.findIndex(l => /Multiplica sus dimensiones/.test(l));
+    lineas.splice(i < 0 ? lineas.length : i, i < 0 ? 0 : 1, aviso, quien, 'Ajusta una banda cada vez y vuelve a medir también las demás: tocar un tramo las mueve un poco a todas.');
+  }
   if (accion === 'alargar' || accion === 'cortar') {
     if (!bien) lineas.push(`La adaptación en la resonancia es baja (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`}): tras ajustar la longitud, revisa también la alimentación.`);
     const inductiva = zx > 0;
@@ -236,7 +265,7 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
     lineas.push(`Ojo: la antena resuena eléctricamente (reactancia cero) a ${fmt(rx.fX)}, un ${(Math.abs(rx.desv) * 100).toFixed(1)} % ${rx.desv > 0 ? 'por encima' : 'por debajo'} de donde mejor se adapta (${fmt(p.f)}). Es habitual en antenas cargadas, fractales o con adaptador, pero el porcentaje de longitud puede no ser fiable: corta o alarga poco a poco y vuelve a medir.`);
   }
   lineas.push(nota);
-  return { accion, titulo, lineas, fRes: p.f, pct, est, rx };
+  return { accion, titulo, lineas, fRes: p.f, pct, est, rx, multibanda: mb };
 }
 
 // Anade el indice a cada resonancia para poder situar el cursor.

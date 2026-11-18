@@ -50,8 +50,13 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
 9. **Antenas simuladas** (`ANTENAS_SIMULADAS` en `drivers/simulado.js`, selector «Antena simulada» con el modo simulado): `predeterminada`
    (868 MHz y 2,44 GHz) y `trampas` (HF: dipolo de 2 brazos con trampa LC y bobina de carga, modelo de líneas de transmisión; mínimos de
    ROE a ~6,95 / ~14,33 / ~18,5 MHz y máximos entre medias; por encima de 40 MHz queda descuadrada a propósito). Sirve para ver cómo
-   trata la app una antena multibanda cargada: 40 m sale «acorta», 20 m «alarga», y ninguna banda queda entera en ROE 2. **Limitación
-   conocida**: el consejo «multiplica sus dimensiones por X» vale para antenas de una banda; en una multibanda cada banda la manda un tramo.
+   trata la app una antena multibanda cargada: 40 m sale «acorta», 20 m «alarga», y ninguna banda queda entera en ROE 2.
+   **Consejo por tramo en multibanda** (`infoMultibanda`, opción «Mi antena es multibanda» o detección automática: otra resonancia con
+   ROE ≲ 3 a ≥ 40 % por encima o por debajo del objetivo, dentro de lo medido): en vez de «multiplica todas las dimensiones» da
+   «acorta/alarga un X % el tramo que gobierna esta banda» (banda baja = tramo exterior y bobinas, % sobre el brazo entero; banda alta o
+   intermedia = tramo interior o entre trampas, % sobre su propia longitud) y pide ajustar una banda cada vez. En banda única con margen
+   del 10 % no se ven otras resonancias: hay que marcar la opción o subir el margen lateral. Es un texto general: la app no sabe qué
+   tramo físico es cada uno.
 10. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 

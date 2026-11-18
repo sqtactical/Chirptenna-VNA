@@ -172,7 +172,7 @@ function evaluarTodo(medida, umbral) {
   const evaluacion = evaluarBandas(medida, bandas, umbral, fMaxActual());
   const picos = resonancias(medida, umbral);
   const dudosos = resonanciasDudosas(medida, picos);
-  const reco = obj ? recomendacion(medida, picos, obj, umbral, unidad()) : null;
+  const reco = obj ? recomendacion(medida, picos, obj, umbral, unidad(), { multibanda: $('multibanda').checked }) : null;
   return { evaluacion, picos, dudosos, reco, obj };
 }
 
@@ -408,6 +408,11 @@ async function iniciar() {
   } catch (e) {
     return estado('No se pudo cargar bandas.json (¿abierto sin servidor web?)', true);
   }
+  try { $('multibanda').checked = localStorage.getItem('multibanda') === '1'; } catch {}
+  $('multibanda').onchange = () => {
+    try { localStorage.setItem('multibanda', $('multibanda').checked ? '1' : '0'); } catch {}
+    reanalizar();
+  };
   try { $('ver-x').checked = localStorage.getItem('ver-x') === '1'; } catch {}
   $('ayuda-x').hidden = !$('ver-x').checked;
   $('ver-x').onchange = () => {

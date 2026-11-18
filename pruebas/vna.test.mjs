@@ -692,3 +692,47 @@ test('antena simulada con trampas y bobina de carga (HF): minimos a ~6,9 / ~14,3
   const m2 = A.calcular(await d2.scan(776.7e6, 957e6, 601, () => {}, 'log'));
   cercano(A.resonancias(m2, U_SIMPLE)[0].f, 871e6, 3e6);
 });
+
+test('multibanda: con otras resonancias a la vista, el consejo es por tramo y no un factor global (40 m = tramo exterior, 20 m = interior)', async () => {
+  const d = new DriverSimulado(); d.antena = 'trampas';
+  const m = A.calcular(await d.scan(3e6, 32e6, 1500, () => {}, 'log'));   // rango ancho: se ven 6,95, 14,33 y 18,5 MHz
+  const picos = A.resonancias(m, U_SIMPLE);
+  const juzgar = (a, b) => A.recomendacion(m, picos, { fMin: a * 1e6, fMax: b * 1e6 }, U_SIMPLE, 'roe');
+  const r40 = juzgar(7.0, 7.2), r20 = juzgar(14.0, 14.35);
+  assert.equal(r40.accion, 'cortar'); assert.equal(r20.accion, 'alargar');
+  for (const r of [r40, r20]) {
+    assert.ok(r.multibanda, r.titulo);
+    assert.ok(!r.lineas.some(l => /Multiplica sus dimensiones/.test(l)), r.lineas.join('\n'));
+    assert.match(r.titulo, /el tramo que gobierna esta banda/);
+    assert.ok(r.lineas.some(l => /parece multibanda/.test(l)));
+    assert.ok(r.lineas.some(l => /una banda cada vez/.test(l)));
+  }
+  assert.equal(r40.multibanda.posicion, 'baja');
+  assert.ok(r40.lineas.some(l => /tramo exterior/.test(l) && /acortar/.test(l)));
+  assert.equal(r20.multibanda.posicion, 'alta'); // por debajo esta el 40 m; el armonico de 18,5 MHz queda a menos de un 40 % por encima
+  assert.ok(r20.lineas.some(l => /tramo interior/.test(l)));
+  assert.ok(r20.lineas.some(l => /alargar/.test(l)));
+});
+
+test('multibanda: si el usuario lo indica y no hay otras resonancias a la vista, da el consejo generico por tramo', async () => {
+  const d = new DriverSimulado(); d.antena = 'trampas';
+  const m = A.calcular(await d.scan(6.3e6, 7.9e6, 601, () => {}, 'log'));  // solo se ve el 40 m
+  const picos = A.resonancias(m, U_SIMPLE), obj = { fMin: 7.0e6, fMax: 7.2e6 };
+  const normal = A.recomendacion(m, picos, obj, U_SIMPLE, 'roe');
+  assert.equal(normal.multibanda, null);
+  assert.ok(normal.lineas.some(l => /Multiplica sus dimensiones por 0\.9/.test(l)), 'sin indicarlo, el consejo sigue siendo global');
+  const r = A.recomendacion(m, picos, obj, U_SIMPLE, 'roe', { multibanda: true });
+  assert.equal(r.multibanda.indicado, true);
+  assert.equal(r.multibanda.posicion, null);
+  assert.match(r.titulo, /^Acorta un \d\.\d % el tramo que gobierna esta banda$/);
+  assert.ok(r.lineas.some(l => /Has indicado que la antena es multibanda/.test(l)));
+  assert.ok(!r.lineas.some(l => /Multiplica sus dimensiones/.test(l)));
+});
+
+test('multibanda: una antena de una banda no se marca como multibanda', async () => {
+  const m = await barrido(776.7e6, 957e6, 601);
+  const picos = A.resonancias(m, U_SIMPLE);
+  assert.equal(A.infoMultibanda(picos, 866.5e6), null);
+  const r = A.recomendacion(m, picos, { fMin: 863e6, fMax: 870e6 }, 10, 'rl');
+  assert.equal(r.multibanda ?? null, null);
+});
