@@ -17,19 +17,31 @@ Esfuerzo: **S** (días), **M** (1–2 semanas), **L** (más). Las casillas se ma
 
 Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos reales grabados.
 
-- [ ] **Probar el driver con el NanoVNA-H conectado** (con el usuario delante): `version`, `info`, `scan` de 11 puntos, un
-      barrido de 3000 puntos, medida en bruto (`cal off` → `cal on` + `sweep` restaurados). Medir tiempos reales. **S**
-- [ ] **Reconexión y errores**: desconectar el cable a mitad de barrido, equipo ocupado, otro programa con el puerto abierto,
-      mensajes claros en cada caso. **S**
-- [ ] **Contraste con `vna/medir_antena_pc.py`** de Chirptenna: misma antena, misma calibración, mismas cifras. **S**
-- [ ] **Verificar `bandas.json`** contra la CNAF (España), el plan de la IARU R1/R2 y la FCC parte 15/97. **S**
-
+- [ ] **Probar el driver con el NanoVNA-H conectado** (con el usuario delante). **Preparado el 18-11**: abre
+      `diagnostico.html`, conecta, marca (si quieres) la prueba «ida y vuelta en bruto» y pulsa *Ejecutar*. Comprueba
+      identificación, `info`, formato de `cal` y `sweep`, `scan` de 11 puntos, límite real de puntos por `scan`, barrido de
+      3000 puntos con tiempos, repetibilidad y la restauración exacta de `cal`/`sweep`; da un informe para pegar. Falta
+      **ejecutarlo con el equipo** y corregir lo que salga. **S**
+- [x] **Reconexión y errores** (18-11): errores con código (`ErrorEquipo`: cancelado, ocupado, permiso, sin respuesta,
+      desconectado, respuesta incompleta, uso simultáneo); cable desenchufado a mitad de barrido se detecta al instante
+      (no espera 20 s) y la interfaz vuelve a «sin conectar» con un mensaje claro; el asistente avisa de que el paso no se
+      guardó; avisa si el dispositivo no parece un NanoVNA; descarta respuestas tardías. 10 pruebas con el emulador
+      (cable cortado, puerto ocupado, equipo mudo…) y comprobado en el navegador. **S**
+- [~] **Contraste con `vna/medir_antena_pc.py`** de Chirptenna: hecho **con datos grabados** (corrección SOL idéntica a
+      1e-16 con el OSL real; antena de 868 MHz con las mismas cifras). Falta repetirlo en vivo: misma antena, misma
+      calibración, mismas cifras. **S**
+- [~] **Verificar `bandas.json`** (18-11): contrastado con Meshtastic (docs de región LoRa), ARRL/FCC e IARU R1 (70 cm,
+      23 cm, 13 cm). **Corregido**: 9 cm de EE.UU. es 3300–3450 MHz (el acceso a 3450–3500 terminó en abril de 2022). Añadidas
+      las regiones de Meshtastic EU_868 (869,4–869,65), EU_433, EU_866 y ANZ. **Sin contrastar** (el PDF del manual IARU R1 es
+      una imagen escaneada): 9 y 5 cm de R1, 4 m, 6 m de R1, 60 m por país, 630 m, 2200 m y las sub-bandas WiFi/U-NII. La
+      CNAF (España) sigue pendiente. **S**
 ## Fase 1 — Que cualquiera lo use (🟢, 🕸️) — lo que más gente va a notar
 
 - [ ] 🟢🕸️ **Perfil «Mi nodo Meshtastic»**: eliges región (EU_868, EU_433, US, y luego ANZ, IN…) y preset (LongFast…) y la
       app calcula la **frecuencia real del canal** con la misma fórmula que el firmware (frecuencia del slot por defecto o el
-      que pongas), mide alrededor y da el veredicto **en esa frecuencia**, no solo en la banda. Útil porque en EU_868 el canal
-      por defecto cae cerca del borde alto (≈869,5 MHz, *a verificar*) y una antena centrada en 868 puede ir justa. **M**
+      que pongas), mide alrededor y da el veredicto **en esa frecuencia**, no solo en la banda. Útil porque la región EU_868 de
+      Meshtastic es solo **869,4–869,65 MHz** (250 kHz, 10 % de ciclo; verificado en sus docs el 18-11) y una antena centrada
+      en 868 MHz puede ir justa. Las ITU 2 m / 70 cm / 1,25 m solo se eligen en modo con licencia de radioaficionado. **M**
 - [ ] 🟢🕸️ **Comparar antenas («shootout»)**: guardar varias medidas con nombre (la de serie del T-Beam/Heltec/RAK, la
       comprada, la casera) y ver una tabla ordenada por ROE en el canal y ancho de banda, con las curvas superpuestas. **M**
 - [ ] 🟢 **Antes / después**: al medir tras cortar, se superpone la medida anterior y dice «has movido la resonancia de 892

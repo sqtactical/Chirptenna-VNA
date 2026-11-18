@@ -26,14 +26,16 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    «posiblemente falsa» (`resonanciasDudosas`) y no entran en la recomendación, el veredicto ni el afinado.
 4. Medir bien una banda estrecha con barrido logarítmico: se encadenan barridos lineales de ≤101 puntos y se **afina**
    (ventanas de ±3 % con 201 puntos alrededor de los 4 mejores picos) fusionando con `fusionar`.
-5. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
+5. Los fallos del equipo (cable fuera, puerto ocupado, equipo mudo) son `ErrorEquipo` con `codigo`; el cable cortado se detecta por el fin de lectura o el evento `disconnect` y rechaza la orden pendiente al instante. La interfaz lo trata en `perderConexion`.
+6. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 
 ## Pendiente
 **El plan completo está en `ROADMAP.md`** (fases con casillas; márcalas al terminar). La Fase 0 (probar con el equipo real)
 va antes que todo lo demás. Resumen:
-- Probar el driver con el NanoVNA conectado (pedir al usuario `version`, `info`, `scan 50000 2700000000 11 3`).
+- Probar el driver con el NanoVNA conectado: **`diagnostico.html`** (`js/diagnostico.js`, con pruebas contra el emulador) ya hace toda la batería y da un informe; falta ejecutarlo con el equipo y corregir lo que salga (Fase 0 del ROADMAP).
 - Modelo de patrones con retardo/capacidad del OPEN (precisión > 1 GHz); drivers de V2/V2Plus4/F V3/LiteVNA.
-- Verificar los bordes de `bandas.json` con los planes nacionales; selector de idioma; versión de escritorio (reutilizar
-  la lógica de Python del proyecto Chirptenna) y posible enlace desde su pestaña «Medir».
-- Crear el repo privado en GitHub (`sqtactical/Chirptenna-VNA`) y publicar con `.github/workflows/pages.yml`.
+- Terminar de verificar `bandas.json` (en `_verificado` está lo contrastado y lo que no; falta la CNAF de España); selector
+  de idioma; versión de escritorio (reutilizar la lógica de Python del proyecto Chirptenna) y posible enlace desde su
+  pestaña «Medir».
+- Repo privado en GitHub: `sqtactical/Chirptenna-VNA` (publicar la web con `.github/workflows/pages.yml` si el plan lo permite).

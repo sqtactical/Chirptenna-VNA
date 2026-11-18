@@ -43,6 +43,11 @@ python -m http.server 8765
 y abre <http://localhost:8765>. Sin equipo, marca **«Modo simulado»**: una antena de ejemplo con dos resonancias y errores
 de medida realistas para probar la calibración.
 
+### Probar con tu NanoVNA
+
+Abre **[diagnostico.html](diagnostico.html)** con el equipo conectado: comprueba el protocolo, el límite de puntos, los tiempos y que la
+medida en bruto restaura la calibración, y genera un informe de texto para pegar en una incidencia. Nunca envía `save`.
+
 ## Pruebas
 
 ```powershell

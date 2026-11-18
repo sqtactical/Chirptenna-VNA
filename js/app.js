@@ -47,14 +47,25 @@ async function conectar() {
     if (!$('simulado').checked && !('serial' in navigator)) throw new Error('Este navegador no soporta Web Serial. Usa Chrome o Edge de escritorio.');
     estado('Conectando…');
     await driver.connect();
+    driver.alPerder = m => perderConexion(m);
     $('medir').disabled = false;
     $('conectar').textContent = 'Desconectar';
-    estado(`Conectado: ${driver.nombre}${driver.version ? ' · ' + driver.version : ''}`);
+    estado(`Conectado: ${driver.nombre}${driver.version ? ' · ' + driver.version : ''}${driver.aviso ? '. ' + driver.aviso : ''}`, !!driver.aviso);
     poblarObjetivo();
   } catch (e) {
     driver = null;
-    estado(e.message, true);
+    estado(e.message, e.codigo !== 'cancelado'); // cancelar el selector no es un error
   }
+}
+
+// El cable se desenchufo o el equipo dejo de responder: la interfaz vuelve a "sin conectar" con un mensaje claro.
+function perderConexion(mensaje) {
+  const d = driver;
+  driver = null;
+  d?.disconnect?.();
+  $('medir').disabled = true;
+  $('conectar').textContent = 'Conectar';
+  estado(mensaje, true);
 }
 
 async function desconectar() {
@@ -219,11 +230,12 @@ async function medir() {
     estado(`Listo: ${crudo.freq.length} puntos en ${((performance.now() - t0) / 1000).toFixed(1)} s${afinado ? ' (con afinado)' : ''}`);
     mostrar();
   } catch (e) {
-    estado(e instanceof ErrorCalibracion && e.faltan.length
+    if (e.codigo === 'desconectado') perderConexion(e.message);
+    else estado(e instanceof ErrorCalibracion && e.faltan.length
       ? `${e.message}. Falta calibrar: ${e.faltan.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; ')}.`
       : e.message, true);
   } finally {
-    $('medir').disabled = false;
+    $('medir').disabled = !driver;
   }
 }
 
@@ -420,7 +432,10 @@ async function iniciar() {
   // Calibracion
   asistente = crearAsistente({
     contenedor: $('asistente'),
-    getDriver: () => driver,
+    getDriver: () => {
+      if (driver?.perdido) perderConexion('Se perdió la conexión con el equipo. Vuelve a conectar.');
+      return driver;
+    },
     getRangoPlan: rangoPlan,
     estado,
     onCambio: id => poblarCal(id),

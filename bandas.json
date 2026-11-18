@@ -1,4 +1,5 @@
 {
+  "_verificado": "18-11-2026. Contrastado con fuentes: Meshtastic (docs de la región LoRa), ARRL (asignaciones FCC) y IARU R1 (70 cm, 23 cm y 13 cm). Corregido: 9 cm EE.UU. 3300-3450. SIN contrastar: 9 cm y 5 cm de R1, 4 m, 6 m de R1, 60 m por país, 630 m, 2200 m y las sub-bandas WiFi/U-NII.",
   "_aviso": "Borrador. Bordes de banda segun planes IARU R1/R2 y reglamentos tipo FCC/ETSI; varian por pais y licencia. Verificar contra el plan de bandas nacional antes de dar un veredicto 'apta para transmitir'. Frecuencias en MHz. Rango medible: depende del dispositivo (ver 'dispositivos'); la web debe marcar como 'no medible' las bandas fuera del f_max de la unidad conectada.",
   "criterio_por_defecto": { "metrica": "perdida_retorno_dB", "umbral": 10, "equivalente_vswr": 1.92 },
   "regiones": {
@@ -37,7 +38,7 @@
     { "servicio": "ham", "nombre": "13 cm", "region": ["R2"], "f_min": 2300.0, "f_max": 2310.0, "nota": "EE.UU.: 2300-2310 y 2390-2450" },
     { "servicio": "ham", "nombre": "13 cm", "region": ["R2"], "f_min": 2390.0, "f_max": 2450.0 },
     { "servicio": "ham", "nombre": "9 cm", "region": ["R1"], "f_min": 3400.0, "f_max": 3475.0, "nota": "R1: solo algunos paises y secundaria" },
-    { "servicio": "ham", "nombre": "9 cm", "region": ["R2"], "f_min": 3300.0, "f_max": 3500.0, "nota": "EE.UU.: 3300-3500, con restricciones" },
+    { "servicio": "ham", "nombre": "9 cm", "region": ["R2"], "f_min": 3300.0, "f_max": 3450.0, "nota": "EE.UU.: 3300-3450 (ARRL; el acceso a 3450-3500 terminó el 14-04-2022). Con restricciones" },
     { "servicio": "ham", "nombre": "5 cm", "region": ["R1"], "f_min": 5650.0, "f_max": 5850.0 },
     { "servicio": "ham", "nombre": "5 cm", "region": ["R2"], "f_min": 5650.0, "f_max": 5925.0 },
 
@@ -46,9 +47,12 @@
     { "servicio": "ism", "nombre": "27 MHz (CB/ISM)", "region": ["global"], "f_min": 26.957, "f_max": 27.283 },
     { "servicio": "ism", "nombre": "40.68 MHz", "region": ["global"], "f_min": 40.66, "f_max": 40.7 },
     { "servicio": "ism", "nombre": "433 MHz", "region": ["R1", "EU"], "f_min": 433.05, "f_max": 434.79 },
-    { "servicio": "ism", "nombre": "868 MHz SRD (LoRa/SigFox)", "region": ["EU"], "f_min": 863.0, "f_max": 870.0, "nota": "No es ISM estricta (SRD). Sub-bandas con duty cycle; LoRa EU usa 868.1-868.5 y 869.525. Objetivo actual Chirptenna: 869.6 MHz +/-3.5" },
-    { "servicio": "ism", "nombre": "915 MHz (LoRa/ISM US)", "region": ["US", "R2"], "f_min": 902.0, "f_max": 928.0 },
-    { "servicio": "ism", "nombre": "2.4 GHz (WiFi/BT/Zigbee)", "region": ["global"], "f_min": 2400.0, "f_max": 2483.5, "nota": "Borde superior cerca del limite de 2.7 GHz del equipo; precision menor (armonicos)" },
+    { "servicio": "ism", "nombre": "868 MHz SRD (LoRa/SigFox)", "region": ["EU"], "f_min": 863.0, "f_max": 870.0, "nota": "No es ISM estricta (SRD). Sub-bandas con duty cycle; Meshtastic EU_868 usa solo 869.4-869.65 (ver abajo); los canales LoRaWAN EU, 868.1-868.5. Objetivo actual Chirptenna: 869.6 MHz +/-3.5" },
+    { "servicio": "ism", "nombre": "915 MHz (LoRa/ISM US)", "region": ["US", "R2"], "f_min": 902.0, "f_max": 928.0, "nota": "Meshtastic US: 902-928 MHz, 100 % de ciclo, 30 dBm (firmware)" },
+    { "servicio": "meshtastic", "nombre": "EU_868 (869.4-869.65)", "region": ["EU"], "f_min": 869.4, "f_max": 869.65, "nota": "Región EU_868 de Meshtastic: banda estrecha de 250 kHz, 10 % de ciclo, 27 dBm. Ancho de banda útil de la antena ≥ esto" },
+    { "servicio": "meshtastic", "nombre": "EU_433 (433.0-434.0)", "region": ["EU"], "f_min": 433.0, "f_max": 434.0, "nota": "Región EU_433 de Meshtastic: 10 % de ciclo, 10 dBm" },
+    { "servicio": "meshtastic", "nombre": "EU_866 (865.6-867.6)", "region": ["EU"], "f_min": 865.6, "f_max": 867.6, "nota": "Región EU_866 de Meshtastic: 2,5 % de ciclo (10 % en ROUTER), 27 dBm" },
+    { "servicio": "meshtastic", "nombre": "ANZ (915-928)", "region": ["ANZ"], "f_min": 915.0, "f_max": 928.0, "nota": "Región ANZ de Meshtastic (Australia y Nueva Zelanda): 100 % de ciclo, 30 dBm" },    { "servicio": "ism", "nombre": "2.4 GHz (WiFi/BT/Zigbee)", "region": ["global"], "f_min": 2400.0, "f_max": 2483.5, "nota": "Borde superior cerca del limite de 2.7 GHz del equipo; precision menor (armonicos)" },
     { "servicio": "ism", "nombre": "5.8 GHz ISM", "region": ["global"], "f_min": 5725.0, "f_max": 5875.0 },
     { "servicio": "ism", "nombre": "WiFi 5 GHz (RLAN)", "region": ["EU"], "f_min": 5150.0, "f_max": 5350.0, "nota": "No es ISM estricta; sub-bandas con DFS/TPC" },
     { "servicio": "ism", "nombre": "WiFi 5 GHz (RLAN)", "region": ["EU"], "f_min": 5470.0, "f_max": 5725.0 },

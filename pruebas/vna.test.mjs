@@ -306,3 +306,155 @@ test('calibracion real: los patrones buenos del NanoVNA pasan las comprobaciones
     assert.ok(!C.comprobarPatron('short', l, o).ok, `carga como SHORT ${tag}`);
   }
 });
+
+// ---------- Fallos de conexion (Fase 0) ----------
+import { ErrorEquipo } from '../js/drivers/nanovna-h.js';
+
+async function intentar(emuOpts = {}, serialOpts = {}) {
+  const emu = new EmuladorNanoVNA(emuOpts);
+  const puerto = instalarSerial(emu, serialOpts);
+  const drv = new DriverNanoVNAH();
+  drv.escalaTiempo = 0.02; // esperas 50 veces mas cortas
+  return { emu, puerto, drv };
+}
+const conCodigo = codigo => e => e instanceof ErrorEquipo && e.codigo === codigo;
+
+test('conexion: si el usuario cancela el selector de puerto, es un error "cancelado"', async () => {
+  const { drv } = await intentar({}, { falloRequest: 'NotFoundError' });
+  await assert.rejects(drv.connect(), conCodigo('cancelado'));
+});
+
+test('conexion: puerto ocupado por otro programa da un mensaje con pistas', async () => {
+  const { drv } = await intentar({}, { falloAbrir: 'InvalidStateError' });
+  await assert.rejects(drv.connect(), e => conCodigo('ocupado')(e) && /otro programa/.test(e.message) && /Arduino/.test(e.message));
+});
+
+test('conexion: un equipo que no responde falla pronto con "sin_respuesta" y deja el puerto cerrado', async () => {
+  const { drv } = await intentar({ mudo: true });
+  const t0 = Date.now();
+  await assert.rejects(drv.connect(), conCodigo('sin_respuesta'));
+  assert.ok(Date.now() - t0 < 1500, 'tardo demasiado');
+  assert.equal(drv.port, null);
+});
+
+test('conexion: un dispositivo que no es NanoVNA conecta pero con aviso', async () => {
+  const { drv } = await intentar({ version: 'Arduino Uno bootloader' });
+  await drv.connect();
+  assert.match(drv.aviso, /no se identifica como NanoVNA/);
+  await drv.disconnect();
+});
+
+test('conexion: un NanoVNA reconocido no lleva aviso', async () => {
+  const { drv } = await intentar();
+  await drv.connect();
+  assert.equal(drv.aviso, '');
+  await drv.disconnect();
+});
+
+test('desenchufar el cable a mitad de un barrido falla enseguida con "desconectado" (sin esperar 20 s)', async () => {
+  const { drv } = await intentar({ cortarEnScan: 2 });
+  await drv.connect();
+  const t0 = Date.now();
+  await assert.rejects(drv.scan(1e6, 100e6, 500, () => {}, 'lineal'), conCodigo('desconectado'));
+  assert.ok(Date.now() - t0 < 1500, 'espero al timeout en vez de detectar el corte');
+  // y las ordenes siguientes tambien fallan claramente
+  await assert.rejects(drv.scan(1e6, 2e6, 10, () => {}, 'lineal'), conCodigo('desconectado'));
+  await drv.disconnect();
+});
+
+test('desenchufar durante una medida en bruto no deja la orden colgada al restaurar el equipo', async () => {
+  const { drv } = await intentar({ cortarEnScan: 1 });
+  await drv.connect();
+  const t0 = Date.now();
+  await assert.rejects(drv.scan(1e6, 20e6, 150, () => {}, 'lineal', { bruto: true }), conCodigo('desconectado'));
+  assert.ok(Date.now() - t0 < 1500);
+  await drv.disconnect();
+});
+
+test('el evento disconnect con el equipo en reposo avisa a la interfaz (alPerder)', async () => {
+  const { drv, puerto } = await intentar();
+  await drv.connect();
+  let aviso = null;
+  drv.alPerder = m => { aviso = m; };
+  puerto.desenchufar();
+  await new Promise(r => setTimeout(r, 20));
+  assert.match(aviso ?? '', /desconect/i);
+  await assert.rejects(drv._cmd('version'), conCodigo('desconectado'));
+  await drv.disconnect();
+});
+
+test('dos ordenes a la vez: la segunda se rechaza claramente en vez de pisar a la primera', async () => {
+  const { drv } = await intentar();
+  await drv.connect();
+  const a = drv._cmd('version', 3000);
+  await assert.rejects(drv._cmd('sweep', 3000), conCodigo('ocupado_interno'));
+  assert.match(await a, /DiSlord/);
+  await drv.disconnect();
+});
+
+test('desconectar a propósito no se confunde con una perdida de conexion', async () => {
+  const { drv } = await intentar();
+  await drv.connect();
+  let avisos = 0;
+  drv.alPerder = () => avisos++;
+  await drv.disconnect();
+  await new Promise(r => setTimeout(r, 20));
+  assert.equal(avisos, 0);
+});
+
+// ---------- Diagnostico para el equipo real ----------
+import { ejecutarDiagnostico } from '../js/diagnostico.js';
+
+test('diagnostico: con el emulador todos los pasos pasan, incluida la ida y vuelta en bruto', async () => {
+  const { emu, drv } = await conectado();
+  emu.barrido = [111111, 222222222, 303];
+  const r = await ejecutarDiagnostico(drv, { bruto: true });
+  const fallos = r.pasos.filter(p => p.ok === false).map(p => `${p.nombre}: ${p.texto}`);
+  assert.deepEqual(fallos, []);
+  assert.ok(r.pasos.some(p => /Ida y vuelta/.test(p.nombre)));
+  assert.equal(emu.calActiva, true);
+  assert.deepEqual(emu.barrido, [111111, 222222222, 303]);
+  assert.ok(!emu.log.some(c => /^save/.test(c)), 'nunca debe enviar save');
+  const lim = r.pasos.find(p => /Límite/.test(p.nombre));
+  assert.equal(lim.datos.max, 101);
+  assert.match(r.resumen, /todo correcto/);
+  await drv.disconnect();
+});
+
+test('diagnostico: detecta un equipo que devuelve puntos de menos y lo cuenta en el informe', async () => {
+  const { drv } = await conectado({ devolverDeMenos: true });
+  const r = await ejecutarDiagnostico(drv);
+  assert.ok(r.pasos.some(p => p.ok === false));
+  assert.match(r.resumen, /con fallo/);
+  await drv.disconnect();
+});
+
+test('diagnostico: sin la prueba en bruto no toca cal ni sweep del equipo', async () => {
+  const { emu, drv } = await conectado();
+  await ejecutarDiagnostico(drv, { bruto: false });
+  assert.ok(!emu.log.includes('cal off') && !emu.log.includes('cal on'));
+  assert.ok(!emu.log.some(c => /^sweep \d/.test(c)), 'no debe escribir sweep');
+  await drv.disconnect();
+});
+
+test('diagnostico: con el controlador simulado se omite el shell y no falla', async () => {
+  const r = await ejecutarDiagnostico(new DriverSimulado(), { bruto: true });
+  assert.ok(!r.pasos.some(p => p.ok === false), JSON.stringify(r.pasos.filter(p => p.ok === false)));
+  assert.ok(r.pasos.some(p => p.nombre === 'Shell del equipo'));
+});
+
+test('bandas.json: las regiones de Meshtastic caen dentro de la banda libre que les corresponde', () => {
+  const m = cfg.bandas.filter(b => b.servicio === 'meshtastic');
+  assert.ok(m.length >= 4);
+  const eu868 = m.find(b => /EU_868/.test(b.nombre));
+  assert.deepEqual([eu868.f_min, eu868.f_max], [869.4, 869.65]);
+  const srd = cfg.bandas.find(b => /868 MHz SRD/.test(b.nombre));
+  assert.ok(eu868.f_min >= srd.f_min && eu868.f_max <= srd.f_max, 'EU_868 fuera de 863-870');
+  const eu433 = m.find(b => /EU_433/.test(b.nombre)), i433 = cfg.bandas.find(b => b.nombre === '433 MHz');
+  assert.ok(eu433.f_min >= i433.f_min - 0.1 && eu433.f_max <= i433.f_max);
+  // y salen en la lista de bandas de Europa pero no en la de EE.UU.
+  const nombres = r => A.bandasDeRegion(cfg.bandas, r).filter(b => b.servicio === 'meshtastic').map(b => b.nombre);
+  assert.ok(nombres('eu').length >= 3 && nombres('us').length === 0);
+  // 9 cm de EE.UU.: 3300-3450 (el acceso a 3450-3500 terminó en 2022)
+  assert.equal(cfg.bandas.find(b => b.nombre === '9 cm' && b.region.includes('R2')).f_max, 3450);
+});

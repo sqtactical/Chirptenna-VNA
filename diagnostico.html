@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico · Chirptenna VNA</title>
+<meta name="description" content="Comprueba que Chirptenna VNA se entiende bien con tu NanoVNA y genera un informe para compartir.">
+<link rel="icon" href="https://sqtactical.github.io/chirptenna/logo.png">
+<link rel="stylesheet" href="estilos.css">
+<style>
+  #informe { white-space: pre-wrap; word-break: break-word; font: .82rem/1.45 ui-monospace, Consolas, monospace; background: var(--entrada); border: 1px solid var(--borde); border-radius: 6px; padding: .7rem; min-height: 6rem; }
+  .paso-ok { color: var(--ok); } .paso-falla { color: var(--error); font-weight: 600; }
+  label.fila { display: flex; flex-direction: row; gap: .5rem; align-items: flex-start; margin: .35rem 0; }
+</style>
+</head>
+<body>
+<header class="cabecera">
+  <img src="https://sqtactical.github.io/chirptenna/logo.png" alt="" onerror="this.remove()">
+  <div class="marca"><b>Chirptenna</b><span>VNA · diagnóstico</span></div>
+  <div class="espaciador"></div>
+  <a href="index.html">← Volver a medir</a>
+  <button id="btn-tema" class="boton-icono" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+</header>
+
+<main>
+  <div class="alpha"><b>Para probar el equipo real.</b> Comprueba lo que la app da por supuesto del NanoVNA y genera un informe de texto que puedes pegar en una incidencia. <b>Hazlo con el equipo delante</b>: no hace falta tocar nada, pero conviene que no haya nada conectado al puerto de medida mientras corre.</div>
+  <div id="aviso-nav" class="alpha" hidden>Este navegador no soporta conexión USB (Web Serial). Usa <b>Chrome o Edge de escritorio</b>.</div>
+
+  <section class="tarjeta">
+    <h2>Ejecutar</h2>
+    <label class="fila"><input type="checkbox" id="bruto"> <span>Incluir la prueba <b>«ida y vuelta en bruto»</b>: envía <code>cal off</code>, mide, y restaura <code>cal on</code> y el barrido. Cambia <em>temporalmente</em> la calibración activa del equipo y la devuelve; <b>nunca envía <code>save</code></b>.</span></label>
+    <label class="fila"><input type="checkbox" id="simulado"> <span>Modo simulado (comprueba la propia página, sin equipo)</span></label>
+    <p>
+      <button id="conectar">Conectar</button>
+      <button id="ejecutar" class="primario" disabled>Ejecutar diagnóstico</button>
+    </p>
+    <p id="estado" role="status">Listo para conectar.</p>
+  </section>
+
+  <section class="tarjeta">
+    <h2>Informe</h2>
+    <div id="informe">(aún no se ha ejecutado)</div>
+    <p><button id="copiar" disabled>Copiar informe</button> <button id="descargar" disabled>Descargar .txt</button></p>
+  </section>
+</main>
+
+<footer class="pie">software libre · <a href="https://github.com/sqtactical/Chirptenna-VNA">código fuente</a></footer>
+<script type="module">
+import { DriverNanoVNAH } from './js/drivers/nanovna-h.js';
+import { DriverSimulado } from './js/drivers/simulado.js';
+import { ejecutarDiagnostico } from './js/diagnostico.js';
+
+const $ = id => document.getElementById(id);
+let drv = null, ultimo = '';
+const estado = (t, error = false) => { $('estado').textContent = t; $('estado').className = error ? 'msg-error' : ''; };
+
+if (!('serial' in navigator)) $('aviso-nav').hidden = false;
+
+$('btn-tema').onclick = () => {
+  const r = document.documentElement, oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
+  const act = r.dataset.theme || (oscuro ? 'dark' : 'light');
+  r.dataset.theme = act === 'dark' ? 'light' : 'dark';
+};
+
+$('conectar').onclick = async () => {
+  if (drv) { await drv.disconnect?.(); drv = null; $('conectar').textContent = 'Conectar'; $('ejecutar').disabled = true; return estado('Desconectado'); }
+  try {
+    drv = $('simulado').checked ? new DriverSimulado() : new DriverNanoVNAH();
+    estado('Conectando…');
+    await drv.connect();
+    drv.alPerder = m => { drv = null; $('conectar').textContent = 'Conectar'; $('ejecutar').disabled = true; estado(m, true); };
+    $('conectar').textContent = 'Desconectar'; $('ejecutar').disabled = false;
+    estado(`Conectado: ${drv.nombre}${drv.version ? ' · ' + drv.version : ''}`);
+  } catch (e) { drv = null; estado(e.message, e.codigo !== 'cancelado'); }
+};
+
+$('ejecutar').onclick = async () => {
+  if (!drv) return;
+  $('ejecutar').disabled = true; $('copiar').disabled = $('descargar').disabled = true;
+  $('informe').textContent = '';
+  try {
+    const r = await ejecutarDiagnostico(drv, {
+      bruto: $('bruto').checked,
+      onPaso: p => { estado(`Hecho: ${p.nombre}…`); $('informe').textContent += `${p.ok === true ? '✔' : p.ok === false ? '✖' : 'ℹ'} ${p.nombre}\n`; },
+    });
+    ultimo = r.resumen;
+    $('informe').textContent = ultimo;
+    $('copiar').disabled = $('descargar').disabled = false;
+    estado(r.pasos.some(p => p.ok === false) ? 'Terminado con fallos: copia el informe y compártelo.' : 'Terminado: todo correcto.', r.pasos.some(p => p.ok === false));
+  } catch (e) { estado(e.message, true); }
+  $('ejecutar').disabled = !drv;
+};
+
+$('copiar').onclick = async () => { try { await navigator.clipboard.writeText(ultimo); estado('Informe copiado'); } catch { estado('No se pudo copiar; usa «Descargar»', true); } };
+$('descargar').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ultimo], { type: 'text/plain;charset=utf-8' }));
+  a.download = `diagnostico_chirptenna_vna_${new Date().toISOString().slice(0, 10)}.txt`;
+  a.click(); URL.revokeObjectURL(a.href);
+};
+</script>
+</body>
+</html>

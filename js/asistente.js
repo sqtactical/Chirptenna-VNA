@@ -179,7 +179,10 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
         const r = resumenTramo(S.seg);
         S.msg = `Calibración calculada. Directividad |Ed| media ${r.ed.toFixed(3)}, adaptación de fuente |Es| media ${r.es.toFixed(3)}. Ahora una verificación rápida (puedes omitirla).`;
       }
-    } catch (e) { S.msg = e.message; S.msgError = true; }
+    } catch (e) {
+      S.msg = e.codigo === 'desconectado' ? `${e.message} El paso no se ha guardado: vuelve a conectar y repítelo.` : e.message;
+      S.msgError = true;
+    }
     S.ocupado = false;
     render();
   }
