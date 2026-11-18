@@ -2,7 +2,7 @@
 import { NIVELES_ROE } from './analisis.js';
 
 const COLOR_ESTADO = { ok: '#2e9e5b', parcial: '#d6a21a', no: '#c8453b', sin_datos: '#888888', fuera: '#888888' };
-export const MARGEN = { l: 52, r: 12, t: 12, b: 34 };
+export const MARGEN = { l: 52, r: 12, t: 30, b: 34 }; // el margen superior aloja el nombre y el marcador de la banda
 
 function tema(opts) {
   if (opts.claro) return { texto: '#1f2a30', rejilla: '#e1e6e9', linea: '#1565c0', fondo: '#ffffff', alerta: '#c62828' };
@@ -68,14 +68,26 @@ export function dibujarSerie(canvas, freq, series, opts = {}) {
       c.textAlign = 'left'; c.globalAlpha = 1;
     }
   }
-  // bandas sombreadas
-  for (const e of opts.evaluacion ?? []) {
-    if (e.estado === 'fuera') continue;
+  // Bandas medidas: relleno suave, bordes sólidos del color del resultado, marcador ▼ y, si son pocas, su nombre en el margen
+  // superior. Así se distinguen bien aunque haya zonas de color debajo (niveles de ROE) y aunque la banda sea muy estrecha.
+  const bandas = (opts.evaluacion ?? []).filter(e => e.estado !== 'fuera');
+  for (const e of bandas) {
+    const color = COLOR_ESTADO[e.estado];
     const x0 = X(Math.max(e.banda.f_min * 1e6, fmin)), x1 = X(Math.min(e.banda.f_max * 1e6, fmax));
-    c.globalAlpha = 0.22; c.fillStyle = COLOR_ESTADO[e.estado];
-    c.fillRect(x0, m.t, Math.max(2, x1 - x0), h - m.t - m.b);
+    const ancho = Math.max(6, x1 - x0), xc = (x0 + x1) / 2, xa = xc - ancho / 2;
+    c.globalAlpha = 0.2; c.fillStyle = color; c.fillRect(xa, m.t, ancho, h - m.t - m.b);
+    c.globalAlpha = 1; c.strokeStyle = color; c.lineWidth = 1.6; c.setLineDash([]);
+    c.beginPath(); c.moveTo(xa, m.t - 2); c.lineTo(xa, h - m.b); c.moveTo(xa + ancho, m.t - 2); c.lineTo(xa + ancho, h - m.b); c.stroke();
+    c.fillStyle = color; c.beginPath(); c.moveTo(xc - 5, m.t - 8); c.lineTo(xc + 5, m.t - 8); c.lineTo(xc, m.t - 1); c.closePath(); c.fill();
+    if (bandas.length <= 3) {
+      const nombre = `${e.banda.servicio.toUpperCase()} ${e.banda.nombre}`.slice(0, 40);
+      c.font = 'bold 11px system-ui, sans-serif';
+      const tw = c.measureText(nombre).width, tx = Math.min(Math.max(xc, m.l + tw / 2), w - m.r - tw / 2);
+      c.textAlign = 'center'; c.fillStyle = color; c.fillText(nombre, tx, m.t - 12); c.textAlign = 'left';
+      c.font = '11px system-ui, sans-serif';
+    }
   }
-  c.globalAlpha = 1;
+  c.globalAlpha = 1; c.lineWidth = 1;
 
   c.strokeStyle = t.rejilla; c.lineWidth = 1; c.fillStyle = t.texto;
   const paso = pasoBonito(yMax - yMin);
@@ -127,13 +139,12 @@ export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
 }
 
 // Gráfico de ROE (VSWR) con bandas y umbral: el modo Simple lo usa en lugar de la pérdida de retorno.
-// El umbral se da en dB de pérdida de retorno (como el resto de la app) y aquí se convierte a ROE.
+// El criterio de «bien adaptada» (ROE 2) lo marca el límite entre las zonas «Aceptable» y «Mejorable»; umbralDb no se usa aquí.
 export function dibujarROE(canvas, medida, evaluacion, umbralDb, opts = {}) {
-  const roeUmbral = (1 + 10 ** (-umbralDb / 20)) / (1 - 10 ** (-umbralDb / 20));
   let desde = 1;
   const regionesY = NIVELES_ROE.map(n => { const r = { desde, hasta: n.max, color: n.color, etiqueta: `${n.etiqueta} (${n.max === Infinity ? `más de ${desde}` : `${desde}–${n.max}`})`.replace(/\./g, ',') }; desde = n.max; return r; });
   dibujarSerie(canvas, medida.freq, [{ y: medida.vswr }], {
-    yMin: 1, yMax: 5, umbral: roeUmbral, evaluacion, regionesY,
+    yMin: 1, yMax: 5, evaluacion, regionesY, // sin línea de umbral: el límite de «aceptable» (ROE 2) ya lo marcan las zonas
     titulo: 'ROE (más bajo = mejor adaptada)', ...opts,
   });
 }

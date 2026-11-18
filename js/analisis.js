@@ -54,10 +54,10 @@ export const roeDeRl = db => (1 + 10 ** (-db / 20)) / (1 - 10 ** (-db / 20));
 // Niveles de ROE del modo Simple (de mejor a peor). `max` es el límite superior de cada región.
 // «Aceptable» llega hasta ROE 2, que es el criterio de «bien adaptada» del modo Simple.
 export const NIVELES_ROE = [
-  { id: 'muy_bien', max: 1.5, etiqueta: 'Muy bien acoplada', color: '#2e9e5b' },
-  { id: 'aceptable', max: 2, etiqueta: 'Aceptable', color: '#8bc34a' },
-  { id: 'mejorable', max: 3, etiqueta: 'Mejorable', color: '#f0a30a' },
-  { id: 'mal', max: Infinity, etiqueta: 'Mal acoplada', color: '#d9534f' },
+  { id: 'muy_bien', max: 1.5, etiqueta: 'Muy bien acoplada', consejo: 'Se puede usar con normalidad', color: '#2e9e5b' },
+  { id: 'aceptable', max: 2, etiqueta: 'Aceptable', consejo: 'Se puede usar con normalidad', color: '#8bc34a' },
+  { id: 'mejorable', max: 3, etiqueta: 'Mejorable', consejo: 'Transmitir poco y a potencia reducida', color: '#f0a30a' },
+  { id: 'mal', max: Infinity, etiqueta: 'Mal acoplada', consejo: 'No transmitir salvo emergencias', color: '#d9534f' },
 ];
 export const nivelROE = roe => NIVELES_ROE.find(n => roe <= n.max + 1e-9);
 // Cómo se muestra la adaptación de un punto: 'roe' (modo Simple: lo que conoce todo el mundo, con su nivel) o 'rl' (pérdida de retorno y ROE).
@@ -100,6 +100,7 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
   const bien = p.rl >= umbralDb;
   const cubre = p.fLo != null && p.fLo <= fMin && p.fHi >= fMax;
   const lineas = [`Resonancia más cercana: ${fmt(p.f)} (${textoAdaptacion(p, unidad)}). Objetivo: ${fmt(fc)}.`];
+  if (unidad === 'roe') lineas.push(`${nivelROE(p.vswr).consejo}.`);
   let accion, titulo;
   if (bien && cubre) {
     accion = 'ok';
@@ -244,6 +245,7 @@ export function veredicto(picos, evaluacion, umbralDb, unidad = 'rl') {
     const otros = picos.slice(1).filter(p => p.rl >= umbralDb);
     if (otros.length) lineas.push(`Otras resonancias: ${otros.slice(0, 4).map(p => `${fmt(p.f)} (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`})`).join(', ')}.`);
   }
+  if (unidad === 'roe' && mejor) lineas.unshift(`${nivelROE(mejor.vswr).consejo}.`);
   if (unidad === 'roe') lineas.push(`Criterio: ${textoUmbral(umbralDb, unidad)}. ${explicacionROE(umbralDb)}`);
   lineas.push(buenos.length ? `Cubre por completo: ${buenos.map(nombre).join(', ')}.` : 'No cubre por completo ninguna banda de la lista.');
   if (parciales.length) lineas.push(`Cubre parte de: ${parciales.map(nombre).join(', ')}.`);

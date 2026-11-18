@@ -59,7 +59,7 @@ export async function generarPDF(ultimo, meta) {
   doc.addImage(cv.toDataURL('image/png'), 'PNG', M, y, W, alto);
   y += alto + 2;
   texto(roe
-    ? 'Zonas horizontales: ROE 1-1,5 muy bien acoplada, 1,5-2 aceptable, 2-3 mejorable, mas de 3 mal acoplada. Franjas verticales: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea discontinua = maximo aceptable (ROE 2).'
+    ? 'Zonas horizontales: ROE 1-1,5 muy bien acoplada; 1,5-2 aceptable; 2-3 mejorable (transmitir poco y a potencia reducida); mas de 3 mal acoplada (no transmitir salvo emergencias). Franjas verticales con borde: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos.'
     : 'Franjas: verde = cubre la banda, ambar = parcial, rojo = no resuena, gris = sin datos. Linea roja discontinua = minimo exigido.', { size: 8, color: [93, 106, 115], gap: 4 });
 
   // Datos de la medida

@@ -514,3 +514,17 @@ test('modo Simple: niveles de ROE (1-1,5 muy bien, 1,5-2 aceptable, 2-3 mejorabl
   // en modo avanzado no aparecen los niveles
   assert.ok(!/acoplada/.test(A.veredicto(picos, [], 10).titulo));
 });
+
+test('modo Simple: cada nivel de ROE trae su consejo de uso y sale en el veredicto y la recomendacion', async () => {
+  assert.equal(A.nivelROE(2.5).consejo, 'Transmitir poco y a potencia reducida');
+  assert.equal(A.nivelROE(4).consejo, 'No transmitir salvo emergencias');
+  const u = 20 * Math.log10(3), med = await barrido(776.7e6, 957e6, 601), picos = A.resonancias(med, u);
+  const v = A.veredicto(picos, [], u, 'roe');
+  assert.equal(v.lineas[0], 'Se puede usar con normalidad.');
+  assert.equal(A.recomendacion(med, picos, { fMin: 863e6, fMax: 870e6 }, u, 'roe').lineas[1], 'Se puede usar con normalidad.');
+  // una antena mal adaptada: ROE de ~4 a la resonancia (la simulada de 2,44 GHz, gmin 0,22, da ROE ~1,6; se fuerza con otro umbral)
+  const mala = { vswr: 4.2, rl: 4.4 };
+  assert.match(A.textoAdaptacion(mala, 'roe'), /mal acoplada/);
+  // en Avanzado no hay consejos de uso
+  assert.ok(!A.veredicto(picos, [], 10).lineas.some(l => /transmitir|usar con normalidad/i.test(l)));
+});

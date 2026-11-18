@@ -32,8 +32,10 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    campo en dB (10 por defecto = ROE 1,92). Cada modo fija `ultimo.umbral` al cambiar de modo. Los textos reciben `unidad` ('roe'|'rl')
    (`textoAdaptacion`, `textoUmbral`, `explicacionROE` en `analisis.js`); en Simple no debe aparecer ningún «dB» (hay un test).
    Niveles de ROE del modo Simple (`NIVELES_ROE`, también zonas de color del gráfico y leyenda): 1–1,5 muy bien acoplada, 1,5–2
-   aceptable, 2–3 mejorable, más de 3 mal acoplada; el límite de «aceptable» es el criterio (ROE 2). Si se cambian, tocar también
-   la leyenda de `index.html` y el texto del PDF.
+   aceptable, 2–3 mejorable («transmitir poco y a potencia reducida»), más de 3 mal acoplada («no transmitir salvo emergencias»);
+   el límite de «aceptable» es el criterio (ROE 2) y no hay línea de umbral en el gráfico. Cada nivel tiene su `consejo`, que sale en
+   el veredicto y la recomendación. Si se cambian, tocar también la leyenda de `index.html` y el texto del PDF. La banda medida se
+   marca con borde sólido, ▼ y su nombre en el margen superior (`MARGEN.t` = 30; el nombre solo si hay ≤ 3 bandas).
 7. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 
