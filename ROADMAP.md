@@ -63,8 +63,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
 
 ## Fase 2 — Radioaficionados (📡, 🟡)
 
-- [ ] 📡 **Plan de banda por región y modo**: segmentos CW/SSB/digital/FM de cada banda (IARU R1/R2/R3) en la gráfica; elegir
-      «quiero la antena centrada en la parte de SSB de 20 m» en lugar de la banda entera. **M**
+- [x] 📡 **Plan de banda por región y modo** (18-11, primera versión): en las bandas de HF (160–10 m) el modo Simple pregunta «¿para qué parte de la banda quieres ajustar la antena?» (toda la banda, CW, fonía, digitales de banda estrecha, FT8, FT4, WSPR) con los segmentos de la IARU R1 y la ARRL (`segmentos_hf.json`); se mide la banda entera y se juzga el segmento elegido. Tabla «cómo va la antena en cada parte de la banda» con el nivel de ROE y qué hacer en cada modo, y comparación con la medida anterior (línea gris) para ir ajustando. Segmentos orientativos: los de R1 son de memoria (falta contrastarlos con el PDF oficial) y falta la CNAF; las frecuencias de FT8, FT4 y WSPR salen de WSJT-X. Falta: 60 m por canales, VHF/UHF, JS8 y otros modos, y las normas por licencia. **M**
 - [ ] 📡 **Antenas multibanda**: objetivo con varias bandas a la vez (dipolo en abanico, EFHW con 49:1, G5RV, verticales con
       trampas) y veredicto por banda; aviso cuando ajustar una mueve otra. **M**
 - [ ] 📡🟡 **Medidas de coaxial**: factor de velocidad, longitud eléctrica, pérdida a una frecuencia y **stubs** (λ/4, λ/2,

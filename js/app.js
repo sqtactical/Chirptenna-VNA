@@ -1,7 +1,7 @@
 import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
 import {
-  calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
+  calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
@@ -100,6 +100,7 @@ function poblarObjetivo() {
     sel.value = String(i >= 0 ? i : 0);
   }
   $('campo-fobj').hidden = sel.value !== 'custom';
+  poblarSegmentos();
 }
 
 function objetivoActual() {
@@ -111,7 +112,41 @@ function objetivoActual() {
     return { fMin: f, fMax: f, banda: { servicio: 'objetivo', nombre: `${(f / 1e6).toFixed(3)} MHz`, region: [], f_min: f / 1e6, f_max: f / 1e6 } };
   }
   const b = listaObj[+v];
-  return b ? { fMin: b.f_min * 1e6, fMax: b.f_max * 1e6, banda: b } : null;
+  if (!b) return null;
+  // Segmento de una banda de HF (CW, fonía, FT8...): se juzga ese tramo, pero se mide la banda entera (+ margen) para ver los demás
+  const seg = segmentoElegido(b);
+  if (seg) {
+    return {
+      fMin: seg.f_min * 1e6, fMax: seg.f_max * 1e6, segmento: seg, bandaCompleta: b,
+      rango: { min: b.f_min * 1e6, max: b.f_max * 1e6 },
+      banda: { servicio: b.servicio, nombre: `${b.nombre} · ${seg.nombre}`, region: b.region, f_min: seg.f_min, f_max: seg.f_max },
+    };
+  }
+  return { fMin: b.f_min * 1e6, fMax: b.f_max * 1e6, banda: b, bandaCompleta: b };
+}
+
+// Segmentos por modo de la banda elegida (solo HF): lista para el selector «¿Para qué parte de la banda?»
+let segCfg = null, segActuales = [];
+function segmentoElegido(banda) {
+  const v = $('segmento')?.value;
+  if (!v || !segActuales.length) return null;
+  return segActuales.find(s => s.id === v) ?? null;
+}
+
+function poblarSegmentos() {
+  const sel = $('segmento'), v = $('objetivo').value;
+  const b = v === 'custom' || v === '' ? null : listaObj[+v];
+  segActuales = b && segCfg ? segmentosDeBanda(segCfg, b, $('region').value) : [];
+  const previo = sel.value;
+  sel.innerHTML = '';
+  $('campo-segmento').hidden = !segActuales.length;
+  if (!segActuales.length) return;
+  sel.add(new Option(`Toda la banda (${b.f_min}–${b.f_max} MHz)`, ''));
+  for (const s of segActuales) {
+    const rango = s.puntual ? `${s.f_min.toFixed(3)} MHz` : `${s.f_min}–${s.f_max} MHz`;
+    sel.add(new Option(`${s.nombre} (${rango})${s.nota && !s.puntual ? ' ·  ' + s.nota : ''}`, s.id));
+  }
+  sel.value = [...sel.options].some(o => o.value === previo) ? previo : '';
 }
 
 // ---------- Calibracion ----------
@@ -150,7 +185,8 @@ function rangoPlan() {
     const obj = objetivoActual();
     if (obj) {
       const m = Math.min(0.95, Math.max(0, +$('margen').value || 0) / 100);
-      return { fIni: Math.max(lim[0], obj.fMin * (1 - m)), fFin: Math.min(lim[1], obj.fMax * (1 + m)), desc: 'la banda objetivo con su margen lateral' };
+      const base = obj.rango ?? { min: obj.fMin, max: obj.fMax };
+      return { fIni: Math.max(lim[0], base.min * (1 - m)), fFin: Math.min(lim[1], base.max * (1 + m)), desc: 'la banda objetivo con su margen lateral' };
     }
   }
   if (modo === 'avanzado') return { fIni: Math.max(lim[0], +$('fini').value * 1e3), fFin: Math.min(lim[1], +$('ffin').value * 1e6), desc: 'el barrido general que has configurado' };
@@ -173,7 +209,10 @@ function evaluarTodo(medida, umbral) {
   const picos = resonancias(medida, umbral);
   const dudosos = resonanciasDudosas(medida, picos);
   const reco = obj ? recomendacion(medida, picos, obj, umbral, unidad(), { multibanda: $('multibanda').checked }) : null;
-  return { evaluacion, picos, dudosos, reco, obj };
+  // cobertura por modo (CW, fonía, FT8...) de la banda objetivo, si es de HF
+  const segmentos = obj?.bandaCompleta ? segmentosDeBanda(segCfg, obj.bandaCompleta, $('region').value) : [];
+  const cobertura = segmentos.length ? coberturaSegmentos(medida, segmentos, umbral) : [];
+  return { evaluacion, picos, dudosos, reco, obj, cobertura };
 }
 
 async function medir() {
@@ -183,8 +222,9 @@ async function medir() {
     // Una banda con margen lateral: borde inferior -X % y borde superior +X %, por si la antena no resuena justo en ella
     if (!obj) return estado('Elige una banda objetivo', true);
     const margen = Math.min(0.95, Math.max(0, +$('margen').value || 0) / 100);
-    fIni = Math.max(driver.fMinHz, obj.fMin * (1 - margen));
-    fFin = Math.min(driver.fMaxHz, obj.fMax * (1 + margen));
+    const base = obj.rango ?? { min: obj.fMin, max: obj.fMax }; // con un segmento se mide la banda entera
+    fIni = Math.max(driver.fMinHz, base.min * (1 - margen));
+    fFin = Math.min(driver.fMaxHz, base.max * (1 + margen));
     if (fFin <= fIni * 1.05) return estado('La banda objetivo queda fuera del rango del equipo', true);
     puntos = 601; esp = 'log'; afinar = modo === 'simple' ? true : $('afinar').checked;
   } else if (modo === 'simple') {
@@ -229,9 +269,14 @@ async function medir() {
       if (afinado) { medida = calcular(crudo); res = evaluarTodo(medida, umbral); }
     }
     const centro = obj ? (obj.fMin + obj.fMax) / 2 : medida.freq[0];
+    // Medida anterior del mismo objetivo y del mismo rango: se superpone en el gráfico y se compara en el texto (asistente de ajuste)
+    const clave = obj ? `${(obj.bandaCompleta ?? obj.banda).nombre}|${fIni.toFixed(0)}|${fFin.toFixed(0)}|${driver.id}` : null;
+    const previo = ultimo && clave && ultimo.clave === clave
+      ? { freq: ultimo.medida.freq, vswr: ultimo.medida.vswr, fecha: ultimo.fecha, est: estadisticaBanda(ultimo.medida, obj.fMin, obj.fMax, umbral) }
+      : null;
     ultimo = {
       crudo, medida, ...res, umbral, fecha: new Date(), afinado, calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null,
-      idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro),
+      idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo,
     };
     pitido(1320, 250);
     estado(`Listo: ${crudo.freq.length} puntos en ${((performance.now() - t0) / 1000).toFixed(1)} s${afinado ? ' (con afinado)' : ''}`);
@@ -247,6 +292,37 @@ async function medir() {
 }
 
 // ---------- Presentacion ----------
+// Qué ha cambiado desde la medida anterior de este mismo objetivo (el efecto de lo que acabas de cortar o alargar)
+function comparacionPrevia() {
+  const p = ultimo.previo, e = ultimo.reco?.est;
+  if (!p || !e) return null;
+  const hora = p.fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const d = e.roeMax - p.est.roeMax, rel = Math.abs(d) / p.est.roeMax;
+  const tend = rel < 0.05 ? 'prácticamente igual' : d < 0 ? 'mejor' : 'peor';
+  return `Respecto a la medida anterior (${hora}, línea gris del gráfico): ROE en el peor punto del objetivo ${p.est.roeMax.toFixed(2)} → ${e.roeMax.toFixed(2)} (${tend}); en el mejor punto ${p.est.roeMin.toFixed(2)} → ${e.roeMin.toFixed(2)}.`;
+}
+
+// Tabla «cómo va la antena en cada parte de la banda» (CW, fonía, digitales, FT8...) para las bandas de HF
+function mostrarModos() {
+  const filas = ultimo.cobertura ?? [];
+  $('tarjeta-modos').hidden = !filas.length;
+  if (!filas.length) return;
+  const sel = ultimo.obj?.segmento?.id;
+  const tb = $('modos');
+  tb.innerHTML = '<tr><th>Parte de la banda</th><th>Rango</th><th>ROE (mejor a peor)</th><th>Resultado</th><th>Qué hacer</th></tr>';
+  for (const f of filas) {
+    const s = f.segmento, rango = s.puntual ? `${s.f_min.toFixed(3)} MHz` : `${s.f_min} – ${s.f_max} MHz`;
+    if (!f.medido) { tb.innerHTML += `<tr><td>${s.nombre}</td><td>${rango}</td><td colspan="3">fuera de lo medido</td></tr>`; continue; }
+    const roe = f.est.sinPuntos || s.puntual ? f.est.roeMin.toFixed(2) : `${f.est.roeMin.toFixed(2)} a ${f.est.roeMax.toFixed(2)}`;
+    tb.innerHTML += `<tr class="${s.id === sel ? 'fila-elegida' : ''}"><td>${s.nombre}${s.id === sel ? ' ◀ ajustando' : ''}</td><td>${rango}</td><td>${roe}</td>` +
+      `<td><span class="nivel" style="--c:${f.nivel.color}">${f.nivel.etiqueta}</span></td><td>${f.nivel.consejo}</td></tr>`;
+  }
+  const bien = filas.filter(f => f.medido && ['muy_bien', 'aceptable'].includes(f.nivel.id)).map(f => f.segmento.nombre);
+  const mal = filas.filter(f => f.medido && ['mejorable', 'mal'].includes(f.nivel.id)).map(f => f.segmento.nombre);
+  $('resumen-modos').innerHTML = `<p>${bien.length ? `<b>Puedes usarla con normalidad en:</b> ${bien.join(', ')}.` : '<b>Ahora mismo no está bien adaptada en ninguna parte de la banda.</b>'}` +
+    `${mal.length ? ` <b>Con cuidado o mejor no:</b> ${mal.join(', ')}.` : ''}</p>`;
+}
+
 function mostrar() {
   if (!ultimo) return;
   $('resultados').hidden = false;
@@ -260,9 +336,14 @@ function mostrar() {
     r.replaceChildren();
     r.appendChild(Object.assign(document.createElement('p'), { className: 'gran', textContent: ultimo.reco.titulo }));
     const ul = document.createElement('ul');
-    for (const l of ultimo.reco.lineas) ul.appendChild(Object.assign(document.createElement('li'), { textContent: l }));
+    const lineas = [...ultimo.reco.lineas];
+    // asistente de ajuste: qué ha cambiado desde la medida anterior de este mismo objetivo
+    const cmp = comparacionPrevia();
+    if (cmp) lineas.unshift(cmp);
+    for (const l of lineas) ul.appendChild(Object.assign(document.createElement('li'), { textContent: l }));
     r.appendChild(ul);
   }
+  mostrarModos();
 
   // Resumen (avanzado)
   const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj });
@@ -319,7 +400,8 @@ function marcasXActivas() {
 function redibujar() {
   if (!ultimo) return;
   const { medida, idx } = ultimo, fm = medida.freq[idx];
-  (unidad() === 'roe' ? dibujarROE : dibujar)($('grafico'), medida, ultimo.evaluacion, ultimo.umbral, { marcadorF: fm, marcasX: marcasXActivas() });
+  const previo = unidad() === 'roe' && ultimo.previo ? remuestrear(ultimo.previo.freq, ultimo.previo.vswr, medida.freq) : undefined;
+  (unidad() === 'roe' ? dibujarROE : dibujar)($('grafico'), medida, ultimo.evaluacion, ultimo.umbral, { marcadorF: fm, marcasX: marcasXActivas(), previo });
   if (modo !== 'avanzado') return;
   dibujarSmith($('smith'), medida, { marcadorIdx: idx });
   dibujarSerie($('g-z'), medida.freq, [{ y: medida.zr, nombre: 'R' }, { y: medida.zx, nombre: 'X', color: '#ef6c00' }], { unidad: 'Ω', marcadorF: fm });
@@ -405,6 +487,7 @@ async function iniciar() {
   if (!('serial' in navigator)) $('aviso-nav').hidden = false;
   try {
     bandasCfg = await (await fetch('./bandas.json')).json();
+    try { segCfg = await (await fetch('./segmentos_hf.json')).json(); } catch { segCfg = null; } // sin él no hay selector de segmentos
   } catch (e) {
     return estado('No se pudo cargar bandas.json (¿abierto sin servidor web?)', true);
   }
@@ -438,7 +521,8 @@ async function iniciar() {
   $('campo-antena-sim').hidden = !$('simulado').checked;
   $('medir').onclick = medir;
   $('region').onchange = () => { poblarObjetivo(); reanalizar(); };
-  $('objetivo').onchange = () => { $('campo-fobj').hidden = $('objetivo').value !== 'custom'; reanalizar(); };
+  $('objetivo').onchange = () => { $('campo-fobj').hidden = $('objetivo').value !== 'custom'; poblarSegmentos(); reanalizar(); };
+  $('segmento').onchange = reanalizar; // se mide la banda entera, así que cambiar de segmento no obliga a medir otra vez
   $('fobj').onchange = reanalizar;
   $('umbral').onchange = () => { if (ultimo) ultimo.umbral = +$('umbral').value; reanalizar(); };
   $('csv').onclick = () => {

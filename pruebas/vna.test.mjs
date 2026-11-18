@@ -736,3 +736,79 @@ test('multibanda: una antena de una banda no se marca como multibanda', async ()
   const r = A.recomendacion(m, picos, { fMin: 863e6, fMax: 870e6 }, 10, 'rl');
   assert.equal(r.multibanda ?? null, null);
 });
+
+// ---------- Segmentos por modo en HF ----------
+const segCfg = JSON.parse(fs.readFileSync(new URL('../segmentos_hf.json', import.meta.url), 'utf8'));
+const bandaHF = (nombre, region) => cfg.bandas.find(b => b.nombre === nombre && (b.region.includes(region) || b.region.includes('global')));
+
+test('segmentos_hf.json: cada segmento cae dentro de su banda (R1 y EE. UU.), no se solapan y los digitales de WSJT-X estan dentro', () => {
+  for (const [nombre, regiones] of Object.entries(segCfg.bandas)) {
+    for (const [reg, lista] of Object.entries(regiones)) {
+      const banda = bandaHF(nombre, reg === 'US' ? 'R2' : 'R1');
+      assert.ok(banda, `${nombre} ${reg}: no esta en bandas.json`);
+      const orden = [...lista].sort((a, b) => a.f_min - b.f_min);
+      orden.forEach((s, i) => {
+        assert.ok(s.f_min < s.f_max, `${nombre} ${reg} ${s.id}`);
+        assert.ok(s.f_min >= banda.f_min - 1e-9 && s.f_max <= banda.f_max + 1e-9, `${nombre} ${reg} ${s.id} fuera de la banda ${banda.f_min}-${banda.f_max}`);
+        if (i) assert.ok(s.f_min >= orden[i - 1].f_max - 1e-9, `${nombre} ${reg}: ${s.id} se solapa con ${orden[i - 1].id}`);
+      });
+    }
+    for (const [modo, dial] of Object.entries(segCfg.digitales[nombre] ?? {})) {
+      const banda = bandaHF(nombre, 'R1');
+      assert.ok(dial >= banda.f_min && dial + segCfg.ancho_senal_digital_MHz <= banda.f_max, `${nombre} ${modo} ${dial}`);
+    }
+  }
+  // los dial de FT8 verificados en el codigo de WSJT-X
+  assert.deepEqual(['160 m', '80 m', '40 m', '30 m', '20 m', '17 m', '15 m', '12 m', '10 m'].map(b => segCfg.digitales[b].ft8), [1.840, 3.573, 7.074, 10.136, 14.074, 18.100, 21.074, 24.915, 28.074]);
+});
+
+test('segmentosDeBanda: por region, con FT8/FT4/WSPR como segmentos puntuales de 3 kHz', () => {
+  const b40 = bandaHF('40 m', 'R1');
+  const eu = A.segmentosDeBanda(segCfg, b40, 'eu'), us = A.segmentosDeBanda(segCfg, bandaHF('40 m', 'R2'), 'us');
+  assert.deepEqual(eu.filter(s => !s.puntual).map(s => s.id), ['cw', 'digital', 'fonia']);
+  assert.deepEqual(us.filter(s => !s.puntual).map(s => s.id), ['cw_digital', 'fonia']);
+  const ft8 = eu.find(s => s.id === 'ft8');
+  assert.equal(ft8.puntual, true); cercano(ft8.f_min, 7.074, 1e-9); cercano(ft8.f_max - ft8.f_min, 0.003, 1e-9);
+  assert.ok(eu.some(s => s.id === 'ft4') && eu.some(s => s.id === 'wspr'));
+  assert.ok(!A.segmentosDeBanda(segCfg, bandaHF('30 m', 'R1'), 'eu').some(s => s.id === 'fonia'), 'en 30 m no hay fonia');
+  assert.deepEqual(A.segmentosDeBanda(segCfg, bandaHF('2 m', 'R1'), 'eu'), []);          // no es HF
+  assert.deepEqual(A.segmentosDeBanda(null, b40, 'eu'), []);                               // sin fichero
+  // region "todas": 80 m de R2 usa los segmentos de EE. UU.
+  assert.ok(A.segmentosDeBanda(segCfg, bandaHF('80 m', 'R2'), 'todas').some(s => s.id === 'cw_digital'));
+});
+
+test('coberturaSegmentos: la antena de trampas (40 m) va bien en CW, peor en fonia, y se resume por modo', async () => {
+  const d = new DriverSimulado(); d.antena = 'trampas';
+  const m = A.calcular(await d.scan(6.3e6, 7.9e6, 801, () => {}, 'log'));
+  const segs = A.segmentosDeBanda(segCfg, bandaHF('40 m', 'R1'), 'eu');
+  const cob = A.coberturaSegmentos(m, segs, U_SIMPLE), por = id => cob.find(f => f.segmento.id === id);
+  assert.ok(cob.every(f => f.medido));
+  assert.ok(['muy_bien', 'aceptable'].includes(por('cw').nivel.id), `CW: ${por('cw').nivel.id} ${por('cw').est.roeMax}`);
+  assert.ok(['mejorable', 'mal'].includes(por('fonia').nivel.id), `fonia: ${por('fonia').nivel.id}`);
+  assert.ok(por('cw').est.roeMax < por('fonia').est.roeMax);
+  assert.equal(por('ft8').est.sinPuntos, false);
+  // fuera de lo medido
+  const corto = A.calcular(await d.scan(6.9e6, 7.05e6, 201, () => {}, 'lineal'));
+  assert.equal(A.coberturaSegmentos(corto, segs, U_SIMPLE).find(f => f.segmento.id === 'fonia').medido, false);
+});
+
+test('remuestrear: interpola en log f y deja NaN fuera de lo medido', () => {
+  const fo = Float64Array.from([1e6, 2e6, 4e6]), vo = Float64Array.from([1, 3, 3]);
+  const r = A.remuestrear(fo, vo, Float64Array.from([0.5e6, 1e6, Math.sqrt(2) * 1e6, 2e6, 3e6, 8e6]));
+  assert.ok(Number.isNaN(r[0]) && Number.isNaN(r[5]));
+  cercano(r[1], 1, 1e-9); cercano(r[2], 2, 1e-9); cercano(r[3], 3, 1e-9); cercano(r[4], 3, 1e-9);
+});
+
+test('recomendacion: una banda ancha (80 m) avisa de que no se cubre entera y sugiere elegir un segmento', () => {
+  // dipolo de 80 m centrado en 3,65 MHz y de Q alta: en los bordes de la banda la ROE sube a ~4
+  const f0 = 3.65e6, n = 801, freq = Float64Array.from({ length: n }, (_, i) => 2.8e6 * (4.8 / 2.8) ** (i / (n - 1)));
+  const re = new Float64Array(n), im = new Float64Array(n);
+  freq.forEach((f, i) => { const R = 40, X = 800 * (f / f0 - f0 / f), den = (R + 50) ** 2 + X * X; re[i] = (R * R + X * X - 2500) / den; im[i] = (100 * X) / den; });
+  const m = A.calcular({ freq, re, im }), picos = A.resonancias(m, U_SIMPLE);
+  const r = A.recomendacion(m, picos, { fMin: 3.5e6, fMax: 3.8e6 }, U_SIMPLE, 'roe');
+  assert.ok(r.lineas.some(l => /Esta banda es ancha \(8 %/.test(l) && /elige el segmento/.test(l)), r.lineas.join('\n'));
+  // un segmento estrecho (FT8) no lleva el aviso de banda ancha
+  const ft8 = A.recomendacion(m, picos, { fMin: 3.573e6, fMax: 3.576e6 }, U_SIMPLE, 'roe');
+  assert.ok(!ft8.lineas.some(l => /Esta banda es ancha/.test(l)));
+  assert.ok(A.coberturaSegmentos(m, [{ id: 'ft8', nombre: 'FT8', f_min: 3.573, f_max: 3.576, puntual: true }], U_SIMPLE)[0].nivel.id === 'mejorable'); // ROE ~2,1 a 3,575 MHz: el segmento de FT8 queda un poco fuera
+});

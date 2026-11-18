@@ -146,19 +146,64 @@ export function curvaIrregular(medida, picos, { fMin, fMax }, umbralDb) {
   return null;
 }
 
+// Un objetivo «puntual»: una frecuencia exacta o un tramo diminuto (p. ej. los 3 kHz de una señal FT8), que se juzga por un valor, no por un rango.
+const esPuntual = (est, fMin, fMax) => est.sinPuntos || fMin === fMax || (fMax - fMin) / ((fMin + fMax) / 2) < 0.001;
+
 // Líneas del modo Simple sobre la banda objetivo: ROE mínima y máxima, nivel de la peor y consejo de uso.
 function lineasBanda(est, fMin, fMax, umbralDb) {
+  const puntual = esPuntual(est, fMin, fMax);
   const peor = nivelROE(est.roeMax);
   const l = [];
-  if (est.sinPuntos || fMin === fMax) l.push(`A ${fmtF(est.fMejor)}: ROE ${est.roeMin.toFixed(2)} (${nivelROE(est.roeMin).etiqueta.toLowerCase()}).`);
+  if (puntual) l.push(`A ${fmtF(est.fMejor)}: ROE ${est.roeMin.toFixed(2)} (${nivelROE(est.roeMin).etiqueta.toLowerCase()}).`);
   else l.push(`En la banda (${fmtF(fMin)} a ${fmtF(fMax)}): ROE entre ${est.roeMin.toFixed(2)} y ${est.roeMax.toFixed(2)}; en el peor punto, ${peor.etiqueta.toLowerCase()}.`);
-  l.push(`${(est.sinPuntos || fMin === fMax ? nivelROE(est.roeMin) : peor).consejo}.`);
-  if (!est.sinPuntos && fMin !== fMax && est.fracBuena < 1) {
+  l.push(`${(puntual ? nivelROE(est.roeMin) : peor).consejo}.`);
+  if (!puntual && est.fracBuena < 1) {
     l.push(est.fracBuena > 0
       ? `Solo el ${(est.fracBuena * 100).toFixed(0)} % de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor frecuencia es ${fmtF(est.fMejor)} (ROE ${est.roeMin.toFixed(2)}).`
       : `Ninguna frecuencia de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor es ${fmtF(est.fMejor)} (ROE ${est.roeMin.toFixed(2)}).`);
   }
   return l;
+}
+
+// ---------- Segmentos por modo en HF (CW, fonía, digitales, FT8...) ----------
+// cfg = contenido de segmentos_hf.json. region = valor del selector ('eu' | 'us' | 'todas'). Devuelve [] si la banda no tiene segmentos.
+export function segmentosDeBanda(cfg, banda, region) {
+  const datos = cfg?.bandas?.[banda?.nombre];
+  if (!datos) return [];
+  const clave = region === 'eu' ? 'R1' : region === 'us' ? 'US' : (banda.region.includes('R1') || banda.region.includes('global') ? 'R1' : 'US');
+  const lista = (datos[clave] ?? []).map(s => ({ ...s }));
+  const dig = cfg.digitales?.[banda.nombre] ?? {}, ancho = cfg.ancho_senal_digital_MHz ?? 0.003;
+  const nombres = { ft8: 'FT8', ft4: 'FT4', wspr: 'WSPR' };
+  for (const [id, dial] of Object.entries(dig)) {
+    // la señal ocupa unos 3 kHz por encima de la frecuencia de dial
+    lista.push({ id, nombre: nombres[id] ?? id.toUpperCase(), f_min: dial, f_max: +(dial + ancho).toFixed(6), puntual: true, nota: `Dial de WSJT-X ${dial.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} MHz` });
+  }
+  return lista;
+}
+
+// ROE de cada segmento en lo medido (peor y mejor punto, % de segmento en el criterio) y su nivel de ROE (por el peor punto).
+export function coberturaSegmentos(medida, segmentos, umbralDb) {
+  const fmin = medida.freq[0], fmax = medida.freq[medida.freq.length - 1];
+  return segmentos.map(s => {
+    const f0 = s.f_min * 1e6, f1 = s.f_max * 1e6;
+    if (f1 < fmin || f0 > fmax) return { segmento: s, medido: false };
+    const est = estadisticaBanda(medida, f0, f1, umbralDb);
+    return { segmento: s, medido: true, est, nivel: nivelROE(s.puntual || est.sinPuntos ? est.roeMin : est.roeMax) };
+  });
+}
+
+// Pasa una curva medida en `freqO` a la rejilla `freqD` (interpolación lineal en log f); NaN fuera del rango medido.
+export function remuestrear(freqO, valO, freqD) {
+  const out = new Float64Array(freqD.length), n = freqO.length;
+  let j = 0;
+  for (let i = 0; i < freqD.length; i++) {
+    const f = freqD[i];
+    if (f < freqO[0] || f > freqO[n - 1]) { out[i] = NaN; continue; }
+    while (j < n - 2 && freqO[j + 1] < f) j++;
+    const t = (Math.log(f) - Math.log(freqO[j])) / (Math.log(freqO[j + 1]) - Math.log(freqO[j]));
+    out[i] = valO[j] + t * (valO[j + 1] - valO[j]);
+  }
+  return out;
 }
 
 // ¿Es una antena multibanda? Sí si el usuario lo ha indicado o si, en lo medido, hay otra resonancia clara (ROE ≲ 3) al menos un 40 %
@@ -203,6 +248,10 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
   const bien = p.rl >= umbralDb;
   const cubre = p.fLo != null && p.fLo <= fMin && p.fHi >= fMax;
   const lineas = [...intro, `Resonancia más cercana: ${fmt(p.f)} (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : textoAdaptacion(p, unidad)}). Objetivo: ${fmt(fc)}.`];
+  // Banda ancha (típico en HF: 80 m es un 8 % de su frecuencia): una antena resonante sencilla rara vez la cubre entera con ROE 2
+  if (unidad === 'roe' && !(bien && cubre) && (fMax - fMin) / fc > 0.04) {
+    lineas.push(`Esta banda es ancha (${(((fMax - fMin) / fc) * 100).toFixed(0)} % de su frecuencia): una antena resonante sencilla rara vez la cubre entera con ROE 2. Si no la necesitas toda, elige el segmento que más uses (CW, fonía, digital, FT8…) y la antena se ajustará a ese.`);
+  }
   const irreg = bien && cubre ? null : curvaIrregular(medida, picos, { fMin, fMax }, umbralDb);
   if (irreg) {
     lineas.push(`${irreg.motivo}.`);
@@ -369,7 +418,7 @@ export function veredicto(picos, evaluacion, umbralDb, unidad = 'rl', ctx = null
   if (unidad === 'roe' && ctx?.medida && ctx.obj) {
     const { fMin, fMax, banda } = ctx.obj;
     const est = estadisticaBanda(ctx.medida, fMin, fMax, umbralDb);
-    const puntual = est.sinPuntos || fMin === fMax;
+    const puntual = esPuntual(est, fMin, fMax);
     const peor = nivelROE(puntual ? est.roeMin : est.roeMax);
     const nom = banda && banda.servicio !== 'objetivo' ? `${banda.servicio.toUpperCase()} ${banda.nombre}` : fmt((fMin + fMax) / 2);
     const titulo = puntual

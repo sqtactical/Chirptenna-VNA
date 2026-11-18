@@ -71,6 +71,7 @@
         <select id="estudio"><option value="banda">Una banda (con margen)</option><option value="general">Barrido general</option></select>
       </label>
       <label class="solo-banda">Banda objetivo <select id="objetivo"></select></label>
+      <label id="campo-segmento" class="solo-banda" hidden>¿Para qué parte de la banda quieres ajustar la antena? <select id="segmento"></select></label>
       <label id="campo-fobj" class="solo-banda" hidden>Frecuencia objetivo (MHz)<input id="fobj" type="number" value="868" min="0.05" step="any"></label>
       <label class="solo-banda">Margen lateral (%)<input id="margen" type="number" value="10" min="0" max="100" step="5"></label>
       <label>Retardo (s)<input id="retardo" type="number" value="10" min="0" max="120"></label>
@@ -97,6 +98,13 @@
     <section id="tarjeta-reco" class="tarjeta reco" hidden>
       <h2>Qué hacer con la antena</h2>
       <div id="reco"></div>
+    </section>
+
+    <section id="tarjeta-modos" class="tarjeta" hidden>
+      <h2>Cómo va la antena en cada parte de la banda</h2>
+      <div id="resumen-modos"></div>
+      <div class="tabla-scroll"><table id="modos"></table></div>
+      <div class="leyenda">Segmentos orientativos de los planes de banda IARU R1 (Europa) y ARRL (EE. UU.); comprueba el plan de tu país y los privilegios de tu licencia. Las frecuencias de FT8, FT4 y WSPR son las de dial de WSJT-X (la señal ocupa unos 3 kHz por encima).</div>
     </section>
 
     <section class="tarjeta resumen">

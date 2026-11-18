@@ -57,7 +57,8 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    intermedia = tramo interior o entre trampas, % sobre su propia longitud) y pide ajustar una banda cada vez. En banda única con margen
    del 10 % no se ven otras resonancias: hay que marcar la opción o subir el margen lateral. Es un texto general: la app no sabe qué
    tramo físico es cada uno.
-10. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
+10. **Asistente de ajuste por segmento en HF** (`segmentos_hf.json`, `segmentosDeBanda`, `coberturaSegmentos`): en las bandas de HF el Simple pregunta para qué parte de la banda se ajusta (toda, CW, fonía, digitales, FT8/FT4/WSPR). Con un segmento elegido se MIDE la banda entera (+ margen; `obj.rango`) y se JUZGA el segmento (`obj.fMin/fMax`), así que cambiar de segmento no obliga a medir otra vez. Segmentos por región (`R1` para «Europa», `US` para «EE. UU.»); FT8/FT4/WSPR son segmentos «puntuales» de 3 kHz sobre el dial de WSJT-X (verificados en su código); los segmentos IARU R1 son de memoria y están SIN contrastar (`_verificado` lo dice). Objetivos puntuales (< 0,1 % de la frecuencia) se juzgan por un valor, no por un rango. La banda ancha (> 4 % de su frecuencia, típico de HF) avisa de que una antena resonante sencilla rara vez la cubre entera. Cada medida del mismo objetivo y rango guarda la anterior (`ultimo.previo`): línea gris en el gráfico de ROE y frase «respecto a la medida anterior».
+11. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 
 ## Pendiente

@@ -118,3 +118,7 @@ progress { width: 100%; }
 .niveles i { width: .9rem; height: .9rem; border-radius: 3px; display: inline-block; opacity: .85; flex: none; }
 
 .fila-toggle { display: flex; flex-direction: row; align-items: center; gap: .5rem; margin: .4rem 0 .2rem; font-size: .9rem; }
+
+/* Cobertura por modo (HF) */
+.nivel { display: inline-block; padding: 0 .5em; border-radius: 4px; border-left: 6px solid var(--c, #888); background: color-mix(in srgb, var(--c, #888) 18%, transparent); white-space: nowrap; }
+tr.fila-elegida td { font-weight: 600; background: color-mix(in srgb, var(--primario) 10%, transparent); }

@@ -1,0 +1,117 @@
+{
+  "_aviso": "Segmentos por modo de las bandas de HF, ORIENTATIVOS: recomendaciones de los planes de banda IARU Región 1 (clave R1) y ARRL (clave US), no una norma legal. Los privilegios dependen de tu país y de tu licencia (sobre todo en fonía en EE. UU.). Comprueba el plan de tu país antes de usarlos. Frecuencias en MHz.",
+  "_verificado": "18-11-2026. FT8, FT4 y WSPR: frecuencias de dial por defecto de WSJT-X (models/FrequencyList.cpp del espejo saitohirga/WSJT-X); en 80, 40, 30, 17 y 12 m el FT4 figura como provisional en esa fuente. Segmentos de EE. UU.: contrastados solo en parte con la página de plan de banda de la ARRL. Segmentos IARU R1: de memoria (el PDF oficial es una imagen escaneada que no se pudo leer): SIN contrastar.",
+  "ancho_senal_digital_MHz": 0.003,
+  "digitales": {
+    "160 m": { "ft8": 1.840, "wspr": 1.8366 },
+    "80 m": { "ft8": 3.573, "ft4": 3.575, "wspr": 3.5686 },
+    "40 m": { "ft8": 7.074, "ft4": 7.0475, "wspr": 7.0386 },
+    "30 m": { "ft8": 10.136, "ft4": 10.140, "wspr": 10.1387 },
+    "20 m": { "ft8": 14.074, "ft4": 14.080, "wspr": 14.0956 },
+    "17 m": { "ft8": 18.100, "ft4": 18.104, "wspr": 18.1046 },
+    "15 m": { "ft8": 21.074, "ft4": 21.140, "wspr": 21.0946 },
+    "12 m": { "ft8": 24.915, "ft4": 24.919, "wspr": 24.9246 },
+    "10 m": { "ft8": 28.074, "ft4": 28.180, "wspr": 28.1246 }
+  },
+  "bandas": {
+    "160 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 1.810, "f_max": 1.838 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 1.838, "f_max": 1.843 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 1.843, "f_max": 2.000 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 1.800, "f_max": 1.843 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 1.843, "f_max": 2.000 }
+      ]
+    },
+    "80 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 3.500, "f_max": 3.570 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 3.570, "f_max": 3.600 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 3.600, "f_max": 3.800 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 3.500, "f_max": 3.600 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 3.600, "f_max": 4.000, "nota": "Según licencia: Extra desde 3,600; General desde 3,800" }
+      ]
+    },
+    "40 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 7.000, "f_max": 7.040 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 7.040, "f_max": 7.060 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 7.060, "f_max": 7.200, "nota": "El FT8 (7,074) está dentro de este segmento" }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 7.000, "f_max": 7.125 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 7.125, "f_max": 7.300, "nota": "Según licencia: General desde 7,175" }
+      ]
+    },
+    "30 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 10.100, "f_max": 10.130 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 10.130, "f_max": 10.150 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales (en 30 m no hay fonía)", "f_min": 10.100, "f_max": 10.150 }
+      ]
+    },
+    "20 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 14.000, "f_max": 14.070 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 14.070, "f_max": 14.099 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 14.101, "f_max": 14.350 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 14.000, "f_max": 14.150 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 14.150, "f_max": 14.350, "nota": "Según licencia: General desde 14,225" }
+      ]
+    },
+    "17 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 18.068, "f_max": 18.095 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 18.095, "f_max": 18.109 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 18.111, "f_max": 18.168 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 18.068, "f_max": 18.110 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 18.110, "f_max": 18.168 }
+      ]
+    },
+    "15 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 21.000, "f_max": 21.070 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 21.070, "f_max": 21.149 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 21.151, "f_max": 21.450 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 21.000, "f_max": 21.200 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 21.200, "f_max": 21.450, "nota": "Según licencia: General desde 21,275" }
+      ]
+    },
+    "12 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 24.890, "f_max": 24.915 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 24.915, "f_max": 24.931 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 24.931, "f_max": 24.990 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 24.890, "f_max": 24.930 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 24.930, "f_max": 24.990 }
+      ]
+    },
+    "10 m": {
+      "R1": [
+        { "id": "cw", "nombre": "CW", "f_min": 28.000, "f_max": 28.070 },
+        { "id": "digital", "nombre": "Modos digitales de banda estrecha", "f_min": 28.070, "f_max": 28.190 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 28.225, "f_max": 29.200, "nota": "Incluye todos los modos; las balizas están en 28,190–28,225" },
+        { "id": "fm", "nombre": "FM", "f_min": 29.510, "f_max": 29.700 }
+      ],
+      "US": [
+        { "id": "cw_digital", "nombre": "CW y digitales", "f_min": 28.000, "f_max": 28.300 },
+        { "id": "fonia", "nombre": "Fonía (SSB)", "f_min": 28.300, "f_max": 29.300 },
+        { "id": "fm", "nombre": "FM", "f_min": 29.300, "f_max": 29.700 }
+      ]
+    }
+  }
+}

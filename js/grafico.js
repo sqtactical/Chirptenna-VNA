@@ -112,14 +112,18 @@ export function dibujarSerie(canvas, freq, series, opts = {}) {
   }
   // curvas
   series.forEach((s, k) => {
-    c.strokeStyle = s.color ?? t.linea; c.lineWidth = 1.6; c.beginPath();
+    c.strokeStyle = s.color ?? t.linea; c.lineWidth = s.discontinua ? 1.3 : 1.6; c.beginPath();
+    if (s.discontinua) c.setLineDash([5, 4]);
+    let pluma = false; // levantada con los NaN (parte no medida de una curva remuestreada)
     for (let i = 0; i < freq.length; i++) {
+      if (!Number.isFinite(s.y[i])) { pluma = false; continue; }
       const x = X(freq[i]), y = Y(s.y[i]);
-      i ? c.lineTo(x, y) : c.moveTo(x, y);
+      pluma ? c.lineTo(x, y) : c.moveTo(x, y);
+      pluma = true;
     }
-    c.stroke();
+    c.stroke(); c.setLineDash([]);
     if (series.length > 1 && s.nombre) {
-      c.fillStyle = s.color ?? t.linea; c.fillText('— ' + s.nombre, m.l + 8 + k * 90, m.t + 24);
+      c.fillStyle = s.color ?? t.linea; c.fillText('— ' + s.nombre, m.l + 8 + k * 125, m.t + 24);
     }
   });
   // resonancia eléctrica (X = 0): línea violeta discontinua con su etiqueta abajo
@@ -155,7 +159,10 @@ export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
 export function dibujarROE(canvas, medida, evaluacion, umbralDb, opts = {}) {
   let desde = 1;
   const regionesY = NIVELES_ROE.map(n => { const r = { desde, hasta: n.max, color: n.color, etiqueta: `${n.etiqueta} (${n.max === Infinity ? `más de ${desde}` : `${desde}–${n.max}`})`.replace(/\./g, ',') }; desde = n.max; return r; });
-  dibujarSerie(canvas, medida.freq, [{ y: medida.vswr }], {
+  // opts.previo: ROE de la medida anterior ya remuestreada a medida.freq (línea gris discontinua) para ver el efecto de un ajuste
+  const series = [{ y: medida.vswr, nombre: 'Ahora' }];
+  if (opts.previo) series.unshift({ y: opts.previo, color: '#9aa0a6', discontinua: true, nombre: 'Medida anterior' });
+  dibujarSerie(canvas, medida.freq, series.length > 1 ? series : [{ y: medida.vswr }], {
     yMin: 1, yMax: 5, evaluacion, regionesY, // sin línea de umbral: el límite de «aceptable» (ROE 2) ya lo marcan las zonas
     titulo: 'ROE (más bajo = mejor adaptada)', ...opts,
   });
