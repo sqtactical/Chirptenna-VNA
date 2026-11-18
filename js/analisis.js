@@ -91,6 +91,24 @@ export function estadisticaBanda({ freq, vswr, rl }, fMin, fMax, umbralDb) {
   return { n: idx.length, sinPuntos, roeMin, roeMax, fMejor, fPeor, fracBuena: buenos / idx.length };
 }
 
+// Resonancia eléctrica: frecuencia donde la reactancia X cruza por cero cerca de `f` (Hz), dentro de ±`rango`.
+// Devuelve { fX, tipo: 'serie' (X sube de − a +, la resonancia habitual) | 'paralelo', desv: fX/f − 1 } o null si no hay cruce.
+// Ojo: el mínimo de ROE es donde mejor se adapta la antena a 50 Ω, y no tiene por qué coincidir con X = 0 (antenas cargadas,
+// fractales, con adaptador o medidas a través de un cable).
+export function reactanciaCero({ freq, zx }, f, rango = 0.12) {
+  let mejor = null;
+  for (let i = 1; i < freq.length; i++) {
+    if (freq[i] < f / (1 + rango)) continue;
+    if (freq[i - 1] > f * (1 + rango)) break;
+    const a = zx[i - 1], b = zx[i];
+    if (a === b || a * b > 0) continue;
+    const fX = freq[i - 1] + (a / (a - b)) * (freq[i] - freq[i - 1]), d = Math.abs(Math.log(fX / f));
+    if (!mejor || d < mejor.d) mejor = { fX, tipo: b > a ? 'serie' : 'paralelo', d };
+  }
+  return mejor && { fX: mejor.fX, tipo: mejor.tipo, desv: mejor.fX / f - 1 };
+}
+export const DESV_REACTANCIA = 0.025; // por encima de un 2,5 % se avisa de que mínimo de ROE y X = 0 no coinciden
+
 // ¿La curva es demasiado irregular para decir «alarga/acorta un X %»? Sí si hay varios mínimos visibles a ambos lados del
 // objetivo (varias resonancias cercanas, como en un fractal o una antena multibanda) o si la ROE oscila dentro de la banda.
 // Devuelve null o { motivo, valles }.
@@ -204,8 +222,12 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
     lineas.push(`A ${fmt(fc)} la antena presenta Z = ${zr.toFixed(1)} ${zx >= 0 ? '+' : '-'} j${Math.abs(zx).toFixed(1)} Ω (${inductiva ? 'inductiva' : 'capacitiva'}): ${coincide ? 'coincide con ese diagnóstico.' : 'no coincide con el diagnóstico; es normal en antenas que no son tipo dipolo o monopolo. Fíate más de la frecuencia de resonancia.'}`);
     if (Math.abs(pct) > 25) lineas.push('El cambio es grande: hazlo en dos pasos y mide entre ellos.');
   }
+  const rx = accion === 'ok' ? null : reactanciaCero(medida, p.f);
+  if (rx && rx.tipo === 'serie' && Math.abs(rx.desv) > DESV_REACTANCIA) {
+    lineas.push(`Ojo: la antena resuena eléctricamente (reactancia cero) a ${fmt(rx.fX)}, un ${(Math.abs(rx.desv) * 100).toFixed(1)} % ${rx.desv > 0 ? 'por encima' : 'por debajo'} de donde mejor se adapta (${fmt(p.f)}). Es habitual en antenas cargadas, fractales o con adaptador, pero el porcentaje de longitud puede no ser fiable: corta o alarga poco a poco y vuelve a medir.`);
+  }
   lineas.push(nota);
-  return { accion, titulo, lineas, fRes: p.f, pct, est };
+  return { accion, titulo, lineas, fRes: p.f, pct, est, rx };
 }
 
 // Anade el indice a cada resonancia para poder situar el cursor.

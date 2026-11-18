@@ -600,3 +600,57 @@ test('modo Simple: niveles de ROE y consejos (1-1,5 muy bien, 1,5-2 aceptable, 2
   assert.equal(A.nivelROE(4).consejo, 'No transmitir salvo emergencias');
   cercano(A.NIVELES_ROE[1].max, A.roeDeRl(U_SIMPLE), 1e-9); // el limite de "Aceptable" es el criterio del modo Simple (ROE 2)
 });
+
+// ---------- Minimo de ROE frente a resonancia electrica (X = 0) ----------
+const zModelo = (f, f0, rDe) => {
+  // Z = R(f) + jX(f): resonancia serie en f0 (X = 0) y una resistencia que crece con f, asi que el mejor ajuste a 50 ohm queda por encima
+  const R = rDe(f), X = 60 * (f / f0 - f0 / f);
+  const den = (R + 50) ** 2 + X * X;
+  return [(R * R + X * X - 2500) / den, (100 * X) / den]; // Gamma = (Z - 50) / (Z + 50)
+};
+const curvaZ = (f0, rDe, a = 0.8, b = 1.3) => {
+  const n = 801, freq = Float64Array.from({ length: n }, (_, i) => f0 * a * (b / a) ** (i / (n - 1)));
+  const re = new Float64Array(n), im = new Float64Array(n);
+  freq.forEach((f, i) => { [re[i], im[i]] = zModelo(f, f0, rDe); });
+  return A.calcular({ freq, re, im });
+};
+
+test('X = 0: se encuentra el cruce de reactancia y su desviacion respecto al minimo de ROE', () => {
+  const f0 = 866e6, med = curvaZ(f0, f => 20 * (f / f0) ** 8);
+  const picos = A.resonancias(med, 5, 0.5);
+  assert.ok(picos.length >= 1);
+  const p = picos[0];
+  assert.ok(p.f > f0 * 1.05, `el minimo de ROE deberia quedar por encima de la resonancia: ${p.f / f0}`);
+  const rx = A.reactanciaCero(med, p.f);
+  assert.equal(rx.tipo, 'serie');
+  cercano(rx.fX, f0, f0 * 0.002, 'X = 0 en f0');
+  assert.ok(rx.desv < -A.DESV_REACTANCIA, `desv ${rx.desv}`);
+});
+
+test('X = 0: si coincide con el minimo de ROE no se avisa (resistencia constante)', () => {
+  const f0 = 866e6, med = curvaZ(f0, () => 50, 0.9, 1.1); // R = 50: el minimo es justo X = 0
+  const picos = A.resonancias(med, 10, 3);
+  const rx = A.reactanciaCero(med, picos[0].f);
+  assert.ok(Math.abs(rx.desv) < 0.005, `desv ${rx.desv}`);
+  const r = A.recomendacion(med, picos, { fMin: 863e6, fMax: 870e6 }, U_SIMPLE, 'roe');
+  assert.ok(!r.lineas.some(l => /resuena eléctricamente/.test(l)));
+});
+
+test('X = 0: la recomendacion avisa cuando minimo de ROE y reactancia cero no coinciden, en Simple y en Avanzado', () => {
+  const f0 = 866e6, med = curvaZ(f0, f => 20 * (f / f0) ** 8);
+  const obj = { fMin: 863e6, fMax: 870e6 };
+  for (const unidad of ['roe', 'rl']) {
+    const u = unidad === 'roe' ? U_SIMPLE : 10, picos = A.resonancias(med, u, 0.5);
+    const r = A.recomendacion(med, picos, obj, u, unidad);
+    const aviso = r.lineas.find(l => /resuena eléctricamente/.test(l));
+    assert.ok(aviso, `${unidad}: ${r.accion}\n${r.lineas.join('\n')}`);
+    assert.match(aviso, /por debajo de donde mejor se adapta/);
+    assert.match(aviso, /el porcentaje de longitud puede no ser fiable/);
+    if (unidad === 'roe') assert.ok(!/\bdB\b/.test(aviso));
+  }
+});
+
+test('X = 0: sin cruce de reactancia cerca no hay aviso ni error', () => {
+  const med = curvaZ(866e6, () => 50, 1.5, 1.8); // lejos de la resonancia: X nunca cruza cerca
+  assert.equal(A.reactanciaCero(med, 1.6 * 866e6, 0.03), null);
+});

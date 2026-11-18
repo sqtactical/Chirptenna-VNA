@@ -1,7 +1,7 @@
 import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado } from './drivers/simulado.js';
 import {
-  calcular, resonancias, resonanciasDudosas, nivelROE, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
+  calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
@@ -281,14 +281,22 @@ function mostrar() {
 
 function tablas() {
   const tp = $('picos');
-  tp.innerHTML = '<tr><th>Resonancia</th><th>Pérdida de retorno</th><th>VSWR</th><th>Ancho de banda</th></tr>';
-  if (!ultimo.picos.length) tp.innerHTML += '<tr><td colspan="4">No se detectan resonancias claras en el rango medido.</td></tr>';
+  tp.innerHTML = '<tr><th>Mínimo de ROE</th><th>Pérdida de retorno</th><th>VSWR</th><th title="Frecuencia donde la reactancia X cruza por cero: la resonancia eléctrica. No siempre coincide con el mínimo de ROE.">Reactancia cero (X = 0)</th><th>Ancho de banda</th></tr>';
+  if (!ultimo.picos.length) tp.innerHTML += '<tr><td colspan="5">No se detectan resonancias claras en el rango medido.</td></tr>';
+  // X = 0 cerca de cada mínimo; ⚠ si se aleja más de un 2,5 % (el porcentaje de longitud puede no ser fiable)
+  const celdaX = p => {
+    const rx = reactanciaCero(ultimo.medida, p.f);
+    if (!rx) return '—';
+    const d = `${rx.desv > 0 ? '+' : ''}${(rx.desv * 100).toFixed(1)} %`;
+    if (rx.tipo === 'paralelo') return `${fmtF(rx.fX)} (${d}, en paralelo)`;
+    return Math.abs(rx.desv) > DESV_REACTANCIA ? `⚠ ${fmtF(rx.fX)} (${d}): no coincide` : `${fmtF(rx.fX)} (${d})`;
+  };
   for (const p of ultimo.picos.slice(0, 8)) {
     const bw = p.fLo != null ? `${fmtF(p.fHi - p.fLo)} (${fmtF(p.fLo)} – ${fmtF(p.fHi)})` : `no alcanza ${ultimo.umbral} dB`;
-    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${p.vswr.toFixed(2)}</td><td>${bw}</td></tr>`;
+    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${p.vswr.toFixed(2)}</td><td>${celdaX(p)}</td><td>${bw}</td></tr>`;
   }
   for (const p of ultimo.dudosos ?? []) {
-    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">posiblemente falsa</span></td><td>${p.rl.toFixed(1)} dB</td><td>${p.vswr.toFixed(2)}</td><td>${p.motivo}</td></tr>`;
+    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">posiblemente falsa</span></td><td>${p.rl.toFixed(1)} dB</td><td>${p.vswr.toFixed(2)}</td><td>—</td><td>${p.motivo}</td></tr>`;
   }
   const tb = $('bandas');
   tb.innerHTML = '<tr><th></th><th>Banda</th><th>Rango</th><th>Resultado</th><th>Mejor punto</th></tr>';

@@ -40,7 +40,11 @@ compilación: HTML + JS (módulos ES) + CSS. Detalle de uso y estructura en `REA
    banda objetivo (`estadisticaBanda`, `lineasBanda`), nunca de la mejor resonancia del rango (que puede estar en otra banda). Si hay ≥ 2
    mínimos a ambos lados del objetivo o la ROE oscila dentro de la banda (`curvaIrregular`; los mínimos solo cuentan si entre ellos la ROE
    sube un 10 %, para que el ruido no cuente) no se da «alarga/acorta un X %» (acción `irregular`). Probado con curvas sintéticas.
-8. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
+8. **Mínimo de ROE ≠ resonancia eléctrica.** El mínimo de ROE (lo que la app llama «resonancia») es donde mejor se adapta a 50 Ω; la
+   resonancia eléctrica es donde X cruza por cero (`reactanciaCero`). En antenas cargadas, fractales, con adaptador o medidas a través de
+   un cable no coinciden. Si se separan más de un 2,5 % (`DESV_REACTANCIA`) y la banda no está ya bien cubierta, la recomendación (Simple
+   y Avanzado) avisa de que el porcentaje de longitud puede no ser fiable; la tabla de Avanzado y el PDF muestran X = 0 al lado de cada mínimo.
+9. Verificar la interfaz en el navegador (panel de vista previa o Edge) tras cambios visibles; los tests no ven el DOM.
    Tras cambiar JS/CSS puede hacer falta recarga forzada (caché).
 
 ## Pendiente

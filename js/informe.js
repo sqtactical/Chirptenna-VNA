@@ -1,6 +1,6 @@
 // Informe PDF generado en el navegador con jsPDF (se carga bajo demanda desde cdnjs).
 import { dibujar, dibujarROE } from './grafico.js';
-import { veredicto, roeDeRl, nivelROE } from './analisis.js';
+import { veredicto, roeDeRl, nivelROE, reactanciaCero, DESV_REACTANCIA } from './analisis.js';
 
 async function cargarJsPDF() {
   if (window.jspdf) return window.jspdf.jsPDF;
@@ -80,7 +80,9 @@ export async function generarPDF(ultimo, meta) {
   if (!ultimo.picos.length) texto('No se detectan resonancias claras en el rango medido.', { size: 9 });
   for (const p of ultimo.picos.slice(0, 8)) {
     const bw = p.fLo != null ? `ancho de banda ${fmtF(p.fHi - p.fLo)}` : `no alcanza ${roe ? `ROE ${roeDeRl(ultimo.umbral).toFixed(2)}` : `${ultimo.umbral} dB`}`;
-    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB  -  VSWR ${p.vswr.toFixed(2)}`}  -  ${bw}`, { size: 9, gap: 0.5 });
+    const rx = roe ? null : reactanciaCero(ultimo.medida, p.f);
+    const xTxt = rx ? `  -  X=0 en ${fmtF(rx.fX)} (${rx.desv > 0 ? '+' : ''}${(rx.desv * 100).toFixed(1)} %${rx.tipo === 'paralelo' ? ', en paralelo' : Math.abs(rx.desv) > DESV_REACTANCIA ? ', no coincide con el minimo de ROE' : ''})` : '';
+    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB  -  VSWR ${p.vswr.toFixed(2)}`}  -  ${bw}${xTxt}`, { size: 9, gap: 0.5 });
   }
   for (const p of ultimo.dudosos ?? []) {
     texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`}  -  POSIBLEMENTE FALSA: ${p.motivo}`, { size: 8, gap: 0.5 });
