@@ -176,6 +176,18 @@
       </section>
     </div>
 
+    <section class="tarjeta" id="tarjeta-comparar" hidden>
+      <h2 data-t>Comparar antenas</h2>
+      <p data-t class="leyenda">Guarda esta medida con un nombre (la antena de serie, la comprada, la casera…) y compárala con las demás del mismo objetivo.</p>
+      <div class="campos">
+        <label><span data-t>Nombre de la antena</span><input id="cmp-nombre" type="text" maxlength="30"></label>
+      </div>
+      <div class="botones"><button data-t id="cmp-guardar" class="primario">Guardar esta medida</button><button data-t id="cmp-borrar">Borrar todas</button></div>
+      <div id="cmp-estado" class="leyenda"></div>
+      <div class="tabla-scroll"><table id="cmp-tabla"></table></div>
+      <canvas id="cmp-grafico"></canvas>
+    </section>
+
     <section class="tarjeta">
       <h2 data-t>Descargar</h2>
       <div class="botones">

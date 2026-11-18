@@ -5,7 +5,8 @@ import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
   veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE, ROE_MAX_MOSTRADO, calculoMm,
 } from './analisis.js';
-import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
+import { dibujar, dibujarROE, dibujarROEvarias, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
+import { resumirMedida, cargarMedidas, guardarMedidas, ordenarMedidas, rejillaComun, curvaEnRejilla, valorOrden, PALETA, MAXIMO_EN_GRAFICO } from './comparar.js';
 import { generarPDF } from './informe.js';
 import { corregir, faltante, juegoAJSON, juegoDeJSON, ErrorCalibracion } from './calibracion.js';
 import { almacen, crearAsistente, barraCobertura } from './asistente.js';
@@ -386,6 +387,33 @@ function calculadoraMm() {
   try { localStorage.setItem('largo-mm', $('largo-mm').value); } catch {}
 }
 
+// ---------- Comparar antenas: medidas guardadas con nombre, ordenadas por ROE en el objetivo ----------
+let guardadas = cargarMedidas();
+function renderComparar() {
+  const card = $('tarjeta-comparar');
+  card.hidden = !ultimo?.obj;
+  if (card.hidden) return;
+  const objetivo = ultimo.obj.banda.nombre;
+  const lista = ordenarMedidas(guardadas.filter(m => m.objetivo === objetivo));
+  $('cmp-estado').textContent = lista.length ? T('{0} guardadas para este objetivo ({1} en total).', lista.length, guardadas.length) : T('Aún no hay medidas guardadas para este objetivo.');
+  $('cmp-borrar').hidden = !guardadas.length;
+  const tb = $('cmp-tabla');
+  tb.replaceChildren();
+  $('cmp-grafico').hidden = !lista.length;
+  if (!lista.length) return;
+  const fila = (celdas, th = false) => { const tr = document.createElement('tr'); for (const c of celdas) { const td = document.createElement(th ? 'th' : 'td'); if (c instanceof Node) td.appendChild(c); else td.textContent = c; tr.appendChild(td); } tb.appendChild(tr); return tr; };
+  fila(['', T('Nombre'), T('ROE (mejor a peor)'), T('Resultado'), T('Mejor frecuencia'), T('% de la banda con ROE de 2 o menos'), ''], true);
+  lista.forEach((m, i) => {
+    const e = m.est, puntual = m.est.sinPuntos || e.roeMin === e.roeMax;
+    const quitar = Object.assign(document.createElement('button'), { textContent: '✕', title: T('Quitar'), className: 'enlace' });
+    quitar.onclick = () => { guardadas = guardadas.filter(x => x.id !== m.id); guardarMedidas(guardadas); renderComparar(); };
+    const nivel = nivelROE(valorOrden(m));
+    fila([i === 0 && lista.length > 1 ? '★' : String(i + 1), m.nombre, puntual ? fmtROE(e.roeMin) : T('{0} a {1}', fmtROE(e.roeMin), fmtROE(e.roeMax)), nivel.etiqueta, e.fMejor ? fmtF(e.fMejor) : '—', `${Math.round(e.fracBuena * 100)} %`, quitar]);
+  });
+  const mostradas = lista.slice(0, MAXIMO_EN_GRAFICO), rejilla = rejillaComun(mostradas);
+  dibujarROEvarias($('cmp-grafico'), rejilla, mostradas.map((m, i) => ({ y: curvaEnRejilla(m, rejilla), nombre: m.nombre.slice(0, 12), color: PALETA[i % PALETA.length] })), { titulo: T('ROE de las antenas guardadas') });
+}
+
 function mostrar() {
   if (!ultimo) return;
   $('resultados').hidden = false;
@@ -408,6 +436,7 @@ function mostrar() {
   }
   mostrarModos();
   calculadoraMm();
+  renderComparar();
 
   // Resumen (avanzado)
   const v = veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj });
@@ -551,6 +580,15 @@ async function iniciar() {
   iniciarMesh();
   try { $('largo-mm').value = localStorage.getItem('largo-mm') ?? ''; } catch {}
   $('largo-mm').oninput = calculadoraMm;
+  $('cmp-guardar').onclick = () => {
+    if (!ultimo?.obj) return;
+    const nombre = $('cmp-nombre').value.trim() || T('Antena {0}', guardadas.length + 1);
+    guardadas = [resumirMedida({ nombre, medida: ultimo.medida, obj: ultimo.obj, umbral: ultimo.umbral }), ...guardadas].slice(0, 20);
+    if (!guardarMedidas(guardadas)) estado(T('No se pudo guardar en el navegador (¿sin espacio?)'), true);
+    $('cmp-nombre').value = '';
+    renderComparar();
+  };
+  $('cmp-borrar').onclick = () => { if (!confirm(T('¿Borrar todas las medidas guardadas? No se puede deshacer.'))) return; guardadas = []; guardarMedidas(guardadas); renderComparar(); };
   grillo = crearGrillo({
     raiz: $('grillo'), img: $('grillo-img'), burbuja: $('grillo-burbuja'), texto: $('grillo-texto'), vale: $('grillo-vale'), no: $('grillo-no'),
     alCambiar: activo => { $('ver-grillo').checked = activo; },
@@ -669,7 +707,7 @@ async function iniciar() {
   ['region', 'objetivo', 'margen', 'estudio', 'fini', 'ffin'].forEach(id => $(id).addEventListener('change', resumenCal));
 
   enlazarCursor();
-  window.addEventListener('resize', redibujar);
+  window.addEventListener('resize', () => { redibujar(); renderComparar(); });
 }
 
 iniciar();

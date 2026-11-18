@@ -157,11 +157,21 @@ export function dibujar(canvas, medida, evaluacion, umbralDb, opts = {}) {
 
 // Gráfico de ROE (VSWR) con bandas y umbral: el modo Simple lo usa en lugar de la pérdida de retorno.
 // El criterio de «bien adaptada» (ROE 2) lo marca el límite entre las zonas «Aceptable» y «Mejorable»; umbralDb no se usa aquí.
-export function dibujarROE(canvas, medida, evaluacion, umbralDb, opts = {}) {
+// Las zonas de color de los niveles de ROE, con su etiqueta
+function regionesROE() {
   let desde = 1;
-  const regionesY = NIVELES_ROE.map(n => { const r = { desde, hasta: n.max, color: n.color, etiqueta: `${n.etiqueta} (${n.max === Infinity ? T('más de {0}', desde) : `${desde}–${n.max}`})`.replace(/\./g, idiomaActual() === 'en' ? '.' : ',') }; desde = n.max; return r; });
+  return NIVELES_ROE.map(n => { const r = { desde, hasta: n.max, color: n.color, etiqueta: `${n.etiqueta} (${n.max === Infinity ? T('más de {0}', desde) : `${desde}–${n.max}`})`.replace(/\./g, idiomaActual() === 'en' ? '.' : ',') }; desde = n.max; return r; });
+}
+
+// Varias curvas de ROE (p. ej. antenas guardadas para compararlas) sobre las zonas de nivel; series: [{ y, nombre, color }]
+export function dibujarROEvarias(canvas, freq, series, opts = {}) {
+  dibujarSerie(canvas, freq, series, { yMin: 1, yMax: 5, regionesY: regionesROE(), titulo: T('ROE (más bajo = mejor adaptada)'), ...opts });
+}
+
+export function dibujarROE(canvas, medida, evaluacion, umbralDb, opts = {}) {
+  const regionesY = regionesROE();
   // opts.previo: ROE de la medida anterior ya remuestreada a medida.freq (línea gris discontinua) para ver el efecto de un ajuste
-  const series = [{ y: medida.vswr, nombre: 'Ahora' }];
+  const series = [{ y: medida.vswr, nombre: T('Ahora') }];
   if (opts.previo) series.unshift({ y: opts.previo, color: '#9aa0a6', discontinua: true, nombre: T('Medida anterior') });
   dibujarSerie(canvas, medida.freq, series.length > 1 ? series : [{ y: medida.vswr }], {
     yMin: 1, yMax: 5, evaluacion, regionesY, // sin línea de umbral: el límite de «aceptable» (ROE 2) ya lo marcan las zonas

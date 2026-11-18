@@ -96,3 +96,20 @@ test('Region 3 de la IARU: bandas de HF, VHF y UHF, Meshtastic de Asia-Pacifico 
   assert.deepEqual(s40.map(s => s.id).sort(), ['ft4', 'ft8', 'wspr']);
   assert.ok(A.segmentosDeBanda(seg, m('40 m', 'R3'), 'eu').length > 3, 'con R1 sigue habiendo segmentos de CW, fonía...');
 });
+
+import { resumirMedida, ordenarMedidas, rejillaComun, curvaEnRejilla, valorOrden } from '../js/comparar.js';
+test('comparar antenas: resumen compacto, orden por el peor punto del objetivo y curvas en una rejilla comun', async () => {
+  const med = f => A.calcular({ freq: Float64Array.from({ length: 200 }, (_, i) => 8.4e8 * Math.pow(9e8 / 8.4e8, i / 199)), re: new Float64Array(200).fill(f), im: new Float64Array(200) });
+  const obj = { fMin: 863e6, fMax: 870e6, banda: { nombre: 'ISM 868' } };
+  const buena = resumirMedida({ nombre: 'Buena', medida: med(0.05), obj, umbral: 9.54 });
+  const mala = resumirMedida({ nombre: 'Mala', medida: med(0.6), obj, umbral: 9.54 });
+  assert.equal(buena.freq.length, 240); assert.equal(buena.vswr.length, 240);
+  assert.equal(buena.objetivo, 'ISM 868');
+  assert.ok(buena.est.roeMax < 1.2 && mala.est.roeMax > 3, `${buena.est.roeMax} ${mala.est.roeMax}`);
+  assert.ok(JSON.stringify(buena).length < 12000, 'cada medida ocupa poco en localStorage');
+  assert.deepEqual(ordenarMedidas([mala, buena]).map(m => m.nombre), ['Buena', 'Mala']);
+  assert.equal(valorOrden(buena), buena.est.roeMax);
+  const rej = rejillaComun([buena, mala], 100), c = curvaEnRejilla(mala, rej);
+  assert.equal(rej.length, 100); assert.equal(c.length, 100);
+  assert.ok(Math.abs(c[50] - mala.est.roeMax) < 0.2, 'la curva remuestreada conserva el valor');
+});

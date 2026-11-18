@@ -44,7 +44,8 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       que pongas), mide alrededor y da el veredicto **en esa frecuencia**, no solo en la banda. Útil porque la región EU_868 de
       Meshtastic es solo **869,4–869,65 MHz** (250 kHz, 10 % de ciclo; verificado en sus docs el 18-11) y una antena centrada
       en 868 MHz puede ir justa. Las ITU 2 m / 70 cm / 1,25 m solo se eligen en modo con licencia de radioaficionado. **M**
-- [ ] 🟢🕸️ **Comparar antenas («shootout»)**: guardar varias medidas con nombre (la de serie del T-Beam/Heltec/RAK, la
+- [x] 🟢🕸️ **Comparar antenas («shootout»)** (18-11: tarjeta con nombre, tabla ordenada por el peor punto del objetivo y curvas
+      superpuestas; hasta 20 medidas en `localStorage`, 6 en el gráfico; falta exportar/importar la lista): guardar varias medidas con nombre (la de serie del T-Beam/Heltec/RAK, la
       comprada, la casera) y ver una tabla ordenada por ROE en el canal y ancho de banda, con las curvas superpuestas. **M**
 - [x] 🟢 **Antes / después** (18-11): al medir tras cortar se superpone la medida anterior (línea gris) y dice «has movido la
       resonancia de X a Y» junto a la ROE antes y después. **S**
