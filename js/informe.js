@@ -1,6 +1,6 @@
 // Informe PDF generado en el navegador con jsPDF (se carga bajo demanda desde cdnjs).
 import { dibujar, dibujarROE } from './grafico.js';
-import { veredicto, roeDeRl, nivelROE, reactanciaCero, DESV_REACTANCIA } from './analisis.js';
+import { veredicto, roeDeRl, fmtROE, nivelROE, reactanciaCero, DESV_REACTANCIA } from './analisis.js';
 
 async function cargarJsPDF() {
   if (window.jspdf) return window.jspdf.jsPDF;
@@ -82,10 +82,10 @@ export async function generarPDF(ultimo, meta) {
     const bw = p.fLo != null ? `ancho de banda ${fmtF(p.fHi - p.fLo)}` : `no alcanza ${roe ? `ROE ${roeDeRl(ultimo.umbral).toFixed(2)}` : `${ultimo.umbral} dB`}`;
     const rx = roe ? null : reactanciaCero(ultimo.medida, p.f);
     const xTxt = rx ? `  -  X=0 en ${fmtF(rx.fX)} (${rx.desv > 0 ? '+' : ''}${(rx.desv * 100).toFixed(1)} %${rx.tipo === 'paralelo' ? ', en paralelo' : Math.abs(rx.desv) > DESV_REACTANCIA ? ', no coincide con el minimo de ROE' : ''})` : '';
-    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB  -  VSWR ${p.vswr.toFixed(2)}`}  -  ${bw}${xTxt}`, { size: 9, gap: 0.5 });
+    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB  -  VSWR ${fmtROE(p.vswr)}`}  -  ${bw}${xTxt}`, { size: 9, gap: 0.5 });
   }
   for (const p of ultimo.dudosos ?? []) {
-    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`}  -  POSIBLEMENTE FALSA: ${p.motivo}`, { size: 8, gap: 0.5 });
+    texto(`${fmtF(p.f)}  -  ${roe ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB`}  -  POSIBLEMENTE FALSA: ${p.motivo}`, { size: 8, gap: 0.5 });
   }
   y += 3;
 
@@ -102,7 +102,7 @@ export async function generarPDF(ultimo, meta) {
     doc.setTextColor(31, 42, 48); doc.setFont('helvetica', 'normal');
     doc.text(`${b.servicio.toUpperCase()} ${b.nombre} [${b.region.join('/')}]`, M + 28, y + 4);
     doc.text(`${b.f_min} - ${b.f_max} MHz`, M + 100, y + 4);
-    if (e.fMejor) doc.text(roe ? `ROE ${e.vMejor.toFixed(2)} a ${e.peorVswr.toFixed(2)} (${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` :`${e.mejorRl.toFixed(1)} dB, VSWR ${e.vMejor.toFixed(2)}`, M + 140, y + 4);
+    if (e.fMejor) doc.text(roe ? `ROE ${fmtROE(e.vMejor)} a ${fmtROE(e.peorVswr)} (${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` :`${e.mejorRl.toFixed(1)} dB, VSWR ${fmtROE(e.vMejor)}`, M + 140, y + 4);
     y += 5;
   }
   y += 4;

@@ -2,7 +2,7 @@ import { DriverNanoVNAH } from './drivers/nanovna-h.js';
 import { DriverSimulado, ANTENAS_SIMULADAS } from './drivers/simulado.js';
 import {
   calcular, resonancias, resonanciasDudosas, nivelROE, reactanciaCero, marcasReactancia, segmentosDeBanda, coberturaSegmentos, remuestrear, estadisticaBanda, DESV_REACTANCIA, bandasDeRegion, evaluarBandas, ventanasAfinado, fusionar,
-  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo,
+  veredicto, recomendacion, indiceMasCercano, equivalenteReactivo, fmtROE,
 } from './analisis.js';
 import { dibujar, dibujarROE, dibujarSerie, dibujarSmith, xAFrecuencia } from './grafico.js';
 import { generarPDF } from './informe.js';
@@ -313,7 +313,7 @@ function comparacionPrevia() {
   const hora = p.fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   const d = e.roeMax - p.est.roeMax, rel = Math.abs(d) / p.est.roeMax;
   const tend = rel < 0.05 ? 'prácticamente igual' : d < 0 ? 'mejor' : 'peor';
-  return `Respecto a la medida anterior (${hora}, línea gris del gráfico): ROE en el peor punto del objetivo ${p.est.roeMax.toFixed(2)} → ${e.roeMax.toFixed(2)} (${tend}); en el mejor punto ${p.est.roeMin.toFixed(2)} → ${e.roeMin.toFixed(2)}.`;
+  return `Respecto a la medida anterior (${hora}, línea gris del gráfico): ROE en el peor punto del objetivo ${fmtROE(p.est.roeMax)} → ${fmtROE(e.roeMax)} (${tend}); en el mejor punto ${fmtROE(p.est.roeMin)} → ${fmtROE(e.roeMin)}.`;
 }
 
 // Tabla «cómo va la antena en cada parte de la banda» (CW, fonía, digitales, FT8...) para las bandas de HF
@@ -327,7 +327,7 @@ function mostrarModos() {
   for (const f of filas) {
     const s = f.segmento, rango = s.puntual ? `${+s.f_min.toFixed(4)} MHz` : `${s.f_min} – ${s.f_max} MHz`;
     if (!f.medido) { tb.innerHTML += `<tr><td>${s.nombre}</td><td>${rango}</td><td colspan="3">fuera de lo medido</td></tr>`; continue; }
-    const roe = f.est.sinPuntos || s.puntual ? f.est.roeMin.toFixed(2) : `${f.est.roeMin.toFixed(2)} a ${f.est.roeMax.toFixed(2)}`;
+    const roe = f.est.sinPuntos || s.puntual ? fmtROE(f.est.roeMin) : `${fmtROE(f.est.roeMin)} a ${fmtROE(f.est.roeMax)}`;
     tb.innerHTML += `<tr class="${s.id === sel ? 'fila-elegida' : ''}"><td>${s.nombre}${s.id === sel ? ' ◀ ajustando' : ''}</td><td>${rango}</td><td>${roe}</td>` +
       `<td><span class="nivel" style="--c:${f.nivel.color}">${f.nivel.etiqueta}</span></td><td>${f.nivel.consejo}</td></tr>`;
   }
@@ -389,10 +389,10 @@ function tablas() {
   };
   for (const p of ultimo.picos.slice(0, 8)) {
     const bw = p.fLo != null ? `${fmtF(p.fHi - p.fLo)} (${fmtF(p.fLo)} – ${fmtF(p.fHi)})` : `no alcanza ${ultimo.umbral} dB`;
-    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${p.vswr.toFixed(2)}</td><td>${celdaX(p)}</td><td>${bw}</td></tr>`;
+    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>${celdaX(p)}</td><td>${bw}</td></tr>`;
   }
   for (const p of ultimo.dudosos ?? []) {
-    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">posiblemente falsa</span></td><td>${p.rl.toFixed(1)} dB</td><td>${p.vswr.toFixed(2)}</td><td>—</td><td>${p.motivo}</td></tr>`;
+    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">posiblemente falsa</span></td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>—</td><td>${p.motivo}</td></tr>`;
   }
   const tb = $('bandas');
   tb.innerHTML = '<tr><th></th><th>Banda</th><th>Rango</th><th>Resultado</th><th>Mejor punto</th></tr>';
@@ -400,7 +400,7 @@ function tablas() {
   const filas = [...ultimo.evaluacion].sort((a, b) => orden[a.estado] - orden[b.estado] || a.banda.f_min - b.banda.f_min);
   for (const e of filas) {
     const b = e.banda;
-    const mejor = e.fMejor ? `${unidad() === 'roe' ? `ROE ${e.vMejor.toFixed(2)} a ${e.peorVswr.toFixed(2)} (peor punto: ${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` : `${e.mejorRl.toFixed(1)} dB · VSWR ${e.vMejor.toFixed(2)}`} @ ${fmtF(e.fMejor)}` : '';
+    const mejor = e.fMejor ? `${unidad() === 'roe' ? `ROE ${fmtROE(e.vMejor)} a ${fmtROE(e.peorVswr)} (peor punto: ${nivelROE(e.peorVswr).etiqueta.toLowerCase()})` : `${e.mejorRl.toFixed(1)} dB · VSWR ${fmtROE(e.vMejor)}`} @ ${fmtF(e.fMejor)}` : '';
     tb.innerHTML += `<tr class="${e.estado}"><td>${ICONO[e.estado]}</td><td>${b.servicio.toUpperCase()} ${b.nombre} <small>[${b.region.join('/')}]</small></td><td>${b.f_min} – ${b.f_max} MHz</td><td>${ETIQUETA[e.estado]}</td><td>${mejor}</td></tr>`;
   }
 }
@@ -435,7 +435,7 @@ function tablaCursor() {
     ['Frecuencia', fmtF(f)],
     ['|S11|', `${m.mag[i].toFixed(2)} dB`],
     ['Pérdida de retorno', `${m.rl[i].toFixed(2)} dB`],
-    ['VSWR', m.vswr[i].toFixed(2)],
+    ['VSWR', fmtROE(m.vswr[i])],
     ['Fase de S11', `${m.fase[i].toFixed(1)}°`],
     ['Impedancia Z', `${m.zr[i].toFixed(1)} ${m.zx[i] >= 0 ? '+' : '−'} j${Math.abs(m.zx[i]).toFixed(1)} Ω`],
     ['|Z|', `${Math.hypot(m.zr[i], m.zx[i]).toFixed(1)} Ω`],

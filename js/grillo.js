@@ -2,11 +2,9 @@
 // Reglas de convivencia: habla solo ante eventos (nunca por intervalos), no bloquea nada, se cierra de un clic, se puede
 // silenciar para siempre y solo se ve en el modo Simple. Los textos salen de lo que ya calcula la app (nivel de ROE, curva
 // irregular, multibanda...); no duplica el detalle de la tarjeta de recomendación, solo lo resume en una frase.
-import { nivelROE } from './analisis.js';
+import { nivelROE, fmtROE, ROE_MAX_MOSTRADO } from './analisis.js';
 
 export const NOMBRE = 'Cricky'; // un solo sitio: aquí se cambia el nombre del grillo
-
-const fmtROE = x => x.toFixed(2);
 
 // Evento -> { id, img (variantes/<img>.svg), texto } o null. Función pura: se prueba sin DOM.
 export function elegirMensaje(evento, d = {}) {
@@ -57,6 +55,9 @@ export function resumenHF(cobertura, segmento) {
 export function mensajeResultado({ reco, cobertura, segmento }) {
   if (!reco) return null;
   if (reco.accion === 'sin_resonancia') {
+    if (reco.est && reco.est.roeMin > ROE_MAX_MOSTRADO) {
+      return { id: 'sin-resonancia-abierto', img: 'estado-sin-resonancia', texto: `ROE ${fmtROE(reco.est.roeMin)} en toda la banda: no entra casi nada de potencia. Un circuito abierto o un cable suelto salen igual, así que mira primero que la antena esté conectada. Si lo está, no resuena en esta banda.` };
+    }
     return { id: 'sin-resonancia', img: 'estado-sin-resonancia', texto: 'No veo ninguna resonancia en lo medido. Sube el margen lateral o mide en barrido general, y revisa el cable y la calibración.' };
   }
   if (reco.accion === 'irregular') {

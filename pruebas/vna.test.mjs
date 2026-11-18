@@ -896,6 +896,20 @@ test('grillo: multibanda y X=0 aparecen como frases extra y el objetivo puntual 
   assert.match(puntual.texto, /^Mejorable\. ROE 2\.18:/);
 });
 
+test('ROE > 50 se escribe «> 50» y avisa de que un circuito abierto sale igual', () => {
+  assert.equal(A.fmtROE(1.234), '1.23');
+  assert.equal(A.fmtROE(50), '50.00');
+  assert.equal(A.fmtROE(99), '> 50');
+  const l = mensajeResultado({ reco: { accion: 'sin_resonancia', est: { n: 20, roeMin: 99, roeMax: 99 } } });
+  assert.equal(l.id, 'sin-resonancia-abierto');
+  assert.match(l.texto, /ROE > 50/); assert.match(l.texto, /circuito abierto/); assert.ok(!/99/.test(l.texto));
+  // el texto de la tarjeta tambien: sin «99.00» y con el aviso de conexion
+  const med = A.calcular({ freq: Float64Array.from({ length: 20 }, (_, i) => 4.7e5 + i * 3e3), re: new Float64Array(20).fill(0.9999), im: new Float64Array(20).fill(0.001) });
+  const r = A.recomendacion(med, [], { fMin: 4.72e5, fMax: 4.79e5 }, U_SIMPLE, 'roe');
+  const texto = r.lineas.join(' ');
+  assert.ok(!/99\.00/.test(texto), texto); assert.match(texto, /ROE > 50; mal acoplada/); assert.ok(!/entre > 50/.test(texto)); assert.match(texto, /circuito abierto/);
+});
+
 test('grillo: en HF resume los modos medidos y comenta el tramo elegido', () => {
   const base = { accion: 'cortar', titulo: 'Acorta la antena un 1 %', est: { n: 40, roeMin: 1.3, roeMax: 1.8 } };
   const fila = (id, nombre, nivel) => ({ segmento: { id, nombre }, medido: true, nivel: { id: nivel, consejo: nivel === 'mal' ? 'No transmitir salvo emergencias' : 'Se puede usar con normalidad' } });

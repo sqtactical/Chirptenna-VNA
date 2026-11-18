@@ -51,6 +51,10 @@ export function equivalenteReactivo(f, x) {
 
 // ROE (VSWR) equivalente a una pérdida de retorno en dB.
 export const roeDeRl = db => (1 + 10 ** (-db / 20)) / (1 - 10 ** (-db / 20));
+// Por encima de ROE 50 (pérdida de retorno < 0,35 dB) no se da el número: casi todo se refleja y el valor exacto no dice nada
+// (un circuito abierto, un cable suelto o una antena muy desacoplada salen igual). Se escribe «> 50».
+export const ROE_MAX_MOSTRADO = 50;
+export const fmtROE = x => x > ROE_MAX_MOSTRADO ? `> ${ROE_MAX_MOSTRADO}` : x.toFixed(2);
 // Niveles de ROE del modo Simple (de mejor a peor). `max` es el límite superior de cada región.
 // «Aceptable» llega hasta ROE 2, que es el criterio de «bien adaptada» del modo Simple.
 export const NIVELES_ROE = [
@@ -62,8 +66,8 @@ export const NIVELES_ROE = [
 export const nivelROE = roe => NIVELES_ROE.find(n => roe <= n.max + 1e-9);
 // Cómo se muestra la adaptación de un punto: 'roe' (modo Simple: lo que conoce todo el mundo, con su nivel) o 'rl' (pérdida de retorno y ROE).
 export const textoAdaptacion = (p, unidad = 'rl') => unidad === 'roe'
-  ? `ROE ${p.vswr.toFixed(2)}: ${nivelROE(p.vswr).etiqueta.toLowerCase()}`
-  : `${p.rl.toFixed(1)} dB, VSWR ${p.vswr.toFixed(2)}`;
+  ? `ROE ${fmtROE(p.vswr)}: ${nivelROE(p.vswr).etiqueta.toLowerCase()}`
+  : `${p.rl.toFixed(1)} dB, VSWR ${fmtROE(p.vswr)}`;
 export const textoUmbral = (umbralDb, unidad = 'rl') => unidad === 'roe' ? `ROE de ${+roeDeRl(umbralDb).toFixed(2)} o mejor` : `pérdida de retorno de al menos ${umbralDb} dB`;
 
 // Frase para explicar el criterio en ROE: porcentaje de potencia que se refleja con esa ROE como máximo.
@@ -154,13 +158,16 @@ function lineasBanda(est, fMin, fMax, umbralDb) {
   const puntual = esPuntual(est, fMin, fMax);
   const peor = nivelROE(est.roeMax);
   const l = [];
-  if (puntual) l.push(`A ${fmtF(est.fMejor)}: ROE ${est.roeMin.toFixed(2)} (${nivelROE(est.roeMin).etiqueta.toLowerCase()}).`);
-  else l.push(`En la banda (${fmtF(fMin)} a ${fmtF(fMax)}): ROE entre ${est.roeMin.toFixed(2)} y ${est.roeMax.toFixed(2)}; en el peor punto, ${peor.etiqueta.toLowerCase()}.`);
+  if (puntual) l.push(`A ${fmtF(est.fMejor)}: ROE ${fmtROE(est.roeMin)} (${nivelROE(est.roeMin).etiqueta.toLowerCase()}).`);
+  else if (est.roeMin > ROE_MAX_MOSTRADO) l.push(`En toda la banda (${fmtF(fMin)} a ${fmtF(fMax)}): ROE ${fmtROE(est.roeMin)}; mal acoplada.`);
+  else l.push(`En la banda (${fmtF(fMin)} a ${fmtF(fMax)}): ROE entre ${fmtROE(est.roeMin)} y ${fmtROE(est.roeMax)}; en el peor punto, ${peor.etiqueta.toLowerCase()}.`);
   l.push(`${(puntual ? nivelROE(est.roeMin) : peor).consejo}.`);
-  if (!puntual && est.fracBuena < 1) {
+  if (est.roeMin > ROE_MAX_MOSTRADO) {
+    l.push('No entra casi nada de potencia en ningún punto de la banda. Si la antena no está conectada (circuito abierto) o el cable está suelto, sale exactamente igual: comprueba la conexión antes de tocar la antena.');
+  } else if (!puntual && est.fracBuena < 1) {
     l.push(est.fracBuena > 0
-      ? `Solo el ${(est.fracBuena * 100).toFixed(0)} % de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor frecuencia es ${fmtF(est.fMejor)} (ROE ${est.roeMin.toFixed(2)}).`
-      : `Ninguna frecuencia de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor es ${fmtF(est.fMejor)} (ROE ${est.roeMin.toFixed(2)}).`);
+      ? `Solo el ${(est.fracBuena * 100).toFixed(0)} % de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor frecuencia es ${fmtF(est.fMejor)} (ROE ${fmtROE(est.roeMin)}).`
+      : `Ninguna frecuencia de la banda llega a ${textoUmbral(umbralDb, 'roe')}; la mejor es ${fmtF(est.fMejor)} (ROE ${fmtROE(est.roeMin)}).`);
   }
   return l;
 }
@@ -251,7 +258,7 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
   const pct = (p.f / fc - 1) * 100;
   const bien = p.rl >= umbralDb;
   const cubre = p.fLo != null && p.fLo <= fMin && p.fHi >= fMax;
-  const lineas = [...intro, `Resonancia más cercana: ${fmt(p.f)} (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : textoAdaptacion(p, unidad)}). Objetivo: ${fmt(fc)}.`];
+  const lineas = [...intro, `Resonancia más cercana: ${fmt(p.f)} (${unidad === 'roe' ? `ROE ${fmtROE(p.vswr)}` : textoAdaptacion(p, unidad)}). Objetivo: ${fmt(fc)}.`];
   // Banda ancha (típico en HF: 80 m es un 8 % de su frecuencia): una antena resonante sencilla rara vez la cubre entera con ROE 2
   if (unidad === 'roe' && !(bien && cubre) && (fMax - fMin) / fc > 0.04) {
     lineas.push(`Esta banda es ancha (${(((fMax - fMin) / fc) * 100).toFixed(0)} % de su frecuencia): una antena resonante sencilla rara vez la cubre entera con ROE 2. Si no la necesitas toda, elige el segmento que más uses (CW, fonía, digital, FT8…) y la antena se ajustará a ese.`);
@@ -307,7 +314,7 @@ export function recomendacion(medida, picos, { fMin, fMax }, umbralDb, unidad = 
     lineas.splice(i < 0 ? lineas.length : i, i < 0 ? 0 : 1, aviso, quien, 'Ajusta una banda cada vez y vuelve a medir también las demás: tocar un tramo las mueve un poco a todas.');
   }
   if (accion === 'alargar' || accion === 'cortar') {
-    if (!bien) lineas.push(`La adaptación en la resonancia es baja (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`}): tras ajustar la longitud, revisa también la alimentación.`);
+    if (!bien) lineas.push(`La adaptación en la resonancia es baja (${unidad === 'roe' ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB`}): tras ajustar la longitud, revisa también la alimentación.`);
     const inductiva = zx > 0;
     const coincide = (accion === 'cortar') === inductiva;
     lineas.push(`A ${fmt(fc)} la antena presenta Z = ${zr.toFixed(1)} ${zx >= 0 ? '+' : '-'} j${Math.abs(zx).toFixed(1)} Ω (${inductiva ? 'inductiva' : 'capacitiva'}): ${coincide ? 'coincide con ese diagnóstico.' : 'no coincide con el diagnóstico; es normal en antenas que no son tipo dipolo o monopolo. Fíate más de la frecuencia de resonancia.'}`);
@@ -426,10 +433,10 @@ export function veredicto(picos, evaluacion, umbralDb, unidad = 'rl', ctx = null
     const peor = nivelROE(puntual ? est.roeMin : est.roeMax);
     const nom = banda && banda.servicio !== 'objetivo' ? `${banda.servicio.toUpperCase()} ${banda.nombre}` : fmt((fMin + fMax) / 2);
     const titulo = puntual
-      ? `${nom}: ROE ${est.roeMin.toFixed(2)} (${peor.etiqueta.toLowerCase()}).`
-      : `${nom}: ROE entre ${est.roeMin.toFixed(2)} y ${est.roeMax.toFixed(2)} (${peor.etiqueta.toLowerCase()} en el peor punto).`;
+      ? `${nom}: ROE ${fmtROE(est.roeMin)} (${peor.etiqueta.toLowerCase()}).`
+      : `${nom}: ROE entre ${fmtROE(est.roeMin)} y ${fmtROE(est.roeMax)} (${peor.etiqueta.toLowerCase()} en el peor punto).`;
     const l = lineasBanda(est, fMin, fMax, umbralDb).slice(1); // consejo (y, si procede, qué parte de la banda es buena)
-    if (mejor && (mejor.f < fMin || mejor.f > fMax)) l.push(`La antena resuena mejor en ${fmt(mejor.f)} (ROE ${mejor.vswr.toFixed(2)}), fuera de esta banda.`);
+    if (mejor && (mejor.f < fMin || mejor.f > fMax)) l.push(`La antena resuena mejor en ${fmt(mejor.f)} (ROE ${fmtROE(mejor.vswr)}), fuera de esta banda.`);
     else if (mejor && mejor.fLo != null && !puntual) l.push(`Ancho de banda con ${textoUmbral(umbralDb, unidad)}: ${fmt(mejor.fHi - mejor.fLo)} (${fmt(mejor.fLo)} a ${fmt(mejor.fHi)}).`);
     if (est.fracBuena < 1 && curvaIrregular(ctx.medida, picos, { fMin, fMax }, umbralDb)) l.push('La curva es irregular (varios mínimos): no te fíes de un solo punto y mide la frecuencia exacta que vas a usar.');
     l.push(`Criterio: ${textoUmbral(umbralDb, unidad)}. ${explicacionROE(umbralDb)}`);
@@ -445,7 +452,7 @@ export function veredicto(picos, evaluacion, umbralDb, unidad = 'rl', ctx = null
     titulo = `Resuena a ${fmt(mejor.f)} (${textoAdaptacion(mejor, unidad)}).`;
     if (mejor.fLo != null) lineas.push(`Ancho de banda con ${textoUmbral(umbralDb, unidad)}: ${fmt(mejor.fHi - mejor.fLo)} (${fmt(mejor.fLo)} a ${fmt(mejor.fHi)}).`);
     const otros = picos.slice(1).filter(p => p.rl >= umbralDb);
-    if (otros.length) lineas.push(`Otras resonancias: ${otros.slice(0, 4).map(p => `${fmt(p.f)} (${unidad === 'roe' ? `ROE ${p.vswr.toFixed(2)}` : `${p.rl.toFixed(1)} dB`})`).join(', ')}.`);
+    if (otros.length) lineas.push(`Otras resonancias: ${otros.slice(0, 4).map(p => `${fmt(p.f)} (${unidad === 'roe' ? `ROE ${fmtROE(p.vswr)}` : `${p.rl.toFixed(1)} dB`})`).join(', ')}.`);
   }
   if (unidad === 'roe') lineas.push(`Criterio: ${textoUmbral(umbralDb, unidad)}. ${explicacionROE(umbralDb)}`, 'El resultado de cada banda (y si se puede usar) está en la tabla de bandas.');
   lineas.push(buenos.length ? `Cubre por completo: ${buenos.map(nombre).join(', ')}.` : 'No cubre por completo ninguna banda de la lista.');
