@@ -65,7 +65,7 @@ async function conectar() {
     driver.alPerder = m => perderConexion(m);
     $('medir').disabled = false;
     $('conectar').textContent = T('Desconectar');
-    estado(`Conectado: ${driver.nombre}${driver.version ? ' · ' + driver.version : ''}${driver.aviso ? '. ' + driver.aviso : ''}`, !!driver.aviso);
+    estado(T('Conectado: {0}', driver.nombre + (driver.version ? ' · ' + driver.version : '') + (driver.aviso ? '. ' + driver.aviso : '')), !!driver.aviso);
     poblarObjetivo();
     cricky('conectado', { calibracionApp: !!calSeleccionada() });
   } catch (e) {

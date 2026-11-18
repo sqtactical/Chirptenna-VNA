@@ -95,7 +95,7 @@ export class DriverSimulado {
   nombre = T('Simulado (sin hardware)');
   fMinHz = 50e3;
   fMaxHz = 6e9;
-  version = 'simulado';
+  version = T('simulado');
   estandar = 'antena';
   antena = 'predeterminada'; // ver ANTENAS_SIMULADAS
 

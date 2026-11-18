@@ -23,7 +23,7 @@ $('conectar').onclick = async () => {
     await drv.connect();
     drv.alPerder = m => { drv = null; $('conectar').textContent = T('Conectar'); $('ejecutar').disabled = true; estado(m, true); };
     $('conectar').textContent = T('Desconectar'); $('ejecutar').disabled = false;
-    estado(`Conectado: ${drv.nombre}${drv.version ? ' · ' + drv.version : ''}`);
+    estado(T('Conectado: {0}', drv.nombre + (drv.version ? ' · ' + drv.version : '')));
   } catch (e) { drv = null; estado(e.message, e.codigo !== 'cancelado'); }
 };
 
