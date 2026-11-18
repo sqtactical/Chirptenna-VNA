@@ -47,7 +47,11 @@ export class DriverNanoVNAH {
       this._pump();
       await this._cmd('', 3000); // sincroniza con el prompt "ch> "
       this.version = (await this._cmd('version', 3000)).split(/\r?\n/).map(s => s.trim()).filter(l => l && l !== 'version' && l !== 'ch>').join(' ');
-      this.aviso = /nano|vna|dislord/i.test(this.version) ? '' : 'El equipo no se identifica como NanoVNA; si las medidas salen raras, comprueba que has elegido el puerto correcto.';
+      // En un NanoVNA-H real (DiSlord 1.2.42) `version` solo devuelve «1.2.42»: el nombre sale en `info` («Board: NanoVNA»).
+      let info = '';
+      try { info = (await this._cmd('info', 3000)).split(/\r?\n/).map(s => s.trim()).filter(l => l && l !== 'info' && l !== 'ch>').join(' '); } catch (e) { if (e?.codigo === 'desconectado') throw e; }
+      this.info = info;
+      this.aviso = /nano|vna|dislord/i.test(`${this.version} ${info}`) ? '' : 'El equipo no se identifica como NanoVNA; si las medidas salen raras, comprueba que has elegido el puerto correcto.';
     } catch (e) {
       await this.disconnect();
       throw e;

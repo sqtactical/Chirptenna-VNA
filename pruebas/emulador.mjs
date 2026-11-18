@@ -8,13 +8,14 @@ export const gammaBruto = f => ({ re: 0.9 * Math.cos(f / 7e7) + 0.05, im: 0.8 * 
 const s21 = f => ({ re: 0.01 * Math.cos(f / 1e9), im: 0.01 });
 
 export class EmuladorNanoVNA {
-  constructor({ puntosPorScan = 101, devolverDeMenos = false, version = 'DiSlord NanoVNA-H4 1.2.38 (emulado)', mudo = false, cortarEnScan = 0 } = {}) {
+  constructor({ puntosPorScan = 101, devolverDeMenos = false, version = '1.2.42' /* como el NanoVNA-H real: version solo da el numero */, mudo = false, cortarEnScan = 0, info = '' } = {}) {
     this.calActiva = true;
     this.barrido = [50000, 900000000, 101];
     this.log = [];                 // comandos recibidos, en orden
     this.puntosPorScan = puntosPorScan;
     this.devolverDeMenos = devolverDeMenos;
     this.versionTexto = version;
+    this.infoTexto = info;         // respuesta a `info` (por defecto, la del NanoVNA-H real)
     this.mudo = mudo;              // no responde a nada (equipo equivocado, colgado)
     this.cortarEnScan = cortarEnScan; // si > 0: al llegar el scan N el "cable" se desenchufa (lo gestiona puertoFalso)
     this.alCortar = null;
@@ -49,7 +50,7 @@ export class EmuladorNanoVNA {
       case 'sweep':
         if (a.length === 3) { this.barrido = a.map(Number); return ''; }
         return `${this.barrido.join(' ')}\r\n`;
-      case 'info': return 'Kernel: 5.4.0\r\nBoard: NanoVNA-H4 (emulado)\r\nMax points: 101\r\n';
+      case 'info': return this.infoTexto ? `${this.infoTexto}\r\n` : 'Board: NanoVNA\r\n2019-2024 Copyright @DiSlord (based on @edy555 source)\r\nLicensed under GPL.\r\n  https://github.com/DiSlord/NanoVNA-D\r\nVersion: 1.2.42 [p:101, IF:12k, ADC:192k, Lcd:320x240]\r\nBuild Time: Nov 12 2024 - 17:03:43\r\nArchitecture: ARMv6-M Core Variant: Cortex-M0\r\nPlatform: STM32F072xB Entry Level Medium Density devices\r\n';
       case 'resume': return '';
       case 'scan': {
         const [f0, f1, n, mask] = a.map(Number);

@@ -22,7 +22,8 @@ async function conectado(opts) {
 // ---------- Controlador DiSlord con emulador ----------
 test('connect: sincroniza con el prompt y lee la version', async () => {
   const { drv } = await conectado();
-  assert.match(drv.version, /DiSlord/);
+  assert.equal(drv.version, '1.2.42');
+  assert.match(drv.info, /NanoVNA.*DiSlord/); // el nombre sale de `info`, no de `version` (como en el equipo real)
   await drv.disconnect();
 });
 
@@ -338,7 +339,7 @@ test('conexion: un equipo que no responde falla pronto con "sin_respuesta" y dej
 });
 
 test('conexion: un dispositivo que no es NanoVNA conecta pero con aviso', async () => {
-  const { drv } = await intentar({ version: 'Arduino Uno bootloader' });
+  const { drv } = await intentar({ version: 'Arduino Uno bootloader', info: 'Board: Arduino Uno' });
   await drv.connect();
   assert.match(drv.aviso, /no se identifica como NanoVNA/);
   await drv.disconnect();
@@ -388,7 +389,7 @@ test('dos ordenes a la vez: la segunda se rechaza claramente en vez de pisar a l
   await drv.connect();
   const a = drv._cmd('version', 3000);
   await assert.rejects(drv._cmd('sweep', 3000), conCodigo('ocupado_interno'));
-  assert.match(await a, /DiSlord/);
+  assert.match(await a, /1\.2\.42/);
   await drv.disconnect();
 });
 
