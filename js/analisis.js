@@ -235,9 +235,11 @@ export function infoMultibanda(picos, fc, indicado = false) {
 // Umbrales calibrados con la antena real de 868 MHz (ruido mediano 0,04 dB) y con una copia con ruido añadido (0,7 dB).
 export function avisosMedida(medida) {
   const n = medida.freq.length;
-  if (n < 20) return [];
+  const bajo = n > 0 && medida.freq[0] < 1.8e6
+    ? [{ id: 'hf_baja', texto: T('Por debajo de 1,8 MHz el NanoVNA pierde precisión (poca señal y mucho ruido): toma esos valores como orientativos y repite la medida.') }] : [];
+  if (n < 20) return bajo;
   const mediana = a => Array.from(a).sort((x, y) => x - y)[a.length >> 1];
-  const av = [];
+  const av = [...bajo];
   if (mediana(medida.rl) < 0.5) {
     av.push({ id: 'sin_conectar', texto: T('Casi todo se refleja en todo el rango medido. Es lo normal si la antena o el cable no están conectados, o si el conector está flojo.') });
   } else {

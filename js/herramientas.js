@@ -3,11 +3,13 @@
 import { T } from './i18n.js';
 import { indiceMasCercano, fmtROE } from './analisis.js';
 import { redesL, nombreValor } from './adaptacion.js';
+import { analizarResonador } from './resonador.js';
 import { medirLinea, largoStub, descripcionStub } from './coaxial.js';
 
 const $ = id => document.getElementById(id);
 const fila = (celdas, th = false) => `<tr>${celdas.map(c => `<${th ? 'th' : 'td'}>${c}</${th ? 'th' : 'td'}>`).join('')}</tr>`;
 const fMHz = hz => +(hz / 1e6).toPrecision(6);
+const fmtF = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(4)} MHz` : `${(hz / 1e3).toFixed(2)} kHz`;
 const mm = m => m >= 1 ? `${m.toFixed(3)} m` : `${(m * 1000).toFixed(1)} mm`;
 
 export function iniciarHerramientas({ getUltimo }) {
@@ -60,6 +62,22 @@ export function iniciarHerramientas({ getUltimo }) {
     nota.textContent = vf > 0 ? T('La pérdida solo es fiable si el extremo refleja todo (abierto o en corto limpios) y está calibrado en el conector del cable.') : T('Escribe el largo físico para obtener el factor de velocidad.');
   };
 
+  const trampa = () => {
+    const u = getUltimo(), tabla = $('trampa-tabla'), nota = $('trampa-nota');
+    tabla.replaceChildren(); nota.textContent = '';
+    if (!u) return;
+    const r = analizarResonador(u.medida);
+    if (!r) { nota.textContent = T('No se ve un pozo claro de resonancia en esta medida. Barre una banda más estrecha alrededor de la resonancia y acopla más flojo.'); return; }
+    let h = fila([T('Dato'), T('Valor')], true);
+    h += fila([T('Frecuencia de resonancia'), fmtF(r.f0)]);
+    h += fila([T('Ancho a media potencia'), fmtF(r.bw)]);
+    h += fila([T('Q cargada'), r.qc.toFixed(1)]);
+    h += fila([T('Q propia (acoplo débil)'), r.q0.toFixed(1)]);
+    h += fila([T('Profundidad del pozo'), `${r.profundidadDb.toFixed(1)} dB`]);
+    tabla.innerHTML = h;
+    nota.textContent = r.profundidadDb > 6 ? T('El acoplo es fuerte: la Q cargada sale por debajo de la propia. Aleja el lazo para que el pozo baje menos de 6 dB.') : T('Con el pozo así de somero la Q propia y la cargada casi coinciden.');
+  };
+
   $('adapt-cursor').onclick = () => { const u = getUltimo(); if (u) { $('adapt-f').value = fMHz(u.medida.freq[u.idx]); adaptar(); } };
   for (const id of ['adapt-f']) $(id).oninput = adaptar;
   for (const id of ['coax-largo', 'coax-extremo', 'coax-f', 'stub-f']) $(id).oninput = coaxial;
@@ -70,7 +88,7 @@ export function iniciarHerramientas({ getUltimo }) {
       const u = getUltimo();
       if (!u) return;
       if (!$('adapt-f').value) $('adapt-f').value = fMHz(u.medida.freq[u.idx]);
-      adaptar(); coaxial();
+      adaptar(); coaxial(); trampa();
     },
   };
 }

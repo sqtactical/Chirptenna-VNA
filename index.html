@@ -201,6 +201,22 @@
         <div class="tabla-scroll"><table id="coax-tabla"></table></div>
         <div data-t class="leyenda" id="coax-nota"></div>
       </details>
+      <details id="ham-trampa">
+        <summary data-t>Trampa o circuito resonante (Q)</summary>
+        <p data-t class="leyenda">Acopla el circuito con un lazo o una sonda de un par de vueltas, lo más flojo que puedas (el pozo de la curva debe ser poco profundo), y barre alrededor de su resonancia. Da la frecuencia, el ancho a media potencia y la Q.</p>
+        <div class="tabla-scroll"><table id="trampa-tabla"></table></div>
+        <div data-t class="leyenda" id="trampa-nota"></div>
+      </details>
+      <details id="ham-cable">
+        <summary data-t>Quitar el cable (medir en la antena)</summary>
+        <p data-t class="leyenda">Si mides a través de un cable sin calibrar en su extremo, la ROE de la estación parece mejor que la de la antena porque el cable absorbe parte de lo reflejado. Pon aquí el cable y el programa llevará la medida a la antena. Se aplica a las medidas nuevas, y a los datos guardados (.s1p) también.</p>
+        <div class="campos">
+          <label class="chk"><input id="cable-on" type="checkbox"> <span data-t>Quitar el cable</span></label>
+          <label><span data-t>Largo (m)</span><input id="cable-largo" type="number" step="any" min="0" value="5"></label>
+          <label><span data-t>Factor de velocidad</span><input id="cable-vf" type="number" step="0.01" min="0.3" max="1" value="0.66"></label>
+          <label><span data-t>Pérdida (dB/100 m a 100 MHz)</span><input id="cable-db" type="number" step="any" min="0" value="5"></label>
+        </div>
+      </details>
     </section>
 
     <div class="columnas columnas-2 solo-avanzado">

@@ -82,17 +82,17 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       trampas) y veredicto por banda; aviso cuando ajustar una mueve otra. **M**
 - [x] 📡🟡 **Medidas de coaxial** (19-11, modo Avanzado, js/coaxial.js: retardo, longitud eléctrica, factor de velocidad con el largo que escribas, pérdida de ida y largo de stubs λ/4 y λ/2; probado con líneas sintéticas, sin cable real todavía): factor de velocidad, longitud eléctrica, pérdida a una frecuencia y **stubs** (λ/4, λ/2,
       con el extremo abierto o en corto): cortar un stub midiendo. Equivalente a `vna/medir_latiguillo.py`. **M**
-- [ ] 📡🟡 **Medir la antena a través del coaxial**: «desincrustar» el cable (port extension / electrical delay, o calibrar en
+- [x] 📡🟡 **Medir la antena a través del coaxial** (19-11, js/cable.js, modo Avanzado: largo, factor de velocidad y pérdida del cable; probado con datos sintéticos, no con un cable real; no hay calibración en el extremo): «desincrustar» el cable (port extension / electrical delay, o calibrar en
       el extremo) y avisar de que la ROE leída en la estación siempre parece mejor que en la antena por la pérdida del cable. **M**
-- [ ] 📡 **Trampas y circuitos resonantes**: resonancia y Q de una trampa LC, de un bobinado o de un condensador con la
+- [x] 📡 **Trampas y circuitos resonantes** (19-11, js/resonador.js: frecuencia, ancho a media potencia, Q cargada y propia del pozo de la última medida; sin probar con una trampa real): resonancia y Q de una trampa LC, de un bobinado o de un condensador con la
       técnica de acoplo débil. **M**
 - [x] 📡🟡 **Calculadora de adaptación** (19-11, js/adaptacion.js: redes en L en las dos topologías con valores E24, pérdida de retorno prevista; falta stub, red en π y exportar la lista de componentes): con la Z medida, red en L / π / stub con valores reales (E12/E24) y la curva prevista;
       exportar a la lista de componentes. Reutiliza la lógica de `antenas/ajuste.py` de Chirptenna. **M**
 - [x] 📡 **Sintonizador (ATU)** (19-11, botón «En vivo» del modo Avanzado: 101 puntos sin parar, ROE mínima y del centro en grande; sin probar con el equipo real): modo «ver en vivo» con barrido rápido continuo y la ROE en grande, para ajustar a mano un
       acoplador o un gamma match mirando la pantalla. **M**
 - [ ] 📡🟡 **Bobinas de choque y baluns** (requiere S21, Fase 3): atenuación en modo común y relación de transformación. **M**
-- [ ] 📡 **HF por debajo de 1,8 MHz**: comprobar el comportamiento del equipo en 136 kHz / 475 kHz (los NanoVNA pierden
-      precisión abajo) y avisar. **S**
+- [~] 📡 **HF por debajo de 1,8 MHz** (19-11: aviso automático de precisión si el barrido empieza por debajo de 1,8 MHz; falta comprobar el comportamiento real del equipo en 136 kHz / 475 kHz): los NanoVNA pierden
+      precisión abajo. **S**
 
 ## Fase 3 — Expertos en RF (🔴)
 

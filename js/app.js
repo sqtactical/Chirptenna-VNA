@@ -13,6 +13,7 @@ import { almacen, crearAsistente, barraCobertura } from './asistente.js';
 import { crearGrillo, elegirMensaje } from './grillo.js';
 import { REGIONES, PRESETS, calcularCanal } from './meshtastic.js';
 import { iniciarHerramientas } from './herramientas.js';
+import { quitarCable } from './cable.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
 const $ = id => document.getElementById(id);
@@ -247,9 +248,15 @@ function rangoPlan() {
 // Escaneo con la calibracion elegida: la del equipo, o datos sin corregir + calibracion de la app
 async function escanear(a, b, n, prog, esp) {
   const j = calSeleccionada();
-  if (!j) return driver.scan(a, b, n, prog, esp);
-  driver.setEstandar?.('antena');
-  return corregir(j, await driver.scan(a, b, n, prog, esp, { bruto: true }));
+  let r;
+  if (!j) r = await driver.scan(a, b, n, prog, esp);
+  else {
+    driver.setEstandar?.('antena');
+    r = corregir(j, await driver.scan(a, b, n, prog, esp, { bruto: true }));
+  }
+  // «Quitar el cable» (modo Avanzado): lleva el plano de medida del conector al extremo del cable, donde está la antena
+  return modo === 'avanzado' && $('cable-on').checked
+    ? quitarCable(r, { largoM: +$('cable-largo').value, vf: +$('cable-vf').value, dbPor100m: +$('cable-db').value || 0 }) : r;
 }
 
 // ---------- Analisis segun el modo ----------
