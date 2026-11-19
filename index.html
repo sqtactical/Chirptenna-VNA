@@ -113,6 +113,11 @@
     <div class="botones">
       <button data-t id="conectar" class="primario">Conectar</button>
       <button data-t id="medir" disabled>Medir</button>
+      <button data-t id="envivo" class="solo-avanzado" disabled title="Barrido continuo de la banda objetivo para ajustar a mano un acoplador, un gamma match o un stub mirando la pantalla" data-t-attr="title">En vivo</button>
+    </div>
+    <div id="panel-envivo" class="envivo solo-avanzado" hidden>
+      <div class="envivo-roe"><span data-t>ROE mínima</span> <b id="envivo-roe">—</b> <span id="envivo-f"></span></div>
+      <div class="envivo-roe"><span data-t>ROE en el centro</span> <b id="envivo-centro">—</b></div>
     </div>
     <div data-t id="estado" role="status" aria-live="polite">Listo para conectar.</div>
   </section>
@@ -170,6 +175,32 @@
       <h2 data-t>Cursor</h2>
       <input data-t-attr="aria-label" id="cursor" type="range" min="0" max="0" value="0" aria-label="Posición del cursor">
       <div class="tabla-scroll"><table id="tabla-cursor"></table></div>
+    </section>
+
+    <section class="tarjeta solo-avanzado" id="tarjeta-ham">
+      <h2 data-t>Herramientas de radioaficionado</h2>
+      <details id="ham-adapt" open>
+        <summary data-t>Calculadora de adaptación (red en L)</summary>
+        <p data-t class="leyenda">Con la impedancia medida a una frecuencia, calcula la red de dos componentes (valores E24) que la lleva a 50 Ω. Pon un ATU o los componentes en el extremo de la línea, junto a la antena.</p>
+        <div class="campos">
+          <label><span data-t>Frecuencia (MHz)</span><input id="adapt-f" type="number" step="any" min="0.01"></label>
+          <button data-t id="adapt-cursor" type="button">Usar la del cursor</button>
+        </div>
+        <div class="tabla-scroll"><table id="adapt-tabla"></table></div>
+        <div data-t class="leyenda" id="adapt-nota"></div>
+      </details>
+      <details id="ham-coax">
+        <summary data-t>Coaxial y stubs</summary>
+        <p data-t class="leyenda">Mide el tramo con el extremo lejano abierto o en corto (barrido general o de varias decenas de MHz, calibrado en el conector). Da el factor de velocidad, la pérdida y el largo de un stub de λ/4 o λ/2.</p>
+        <div class="campos">
+          <label><span data-t>Largo físico (m)</span><input id="coax-largo" type="number" step="any" min="0.01"></label>
+          <label><span data-t>Extremo lejano</span><select id="coax-extremo"><option data-t value="abierto">Abierto</option><option data-t value="corto">En corto</option></select></label>
+          <label><span data-t>Pérdida a (MHz)</span><input id="coax-f" type="number" step="any" min="0.01"></label>
+          <label><span data-t>Stub para (MHz)</span><input id="stub-f" type="number" step="any" min="0.01"></label>
+        </div>
+        <div class="tabla-scroll"><table id="coax-tabla"></table></div>
+        <div data-t class="leyenda" id="coax-nota"></div>
+      </details>
     </section>
 
     <div class="columnas columnas-2 solo-avanzado">

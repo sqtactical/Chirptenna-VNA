@@ -5,6 +5,6 @@
   "description": "Asistente web (Web Serial) para medir antenas con un NanoVNA",
   "license": "AGPL-3.0-only",
   "type": "module",
-  "scripts": { "test": "node --test pruebas/vna.test.mjs pruebas/real.test.mjs pruebas/i18n.test.mjs" },
+  "scripts": { "test": "node --test pruebas/vna.test.mjs pruebas/real.test.mjs pruebas/i18n.test.mjs pruebas/ham.test.mjs" },
   "engines": { "node": ">=20" }
 }

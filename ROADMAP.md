@@ -80,15 +80,15 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
 - [x] 📡 **Plan de banda por región y modo** (18-11, primera versión): en las bandas de HF (160–10 m) el modo Simple pregunta «¿para qué parte de la banda quieres ajustar la antena?» (toda la banda, CW, fonía, digitales de banda estrecha, FT8, FT4, WSPR) con los segmentos de la IARU R1 y la ARRL (`segmentos_hf.json`); se mide la banda entera y se juzga el segmento elegido. Tabla «cómo va la antena en cada parte de la banda» con el nivel de ROE y qué hacer en cada modo, y comparación con la medida anterior (línea gris) para ir ajustando. Segmentos orientativos: los de R1 son de memoria (falta contrastarlos con el PDF oficial) y falta la CNAF; las frecuencias de FT8, FT4 y WSPR salen de WSJT-X. Añadidos el mismo día 60 m (segmentos de la IARU R1 y canales de EE. UU.), 4 m (llamada SSB, AM/FM, FT8, WSPR, MSK144) y 8 m (40 MHz) como autorización experimental o temporal. Falta: 6 m y VHF/UHF por modos, JS8, la CNAF de España y las normas por licencia. **M**
 - [ ] 📡 **Antenas multibanda**: objetivo con varias bandas a la vez (dipolo en abanico, EFHW con 49:1, G5RV, verticales con
       trampas) y veredicto por banda; aviso cuando ajustar una mueve otra. **M**
-- [ ] 📡🟡 **Medidas de coaxial**: factor de velocidad, longitud eléctrica, pérdida a una frecuencia y **stubs** (λ/4, λ/2,
+- [x] 📡🟡 **Medidas de coaxial** (19-11, modo Avanzado, js/coaxial.js: retardo, longitud eléctrica, factor de velocidad con el largo que escribas, pérdida de ida y largo de stubs λ/4 y λ/2; probado con líneas sintéticas, sin cable real todavía): factor de velocidad, longitud eléctrica, pérdida a una frecuencia y **stubs** (λ/4, λ/2,
       con el extremo abierto o en corto): cortar un stub midiendo. Equivalente a `vna/medir_latiguillo.py`. **M**
 - [ ] 📡🟡 **Medir la antena a través del coaxial**: «desincrustar» el cable (port extension / electrical delay, o calibrar en
       el extremo) y avisar de que la ROE leída en la estación siempre parece mejor que en la antena por la pérdida del cable. **M**
 - [ ] 📡 **Trampas y circuitos resonantes**: resonancia y Q de una trampa LC, de un bobinado o de un condensador con la
       técnica de acoplo débil. **M**
-- [ ] 📡🟡 **Calculadora de adaptación**: con la Z medida, red en L / π / stub con valores reales (E12/E24) y la curva prevista;
+- [x] 📡🟡 **Calculadora de adaptación** (19-11, js/adaptacion.js: redes en L en las dos topologías con valores E24, pérdida de retorno prevista; falta stub, red en π y exportar la lista de componentes): con la Z medida, red en L / π / stub con valores reales (E12/E24) y la curva prevista;
       exportar a la lista de componentes. Reutiliza la lógica de `antenas/ajuste.py` de Chirptenna. **M**
-- [ ] 📡 **Sintonizador (ATU)**: modo «ver en vivo» con barrido rápido continuo y la ROE en grande, para ajustar a mano un
+- [x] 📡 **Sintonizador (ATU)** (19-11, botón «En vivo» del modo Avanzado: 101 puntos sin parar, ROE mínima y del centro en grande; sin probar con el equipo real): modo «ver en vivo» con barrido rápido continuo y la ROE en grande, para ajustar a mano un
       acoplador o un gamma match mirando la pantalla. **M**
 - [ ] 📡🟡 **Bobinas de choque y baluns** (requiere S21, Fase 3): atenuación en modo común y relación de transformación. **M**
 - [ ] 📡 **HF por debajo de 1,8 MHz**: comprobar el comportamiento del equipo en 136 kHz / 475 kHz (los NanoVNA pierden

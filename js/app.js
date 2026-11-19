@@ -12,6 +12,7 @@ import { corregir, faltante, juegoAJSON, juegoDeJSON, ErrorCalibracion } from '.
 import { almacen, crearAsistente, barraCobertura } from './asistente.js';
 import { crearGrillo, elegirMensaje } from './grillo.js';
 import { REGIONES, PRESETS, calcularCanal } from './meshtastic.js';
+import { iniciarHerramientas } from './herramientas.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
 const $ = id => document.getElementById(id);
@@ -27,7 +28,7 @@ const umbralActual = () => (modo === 'avanzado' ? +$('umbral').value : UMBRAL_SI
 
 let bandasCfg = null, driver = null, ultimo = null, modo = 'simple', estudio = 'banda', listaObj = [];
 // Cricky, el grillo asistente: comenta los eventos importantes (solo en el modo Simple)
-let grillo = null;
+let grillo = null, herramientas = null, enVivo = false;
 const cricky = (evento, datos) => { if (modo === 'simple') grillo?.decir(elegirMensaje(evento, datos)); };
 
 const fmtF = hz => hz >= 1e9 ? `${(hz / 1e9).toFixed(3)} GHz` : hz >= 1e6 ? `${(hz / 1e6).toFixed(3)} MHz` : `${(hz / 1e3).toFixed(1)} kHz`;
@@ -63,7 +64,7 @@ async function conectar() {
     estado(T('Conectando…'));
     await driver.connect();
     driver.alPerder = m => perderConexion(m);
-    $('medir').disabled = false;
+    $('medir').disabled = false; $('envivo').disabled = false;
     $('conectar').textContent = T('Desconectar');
     estado(T('Conectado: {0}', driver.nombre + (driver.version ? ' · ' + driver.version : '') + (driver.aviso ? '. ' + driver.aviso : '')), !!driver.aviso);
     poblarObjetivo();
@@ -79,16 +80,18 @@ function perderConexion(mensaje) {
   const d = driver;
   driver = null;
   d?.disconnect?.();
-  $('medir').disabled = true;
+  enVivo = false;
+  $('medir').disabled = true; $('envivo').disabled = true;
   $('conectar').textContent = T('Conectar');
   estado(mensaje, true);
   cricky('perdida');
 }
 
 async function desconectar() {
+  enVivo = false;
   await driver?.disconnect();
   driver = null;
-  $('medir').disabled = true;
+  $('medir').disabled = true; $('envivo').disabled = true;
   $('conectar').textContent = T('Conectar');
   estado(T('Desconectado'));
 }
@@ -297,7 +300,7 @@ async function medir() {
     }
   }
 
-  $('medir').disabled = true;
+  $('medir').disabled = true; $('envivo').disabled = true;
   try {
     if (+$('retardo').value > 0) cricky('cuenta-atras');
     for (let s = +$('retardo').value; s > 0; s--) {
@@ -343,7 +346,44 @@ async function medir() {
       ? T('{0}. Falta calibrar: {1}.', e.message, e.faltan.map(h => `${fmtF(h[0])} a ${fmtF(h[1])}`).join('; '))
       : e.message, true);
   } finally {
+    $('medir').disabled = !driver; $('envivo').disabled = !driver;
+  }
+}
+
+// Modo en vivo (para ajustar a mano un ATU, un gamma match o un stub): barrido corto y continuo de la banda objetivo
+// con la ROE mínima y la del centro en grande. Sin afinado ni retardo; se para con el mismo botón.
+async function alternarEnVivo() {
+  if (enVivo) { enVivo = false; return; }
+  if (!driver) return;
+  const { fIni, fFin } = rangoPlan();
+  const juegoCal = calSeleccionada();
+  if (juegoCal && faltante(juegoCal.segmentos, fIni, fFin).length) return estado(T('La calibración «{0}» no cubre ese rango.', juegoCal.nombre), true);
+  enVivo = true;
+  $('envivo').textContent = T('Parar');
+  $('medir').disabled = true;
+  $('panel-envivo').hidden = false;
+  const umbral = umbralActual();
+  try {
+    while (enVivo && driver) {
+      const crudo = await escanear(fIni, fFin, 101, () => {}, 'lineal');
+      if (!enVivo) break;
+      const medida = calcular(crudo);
+      let imin = 0;
+      for (let i = 1; i < medida.vswr.length; i++) if (medida.vswr[i] < medida.vswr[imin]) imin = i;
+      const ic = indiceMasCercano(medida.freq, (fIni + fFin) / 2);
+      $('envivo-roe').textContent = fmtROE(medida.vswr[imin]);
+      $('envivo-f').textContent = `@ ${fmtF(medida.freq[imin])}`;
+      $('envivo-centro').textContent = fmtROE(medida.vswr[ic]);
+      ultimo = { crudo, medida, ...evaluarTodo(medida, umbral), umbral, fecha: new Date(), afinado: false, calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null, idx: imin, clave: null, previo: null };
+      mostrar();
+    }
+  } catch (e) {
+    if (e.codigo === 'desconectado') perderConexion(e.message); else estado(e.message, true);
+  } finally {
+    enVivo = false;
+    $('envivo').textContent = T('En vivo');
     $('medir').disabled = !driver;
+    $('envivo').disabled = !driver;
   }
 }
 
@@ -517,6 +557,7 @@ function mostrar() {
   ve.appendChild(ulv);
 
   tablas();
+  herramientas?.actualizar();
   const s = $('cursor');
   s.max = ultimo.medida.freq.length - 1;
   s.value = ultimo.idx;
@@ -711,6 +752,8 @@ async function iniciar() {
   $('simulado').addEventListener('change', () => { $('campo-antena-sim').hidden = !$('simulado').checked; });
   $('campo-antena-sim').hidden = !$('simulado').checked;
   $('medir').onclick = medir;
+  $('envivo').onclick = alternarEnVivo;
+  herramientas = iniciarHerramientas({ getUltimo: () => ultimo });
   $('region').onchange = () => { soltarCompartida(); poblarObjetivo(); reanalizar(); };
   $('objetivo').onchange = () => { soltarCompartida(); $('campo-fobj').hidden = $('objetivo').value !== 'custom'; $('campo-mesh').hidden = $('objetivo').value !== 'meshtastic'; actualizarMesh(); poblarSegmentos(); reanalizar(); };
   $('segmento').onchange = reanalizar; // se mide la banda entera, así que cambiar de segmento no obliga a medir otra vez
