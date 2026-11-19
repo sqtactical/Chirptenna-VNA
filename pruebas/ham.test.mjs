@@ -91,6 +91,34 @@ test('resonador: Q cargada y propia de una trampa con acoplo débil', () => {
   assert.ok(Math.abs(r.q0 / Q0 - 1) < 0.1, `Q0 ${r.q0}`);
 });
 
+import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from '../js/multibanda.js';
+import { resonancias } from '../js/analisis.js';
+
+// antena con dos resonancias (como unas trampas de 40 y 20 m): |Γ| bajo cerca de f1 y f2
+function dosBandas(f1, f2) {
+  const n = 1500, freq = new Float64Array(n), re = new Float64Array(n), im = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const f = 5e6 * (16e6 / 5e6) ** (i / (n - 1)); // 5–16 MHz, log
+    const a = Math.exp(-(((f - f1) / (f1 * 0.03)) ** 2)), b = Math.exp(-(((f - f2) / (f2 * 0.03)) ** 2));
+    const g = 0.95 - 0.8 * Math.max(a, b);
+    freq[i] = f; re[i] = g; im[i] = 0;
+  }
+  return calcular({ freq, re, im });
+}
+
+test('multibanda: veredicto por banda y aviso cuando ajustar una mueve la otra', () => {
+  const bandas = [{ nombre: '40 m', f_min: 7.0, f_max: 7.2 }, { nombre: '20 m', f_min: 14.0, f_max: 14.35 }];
+  const analizar = m => resumenPorBanda(veredictosPorBanda(m, resonancias(m, 10), bandas, 9.54, 'roe'));
+  const m1 = dosBandas(7.1e6, 14.18e6);
+  const v = veredictosPorBanda(m1, resonancias(m1, 10), bandas, 9.54, 'roe');
+  assert.equal(v.length, 2);
+  assert.ok(v.every(x => x.reco && x.reco.titulo));
+  const r1 = analizar(m1), r2 = analizar(dosBandas(7.5e6, 14.9e6)), r3 = analizar(dosBandas(7.1e6, 14.18e6));
+  assert.equal(avisosArrastre(r1, r3).length, 0);
+  assert.equal(avisosArrastre(r1, r2)[0].id, 'arrastre');
+  assert.equal(avisosArrastre(r1, { ...r2, clave: 'otras' }).length, 0);
+});
+
 test('stub: λ/4 con VF 0,66 a 145 MHz son 34,2 cm', () => {
   assert.ok(Math.abs(largoStub(0.25, 145e6, 0.66) - 0.3411) < 0.001);
 });

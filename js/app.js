@@ -14,6 +14,7 @@ import { crearGrillo, elegirMensaje } from './grillo.js';
 import { REGIONES, PRESETS, calcularCanal } from './meshtastic.js';
 import { iniciarHerramientas } from './herramientas.js';
 import { quitarCable } from './cable.js';
+import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
 const $ = id => document.getElementById(id);
@@ -118,7 +119,29 @@ function poblarObjetivo() {
   $('campo-mesh').hidden = sel.value !== 'meshtastic';
   actualizarMesh();
   poblarSegmentos();
+  poblarMulti();
 }
+
+// Varias bandas a la vez (antena multibanda): casillas con las bandas de la región; la selección se recuerda
+function poblarMulti() {
+  let marcadas = [];
+  try { marcadas = JSON.parse(localStorage.getItem('multi') || '[]'); } catch {}
+  const previas = [...document.querySelectorAll('#multi-bandas input')];
+  if (previas.length) marcadas = previas.filter(c => c.checked).map(c => c.dataset.nombre);
+  const cont = $('multi-bandas');
+  cont.replaceChildren();
+  listaObj.forEach((b, i) => {
+    const l = document.createElement('label'), c = document.createElement('input');
+    c.type = 'checkbox'; c.dataset.nombre = b.nombre; c.value = String(i); c.checked = marcadas.includes(b.nombre);
+    c.onchange = () => {
+      try { localStorage.setItem('multi', JSON.stringify([...cont.querySelectorAll('input:checked')].map(x => x.dataset.nombre))); } catch {}
+      reanalizar(); resumenCal();
+    };
+    l.append(c, document.createTextNode(` ${b.nombre} (${b.f_min}-${b.f_max} MHz)`));
+    cont.appendChild(l);
+  });
+}
+const multiSeleccion = () => [...document.querySelectorAll('#multi-bandas input:checked')].map(c => listaObj[+c.value]).filter(Boolean);
 
 // ---------- Mi nodo Meshtastic: el canal se calcula como el firmware ----------
 function canalMesh() {
@@ -241,6 +264,13 @@ function rangoPlan() {
       return { fIni: Math.max(lim[0], base.min * (1 - m)), fFin: Math.min(lim[1], base.max * (1 + m)), desc: T('la banda objetivo con su margen lateral') };
     }
   }
+  if (estudio === 'multi') {
+    const bs = multiSeleccion();
+    if (bs.length) {
+      const m = Math.min(0.95, Math.max(0, +$('margen').value || 0) / 100);
+      return { fIni: Math.max(lim[0], Math.min(...bs.map(b => b.f_min)) * 1e6 * (1 - m)), fFin: Math.min(lim[1], Math.max(...bs.map(b => b.f_max)) * 1e6 * (1 + m)), desc: T('las bandas marcadas con su margen lateral') };
+    }
+  }
   if (modo === 'avanzado') return { fIni: Math.max(lim[0], +$('fini').value * 1e3), fFin: Math.min(lim[1], +$('ffin').value * 1e6), desc: T('el barrido general que has configurado') };
   return { fIni: lim[0], fFin: lim[1], desc: T('todo el rango del equipo') };
 }
@@ -262,15 +292,17 @@ async function escanear(a, b, n, prog, esp) {
 // ---------- Analisis segun el modo ----------
 function evaluarTodo(medida, umbral) {
   const obj = estudio === 'banda' ? objetivoActual() : null;
-  const bandas = estudio === 'banda' ? (obj ? [obj.banda] : []) : bandasDeRegion(bandasCfg.bandas, $('region').value);
+  const seleccion = estudio === 'multi' ? multiSeleccion() : [];
+  const bandas = estudio === 'banda' ? (obj ? [obj.banda] : []) : estudio === 'multi' ? seleccion : bandasDeRegion(bandasCfg.bandas, $('region').value);
   const evaluacion = evaluarBandas(medida, bandas, umbral, fMaxActual());
   const picos = resonancias(medida, umbral);
+  const multi = seleccion.length ? veredictosPorBanda(medida, picos, seleccion, umbral, unidad()) : null;
   const dudosos = resonanciasDudosas(medida, picos);
   const reco = obj ? recomendacion(medida, picos, obj, umbral, unidad(), { multibanda: $('multibanda').checked }) : null;
   // cobertura por modo (CW, fonía, FT8...) de la banda objetivo, si es de HF
   const segmentos = obj?.bandaCompleta ? segmentosDeBanda(segCfg, obj.bandaCompleta, $('region').value) : [];
   const cobertura = segmentos.length ? coberturaSegmentos(medida, segmentos, umbral) : [];
-  return { evaluacion, picos, dudosos, reco, obj, cobertura };
+  return { evaluacion, picos, dudosos, reco, obj, cobertura, multi };
 }
 
 async function medir() {
@@ -286,6 +318,13 @@ async function medir() {
     fFin = Math.min(driver.fMaxHz, base.max * (1 + margen));
     if (fFin <= fIni * 1.05) return estado(T('La banda objetivo queda fuera del rango del equipo'), true);
     puntos = 601; esp = 'log'; afinar = modo === 'simple' ? true : $('afinar').checked;
+  } else if (estudio === 'multi') {
+    // Varias bandas: un solo barrido de la más baja a la más alta (con margen), con afinado en cada resonancia
+    if (multiSeleccion().length < 2) return estado(T('Marca al menos dos bandas para estudiar una antena multibanda.'), true);
+    const r = rangoPlan();
+    fIni = Math.max(driver.fMinHz, r.fIni); fFin = Math.min(driver.fMaxHz, r.fFin);
+    if (fFin <= fIni * 1.05) return estado(T('Las bandas marcadas quedan fuera del rango del equipo'), true);
+    puntos = Math.min(3000, 600 + 300 * multiSeleccion().length); esp = 'log'; afinar = modo === 'simple' ? true : $('afinar').checked;
   } else if (modo === 'simple') {
     fIni = driver.fMinHz; fFin = driver.fMaxHz; puntos = 3000; esp = 'log'; afinar = true;
   } else {
@@ -338,9 +377,10 @@ async function medir() {
       ? { freq: ultimo.medida.freq, vswr: ultimo.medida.vswr, fecha: ultimo.fecha, est: estadisticaBanda(ultimo.medida, obj.fMin, obj.fMax, umbral) }
       : null;
     if (previo) previo.fRes = ultimoRes;
+    const previoMulti = ultimo?.multi ? resumenPorBanda(ultimo.multi) : null;
     ultimo = {
       crudo, medida, ...res, umbral, fecha: new Date(), afinado, calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null,
-      idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo,
+      idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo, previoMulti,
     };
     pitido(1320, 250);
     estado(T('Listo: {0} puntos en {1} s{2}', crudo.freq.length, ((performance.now() - t0) / 1000).toFixed(1), afinado ? T(' (con afinado)') : ''));
@@ -544,10 +584,28 @@ function mostrar() {
     for (const l of lineas) ul.appendChild(Object.assign(document.createElement('li'), { textContent: l }));
     r.appendChild(ul);
   }
+  // Antena multibanda: un veredicto por cada banda marcada
+  if (ultimo.multi) {
+    tr.hidden = false;
+    tr.className = 'tarjeta reco multi';
+    const r = $('reco');
+    r.replaceChildren(Object.assign(document.createElement('p'), { className: 'gran', textContent: T('Veredicto por banda') }));
+    for (const v of ultimo.multi) {
+      const d = document.createElement('div');
+      d.className = 'banda-multi';
+      d.appendChild(Object.assign(document.createElement('b'), { textContent: `${v.banda.nombre}: ${v.reco.titulo}` }));
+      const ul = document.createElement('ul');
+      for (const l of v.reco.lineas.slice(0, 3)) ul.appendChild(Object.assign(document.createElement('li'), { textContent: l }));
+      d.appendChild(ul);
+      r.appendChild(d);
+    }
+  }
   mostrarModos();
   calculadoraMm();
   renderComparar();
-  const avisos = avisosMedida(ultimo.medida);
+  // con varias bandas el barrido incluye mucho espacio entre ellas, fuera de resonancia: «todo se refleja» no es señal de cable suelto
+  const avisos = avisosMedida(ultimo.medida).filter(a => !(ultimo.multi && a.id === 'sin_conectar'));
+  if (ultimo.multi) avisos.push(...avisosArrastre(ultimo.previoMulti, resumenPorBanda(ultimo.multi)));
   const inestable = ultimo.previo && ultimo.reco?.est ? avisoInestable(ultimo.previo.est.roeMax, ultimo.reco.est.roeMax, ultimo.previo.fRes, ultimo.reco.fRes) : null;
   if (inestable) avisos.push(inestable);
   const av = $('avisos-medida');
@@ -741,7 +799,7 @@ async function iniciar() {
 
   let e0 = 'banda';
   try { e0 = localStorage.getItem('estudio') || 'banda'; } catch {}
-  aplicarEstudio(e0 === 'general' ? 'general' : 'banda');
+  aplicarEstudio(['general', 'multi'].includes(e0) ? e0 : 'banda');
   $('estudio').onchange = () => aplicarEstudio($('estudio').value);
   $('margen').onchange = () => {};
   $('modo-simple').onclick = () => aplicarModo('simple');

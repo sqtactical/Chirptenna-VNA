@@ -84,7 +84,7 @@
         <select id="region"><option data-t value="eu">Europa (R1 / UE)</option><option data-t value="us">América / EE.UU. (R2)</option><option data-t value="ap">Asia-Pacífico (R3)</option><option data-t value="todas">Todas</option></select>
       </label>
       <label><span data-t>Qué estudiar</span>
-        <select id="estudio"><option data-t value="banda">Una banda (con margen)</option><option data-t value="general">Barrido general</option></select>
+        <select id="estudio"><option data-t value="banda">Una banda (con margen)</option><option data-t value="multi">Varias bandas (antena multibanda)</option><option data-t value="general">Barrido general</option></select>
       </label>
       <label class="solo-banda"><span data-t>Banda objetivo</span> <select id="objetivo"></select></label>
       <label id="campo-segmento" class="solo-banda" hidden><span data-t>¿Para qué parte de la banda quieres ajustar la antena?</span> <select id="segmento"></select></label>
@@ -96,7 +96,8 @@
         <div id="mesh-info" class="leyenda"></div>
       </div>
       <label id="campo-fobj" class="solo-banda" hidden><span data-t>Frecuencia objetivo (MHz)</span><input id="fobj" type="number" value="868" min="0.05" step="any"></label>
-      <label class="solo-banda"><span data-t>Margen lateral (%)</span><input id="margen" type="number" value="10" min="0" max="100" step="5"></label>
+      <div id="campo-multi" class="solo-multi subcampos"><span data-t>Bandas de tu antena (marca todas las que debe cubrir)</span><div id="multi-bandas" class="multi-bandas"></div></div>
+      <label class="solo-banda con-multi"><span data-t>Margen lateral (%)</span><input id="margen" type="number" value="10" min="0" max="100" step="5"></label>
       <label><span data-t>Retardo (s)</span><input id="retardo" type="number" value="10" min="0" max="120"></label>
       <label class="solo-avanzado solo-general"><span data-t>Inicio (kHz)</span><input id="fini" type="number" value="50" min="1"></label>
       <label class="solo-avanzado solo-general"><span data-t>Fin (MHz)</span><input id="ffin" type="number" value="2700" min="1"></label>

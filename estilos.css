@@ -80,6 +80,8 @@ small { color: var(--suave); }
 body[data-modo="simple"] .solo-avanzado { display: none !important; }
 body[data-modo="avanzado"] .solo-simple { display: none !important; }
 body[data-estudio="general"] .solo-banda { display: none !important; }
+body[data-estudio="multi"] .solo-banda:not(.con-multi), body[data-estudio="multi"] .solo-general { display: none !important; }
+body:not([data-estudio="multi"]) .solo-multi { display: none !important; }
 body[data-estudio="banda"] .solo-general { display: none !important; }
 /* En modo simple y estudiando una banda solo interesa la recomendacion y el grafico */
 body[data-modo="simple"][data-estudio="banda"] .resumen,
@@ -164,3 +166,7 @@ body[data-modo="simple"] #grillo[data-activo="1"] { display: flex; }
 .envivo { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.6rem; padding: 0.6rem 0.9rem; border: 1px solid var(--linea, #8884); border-radius: 10px; }
 .envivo b { font-size: 2rem; font-variant-numeric: tabular-nums; }
 .envivo[hidden] { display: none; }
+
+.multi-bandas { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.2rem 1rem; margin-top: 0.3rem; }
+.multi-bandas label { display: flex; gap: 0.4rem; align-items: center; font-size: 0.9rem; }
+.reco.multi .banda-multi { margin: 0.5rem 0; padding-top: 0.4rem; border-top: 1px solid var(--linea, #8884); }
