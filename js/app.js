@@ -17,7 +17,7 @@ import { quitarCable } from './cable.js';
 import { leerTouchstone } from './touchstone.js';
 import { promediar, ruidoSistema, umbralProminencia } from './estadistica.js';
 import { compararConReferencia } from './diferencia.js';
-import { leerResultadoChirptenna, deducirEr } from './puente.js';
+import { leerResultadoChirptenna, deducirEr, leerObjetivoUrl } from './puente.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
@@ -987,6 +987,16 @@ async function iniciar() {
 
   const codigo = codigoDeHash();
   if (codigo) await abrirCompartida(codigo);
+  else {
+    // Abierto desde Chirptenna (pestaña Medir): su objetivo manda hasta que el usuario cambie de banda
+    const o = leerObjetivoUrl(location.search);
+    if (o) {
+      const nom = o.nombre ? `${o.nombre} · ` : '';
+      const txt = o.fMinMHz === o.fMaxMHz ? `${o.fMinMHz} MHz` : `${o.fMinMHz}–${o.fMaxMHz} MHz`;
+      objetivoCompartido = { fMin: o.fMinMHz * 1e6, fMax: o.fMaxMHz * 1e6, banda: { servicio: 'chirptenna', nombre: nom + txt, region: [], f_min: o.fMinMHz, f_max: o.fMaxMHz } };
+      estado(T('Objetivo recibido de Chirptenna: {0}', nom + txt));
+    }
+  }
 
   enlazarCursor();
   window.addEventListener('resize', () => { redibujar(); renderComparar(); });

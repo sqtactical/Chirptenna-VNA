@@ -118,7 +118,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
 
 ## Fase 4 — Ecosistema
 
-- [~] **Puente con Chirptenna** (20-11: carga el `resultado.json`, compara la resonancia y estima la εr; falta superponer la curva simulada, que va en `datos.npz` y el navegador no lee): abrir el `diseno.json` y el `resultado.json` de una antena de Chirptenna y superponer
+- [~] **Puente con Chirptenna** (20-11: carga el `resultado.json`, compara la resonancia y estima la εr; 20-11: Chirptenna guarda `s11_simulado.s1p`, que se carga como referencia, y abre la web con `?f=&banda=&nombre=` (`leerObjetivoUrl`); falta abrir el `diseno.json` y una εr con la pendiente simulada de cada placa en vez de (εr+1)/2): abrir el `diseno.json` y el `resultado.json` de una antena de Chirptenna y superponer
       simulado frente a medido (lo que hace `herramientas/comparar_medida.py`), con la εr del FR4 deducida del desplazamiento. **M**
 - [ ] **Versión de escritorio** (Python/NiceGUI): para quien no use Chrome, con la misma lógica; reutiliza `vna/*.py`. **L**
 - [ ] **Base de datos comunitaria de antenas** (opcional y anónima): curvas de antenas comerciales de Meshtastic/LoRa medidas

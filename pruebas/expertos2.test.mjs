@@ -1,6 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { leerResultadoChirptenna, deducirEr } from '../js/puente.js';
+import { leerResultadoChirptenna, deducirEr, leerObjetivoUrl } from '../js/puente.js';
+import { leerTouchstone } from '../js/touchstone.js';
+
+test('puente: objetivo por URL (f, banda, nombre) y entradas no fiables', () => {
+  const o = leerObjetivoUrl('?f=2441.75&banda=2400-2483.5&nombre=mi_antena');
+  assert.deepEqual(o, { fMinMHz: 2400, fMaxMHz: 2483.5, nombre: 'mi_antena' });
+  assert.deepEqual(leerObjetivoUrl('?f=868'), { fMinMHz: 868, fMaxMHz: 868, nombre: '' });
+  assert.equal(leerObjetivoUrl(''), null);
+  assert.equal(leerObjetivoUrl('?f=abc'), null);
+  assert.equal(leerObjetivoUrl('?f=-5'), null);
+  assert.equal(leerObjetivoUrl('?f=2400&banda=2500-2400').fMaxMHz, 2400); // banda invertida: solo la frecuencia
+  assert.equal(leerObjetivoUrl('?f=2400&nombre=<img src=x onerror=1>').nombre, 'img srcx onerror1'); // sin < > = ni comillas
+});
+
+test('contrato con Chirptenna: el .s1p simulado (RI, Hz, 50 Ω, comentarios con !) se lee', () => {
+  const texto = '! Chirptenna · simulación dipolo · openems · 2441.5 MHz\n# HZ S RI R 50\n2400000000 -3.2e-01 1.1e-01\n2441750000 -8.0e-02 5.0e-02\n';
+  const t = leerTouchstone(texto, 's11_simulado.s1p');
+  assert.equal(t.freq.length, 2);
+  assert.equal(t.freq[1], 2441750000);
+});
 
 test('puente: lee el resultado.json de Chirptenna y rechaza lo que no lo es', () => {
   const r = leerResultadoChirptenna(JSON.stringify({ clave: 'parche_rectangular', f_resonancia_MHz: 2440, s11_min_dB: -18, verificacion_malla: { veredicto: 'robusta' } }));

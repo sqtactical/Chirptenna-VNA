@@ -13,6 +13,19 @@ export function leerResultadoChirptenna(texto) {
   };
 }
 
+// Objetivo que manda Chirptenna al abrir la web: ?f=2441.75&banda=2400-2483.5&nombre=mi_antena (MHz). Entrada no fiable:
+// solo números finitos y un nombre limpio (acaba en pantalla). Devuelve null si no hay un objetivo válido.
+export function leerObjetivoUrl(busqueda) {
+  const q = new URLSearchParams(busqueda);
+  const f = +q.get('f');
+  let a = f, b = f;
+  const m = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/.exec(q.get('banda') ?? '');
+  if (m && +m[1] > 0 && +m[2] > +m[1]) { a = +m[1]; b = +m[2]; }
+  if (!(a > 0) || !Number.isFinite(a) || !Number.isFinite(b) || b > 1e5) return null;
+  const nombre = (q.get('nombre') ?? '').replace(/[^\p{L}\p{N} _.\-]/gu, '').slice(0, 60);
+  return { fMinMHz: a, fMaxMHz: b, nombre };
+}
+
 // La frecuencia de una antena impresa escala con 1/√εeff, con εeff ≈ (εr+1)/2 para una pista sobre el sustrato.
 // Dada la resonancia simulada con εr_sim y la medida, devuelve la εeff y la εr que explicarían el desplazamiento.
 export function deducirEr(fSim, fMed, erSim) {
