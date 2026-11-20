@@ -5,6 +5,8 @@
 
 # Chirptenna VNA
 
+**Español** · [English](README.en.md) · [Français](README.fr.md) · [Deutsch](README.de.md)
+
 Asistente web para **medir una antena con un NanoVNA** desde el navegador, sin instalar nada: dice si resuena donde
 quieres, si hay que **alargarla o cortarla y cuánto**, y da todos sus parámetros (Smith, impedancia, VSWR, fase, retardo
 de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirptenna](https://sqtactical.github.io/chirptenna/)
@@ -14,8 +16,6 @@ de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirpten
 > no se ha ejecutado contra el equipo conectado**. Hasta entonces, trátalo como experimental.
 
 **Úsalo ahora: <https://sqtactical.github.io/Chirptenna-VNA/>** (Chrome o Edge de escritorio; tiene un modo simulado para probar sin equipo).
-
-[English summary at the end.]
 
 ## Qué hace
 
@@ -37,6 +37,9 @@ de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirpten
   la banda que mejor la enseña.
 - **Mi nodo Meshtastic**: eliges región y preset y la app calcula la frecuencia real de tu canal y juzga la antena ahí.
 - **Comparar antenas**: guarda varias medidas con nombre y compáralas en una tabla y un gráfico.
+- **Herramientas de radioaficionado** (modo Avanzado): red de adaptación en L con valores E24, medida de coaxial y stubs, quitar el cable de la medida, Q de trampas y resonadores, modo «En vivo» para ajustar un acoplador y veredicto por banda en antenas multibanda.
+- **Herramientas de experto**: comparar con un archivo Touchstone (.s1p/.s2p) o con el esultado.json de una simulación de Chirptenna (estima la εr real), promediar barridos con ruido estimado y una API de consola (window.chirptenna).
+- **Leer en voz alta** el veredicto.
 - **Regiones**: Europa (R1), América (R2) y Asia-Pacífico (R3, con bandas ITU sin contrastar por país).
 - **Idiomas**: castellano, inglés, francés y alemán (selector en la cabecera; se elige solo según el navegador o con
   `?idioma=en`). Las traducciones las ha hecho Claude y conviene que las revise alguien nativo.
@@ -106,11 +109,3 @@ Funciones previstas para principiantes, Meshtastic, radioaficionados y expertos 
 ## Licencia
 
 [AGPL-3.0](LICENSE), como Chirptenna.
-
-## English summary
-
-Browser-based (Web Serial, desktop Chrome/Edge) helper to measure any antenna with a NanoVNA: finds the resonance, tells
-you whether to lengthen or shorten the antenna and by what percentage, covers HAM (MF–SHF) and ISM (EU/US) bands, has an
-advanced mode (Smith chart, impedance, VSWR, phase, group delay, CSV/.s1p, PDF report) and a guided OSL calibration that can
-be done in frequency segments. UI text is in Spanish for now. Alpha: tested against an emulator and real NanoVNA-H data,
-not yet against a connected device. Run with `python -m http.server`, test with `node --test pruebas/`.

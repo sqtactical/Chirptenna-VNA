@@ -74,3 +74,5 @@ va antes que todo lo demás. Resumen:
   de idioma; versión de escritorio (reutilizar la lógica de Python del proyecto Chirptenna) y posible enlace desde su
   pestaña «Medir».
 - Repo privado en GitHub: `sqtactical/Chirptenna-VNA` (publicar la web con `.github/workflows/pages.yml` si el plan lo permite).
+
+- **READMEs en cuatro idiomas**: `README.md` (castellano, fuente), `README.en.md`, `README.fr.md` y `README.de.md` van en paralelo (mismos apartados). Al cambiar uno, actualizar los otros tres.
