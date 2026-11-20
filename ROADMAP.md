@@ -105,7 +105,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       antenas de un mismo nodo. **L**
 - [ ] 🔴 **Dominio del tiempo (TDR)**: transformada inversa con ventanas, paso y respuesta al impulso, localización de
       discontinuidades en un coaxial o en una pista de PCB, **time gating** para quitar reflexiones del entorno. **L**
-- [~] 🔴 **Promediado y estadística** (20-11: casilla «Promediar barridos» 1–20, ruido típico en |S11|; falta usar el ruido como umbral de prominencia, `estadistica.umbralProminencia` ya existe): N barridos, desviación por punto, ruido del sistema estimado y usado como umbral
+- [x] 🔴 **Promediado y estadística** (20-11: casilla «Promediar barridos» 1–20, ruido típico en |S11|; el ruido sube el umbral de prominencia sobre los 3 dB): N barridos, desviación por punto, ruido del sistema estimado y usado como umbral
       de prominencia (hoy fijo en 3 dB). **S**
 - [x] 🔴 **Importar y comparar Touchstone** (20-11: `.s1p`/`.s2p` en RI/MA/DB, superpuesto en gris con diferencia y desplazamiento de la resonancia; el S21 de un `.s2p` se lee pero aún no se dibuja): superponer `.s1p`/`.s2p` de otras herramientas, de simulación (openEMS, NEC,
       CST) o del fabricante; diferencia punto a punto. **S**
@@ -113,7 +113,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       estimada con el método de Wheeler (cap) midiendo con y sin campana. **M**
 - [ ] 🔴 **Incertidumbre**: barras de error a partir de la calidad de la calibración (directividad y adaptación de fuente
       residuales tras verificar con la carga). **M**
-- [ ] 🔴 **Scripting / API**: consola JS o URL con parámetros para automatizar barridos y exportar JSON; registro de los
+- [~] 🔴 **Scripting / API** (20-11: `window.chirptenna.medir()/resultado()/referencia()` en la consola; falta URL con parámetros y registro de comandos): consola JS o URL con parámetros para automatizar barridos y exportar JSON; registro de los
       comandos enviados al equipo (depuración). **S**
 
 ## Fase 4 — Ecosistema

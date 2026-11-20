@@ -15,7 +15,7 @@ import { REGIONES, PRESETS, calcularCanal } from './meshtastic.js';
 import { iniciarHerramientas } from './herramientas.js';
 import { quitarCable } from './cable.js';
 import { leerTouchstone } from './touchstone.js';
-import { promediar, ruidoSistema } from './estadistica.js';
+import { promediar, ruidoSistema, umbralProminencia } from './estadistica.js';
 import { compararConReferencia } from './diferencia.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
@@ -293,12 +293,13 @@ async function escanear(a, b, n, prog, esp) {
 }
 
 // ---------- Analisis segun el modo ----------
+let prominenciaDb = 3; // sube con el ruido medido al promediar barridos
 function evaluarTodo(medida, umbral) {
   const obj = estudio === 'banda' ? objetivoActual() : null;
   const seleccion = estudio === 'multi' ? multiSeleccion() : [];
   const bandas = estudio === 'banda' ? (obj ? [obj.banda] : []) : estudio === 'multi' ? seleccion : bandasDeRegion(bandasCfg.bandas, $('region').value);
   const evaluacion = evaluarBandas(medida, bandas, umbral, fMaxActual());
-  const picos = resonancias(medida, umbral);
+  const picos = resonancias(medida, umbral, prominenciaDb);
   const multi = seleccion.length ? veredictosPorBanda(medida, picos, seleccion, umbral, unidad()) : null;
   const dudosos = resonanciasDudosas(medida, picos);
   const reco = obj ? recomendacion(medida, picos, obj, umbral, unidad(), { multibanda: $('multibanda').checked }) : null;
@@ -363,6 +364,7 @@ async function medir() {
     const Nprom = modo === 'avanzado' ? Math.max(1, Math.min(20, Math.round(+$('promedio').value || 1))) : 1;
     let crudo = await escanear(fIni, fFin, puntos, p => estado(T('Midiendo… {0} %', (p * 100).toFixed(0))), esp);
     let estad = null;
+    prominenciaDb = 3;
     if (Nprom > 1) {
       const barridos = [crudo];
       for (let k = 2; k <= Nprom; k++) {
@@ -371,7 +373,8 @@ async function medir() {
       }
       const p = promediar(barridos);
       crudo = { ...crudo, freq: p.freq, re: p.re, im: p.im };
-      estad = { n: p.n, ...ruidoSistema(p.desv) };
+      estad = { n: p.n, ...ruidoSistema(p.desv), prominencia: umbralProminencia(p.desv) };
+      prominenciaDb = estad.prominencia;
     }
     let medida = calcular(crudo), res = evaluarTodo(medida, umbral), afinado = false;
     if (afinar) {
@@ -864,6 +867,16 @@ async function iniciar() {
   $('simulado').addEventListener('change', () => { $('campo-antena-sim').hidden = !$('simulado').checked; });
   $('campo-antena-sim').hidden = !$('simulado').checked;
   $('medir').onclick = medir;
+  // API para la consola del navegador: automatizar barridos y sacar los datos en JSON
+  window.chirptenna = {
+    medir: async () => { await medir(); return window.chirptenna.resultado(); },
+    resultado: () => ultimo && {
+      fecha: ultimo.fecha.toISOString(), banda: ultimo.obj?.banda.nombre ?? null, veredicto: ultimo.reco?.titulo ?? null,
+      freq_Hz: Array.from(ultimo.medida.freq), s11_re: Array.from(ultimo.crudo.re), s11_im: Array.from(ultimo.crudo.im),
+      roe: Array.from(ultimo.medida.vswr), ruido: ultimo.estad ? { barridos: ultimo.estad.n, sigma: ultimo.estad.sigma } : null,
+    },
+    referencia: async texto => cargarReferencia({ name: 'consola.s1p', text: async () => texto }),
+  };
   $('envivo').onclick = alternarEnVivo;
   herramientas = iniciarHerramientas({ getUltimo: () => ultimo });
   $('region').onchange = () => { soltarCompartida(); poblarObjetivo(); reanalizar(); };
