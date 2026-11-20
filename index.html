@@ -107,6 +107,7 @@
       </label>
       <label class="solo-avanzado"><span data-t>Pérdida de retorno mínima (dB)</span><input id="umbral" type="number" value="10" min="3" max="30"></label>
       <label class="chk solo-avanzado"><input id="afinar" type="checkbox" checked> <span data-t>Afinar alrededor de resonancias y bandas estrechas</span></label>
+      <label class="solo-avanzado"><span data-t>Promediar barridos (1 = sin promediar)</span><input id="promedio" type="number" value="1" min="1" max="20" step="1"></label>
       <label class="chk"><input id="multibanda" type="checkbox"> <span data-t>Mi antena es multibanda (trampas, abanico…): da los consejos por tramo</span></label>
       <label class="chk"><input id="simulado" type="checkbox"> <span data-t>Modo simulado (sin equipo)</span></label>
       <label id="campo-antena-sim" hidden><span data-t>Antena simulada</span><select id="antena-sim"></select></label>
@@ -238,6 +239,16 @@
         <div class="tabla-scroll"><table id="bandas"></table></div>
       </section>
     </div>
+
+    <section class="tarjeta solo-avanzado" id="tarjeta-ref">
+      <h2 data-t>Comparar con un archivo Touchstone</h2>
+      <p data-t class="leyenda">Carga un .s1p (o .s2p) de una simulación, del fabricante o de otra medida y se superpone en gris al gráfico de ROE, con la diferencia punto a punto. Útil para ver cuánto se desvía la antena real de la simulada.</p>
+      <div class="botones">
+        <label class="boton-archivo"><span data-t>Elegir archivo…</span><input id="ref-archivo" type="file" accept=".s1p,.s2p,.txt" hidden></label>
+        <button data-t id="ref-quitar" hidden>Quitar referencia</button>
+      </div>
+      <div id="ref-resultado" class="leyenda"></div>
+    </section>
 
     <section class="tarjeta" id="tarjeta-comparar" hidden>
       <h2 data-t>Comparar antenas</h2>

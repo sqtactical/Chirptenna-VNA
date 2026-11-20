@@ -56,6 +56,7 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--prima
 button, .boton { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font: inherit; padding: .5rem .9rem; border-radius: 6px; border: 1px solid var(--primario); background: transparent; color: var(--primario); cursor: pointer; }
 button.primario { background: var(--primario); color: var(--primario-txt); }
 button:disabled { opacity: .5; cursor: not-allowed; }
+.boton-archivo { display: inline-flex; align-items: center; padding: .5rem .9rem; border-radius: 6px; border: 1px solid var(--primario); color: var(--primario); cursor: pointer; }
 .boton-icono { padding: 0; }
 
 #estado { margin-top: .6rem; color: var(--suave); min-height: 1.4em; }

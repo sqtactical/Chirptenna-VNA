@@ -105,9 +105,9 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       antenas de un mismo nodo. **L**
 - [ ] 🔴 **Dominio del tiempo (TDR)**: transformada inversa con ventanas, paso y respuesta al impulso, localización de
       discontinuidades en un coaxial o en una pista de PCB, **time gating** para quitar reflexiones del entorno. **L**
-- [ ] 🔴 **Promediado y estadística**: N barridos, desviación por punto, ruido del sistema estimado y usado como umbral
+- [~] 🔴 **Promediado y estadística** (20-11: casilla «Promediar barridos» 1–20, ruido típico en |S11|; falta usar el ruido como umbral de prominencia, `estadistica.umbralProminencia` ya existe): N barridos, desviación por punto, ruido del sistema estimado y usado como umbral
       de prominencia (hoy fijo en 3 dB). **S**
-- [ ] 🔴 **Importar y comparar Touchstone**: superponer `.s1p`/`.s2p` de otras herramientas, de simulación (openEMS, NEC,
+- [x] 🔴 **Importar y comparar Touchstone** (20-11: `.s1p`/`.s2p` en RI/MA/DB, superpuesto en gris con diferencia y desplazamiento de la resonancia; el S21 de un `.s2p` se lee pero aún no se dibuja): superponer `.s1p`/`.s2p` de otras herramientas, de simulación (openEMS, NEC,
       CST) o del fabricante; diferencia punto a punto. **S**
 - [ ] 🔴 **Ajuste de modelos**: RLC serie/paralelo equivalente alrededor de la resonancia, Q cargada/descargada, eficiencia
       estimada con el método de Wheeler (cap) midiendo con y sin campana. **M**

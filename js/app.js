@@ -14,6 +14,9 @@ import { crearGrillo, elegirMensaje } from './grillo.js';
 import { REGIONES, PRESETS, calcularCanal } from './meshtastic.js';
 import { iniciarHerramientas } from './herramientas.js';
 import { quitarCable } from './cable.js';
+import { leerTouchstone } from './touchstone.js';
+import { promediar, ruidoSistema } from './estadistica.js';
+import { compararConReferencia } from './diferencia.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
@@ -357,7 +360,19 @@ async function medir() {
     estado(T('Midiendo… no muevas el cable'));
     cricky('midiendo');
     const t0 = performance.now();
+    const Nprom = modo === 'avanzado' ? Math.max(1, Math.min(20, Math.round(+$('promedio').value || 1))) : 1;
     let crudo = await escanear(fIni, fFin, puntos, p => estado(T('Midiendo… {0} %', (p * 100).toFixed(0))), esp);
+    let estad = null;
+    if (Nprom > 1) {
+      const barridos = [crudo];
+      for (let k = 2; k <= Nprom; k++) {
+        estado(T('Promediando: barrido {0} de {1}…', k, Nprom));
+        barridos.push(await escanear(fIni, fFin, puntos, () => {}, esp));
+      }
+      const p = promediar(barridos);
+      crudo = { ...crudo, freq: p.freq, re: p.re, im: p.im };
+      estad = { n: p.n, ...ruidoSistema(p.desv) };
+    }
     let medida = calcular(crudo), res = evaluarTodo(medida, umbral), afinado = false;
     if (afinar) {
       const ventanas = ventanasAfinado(res.picos, res.evaluacion, fIni, fFin);
@@ -380,7 +395,7 @@ async function medir() {
     const previoMulti = ultimo?.multi ? resumenPorBanda(ultimo.multi) : null;
     ultimo = {
       crudo, medida, ...res, umbral, fecha: new Date(), afinado, calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null,
-      idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo, previoMulti,
+      idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo, previoMulti, estad,
     };
     pitido(1320, 250);
     estado(T('Listo: {0} puntos en {1} s{2}', crudo.freq.length, ((performance.now() - t0) / 1000).toFixed(1), afinado ? T(' (con afinado)') : ''));
@@ -623,6 +638,7 @@ function mostrar() {
 
   tablas();
   herramientas?.actualizar();
+  pintarReferencia();
   const s = $('cursor');
   s.max = ultimo.medida.freq.length - 1;
   s.value = ultimo.idx;
@@ -659,6 +675,35 @@ function tablas() {
   }
 }
 
+// Referencia Touchstone (simulación, fabricante, otra medida) superpuesta a la medida y diferencia punto a punto.
+let referencia = null; // { nombre, crudo, medida, puertos }
+function pintarReferencia() {
+  const info = $('ref-resultado');
+  info.replaceChildren();
+  const linea = t => info.appendChild(Object.assign(document.createElement('p'), { textContent: t }));
+  $('ref-quitar').hidden = !referencia;
+  if (ultimo?.estad) linea(T('Promediado de {0} barridos: ruido típico del equipo ±{1} en |S11| (≈ ±{2} dB en un pozo de −20 dB).', ultimo.estad.n, ultimo.estad.sigma.toFixed(4), ultimo.estad.dbEn20.toFixed(2)));
+  if (!referencia) return;
+  const d = compararConReferencia(ultimo.crudo, referencia.crudo);
+  if (!d) return linea(T('La referencia «{0}» no se solapa en frecuencia con esta medida.', referencia.nombre));
+  linea(T('Referencia «{0}» (línea gris del gráfico de ROE). Se comparan {1} puntos ({2} % de la medida).', referencia.nombre, d.n, Math.round(d.solape * 100)));
+  linea(T('Diferencia de S11: media cuadrática {0}, máxima {1} a {2}. Diferencia de ROE: media {3}, máxima {4} a {5}.', d.rmsGamma.toFixed(3), d.maxGamma.toFixed(3), fmtF(d.fMaxGamma), d.roeMedia.toFixed(2), d.roeMaxDif.toFixed(2), fmtF(d.fRoeMaxDif)));
+  if (d.desplazamiento !== null) {
+    const pc = d.desplazamiento * 100;
+    linea(T('Mínimo de |S11|: medido a {0}, referencia a {1} ({2} %).', fmtF(d.fMinMedida), fmtF(d.fMinRef), (pc >= 0 ? '+' : '−') + Math.abs(pc).toFixed(1)));
+    if (Math.abs(pc) > 1) linea(pc < 0 ? T('La medida resuena más baja que la referencia: la antena real es eléctricamente más larga (o el entorno la carga).') : T('La medida resuena más alta que la referencia: la antena real es eléctricamente más corta.'));
+  }
+}
+async function cargarReferencia(archivo) {
+  try {
+    const t = leerTouchstone(await archivo.text(), archivo.name);
+    const crudo = { freq: t.freq, re: t.re, im: t.im };
+    referencia = { nombre: archivo.name, crudo, medida: calcular(crudo), puertos: t.puertos };
+    estado(T('Referencia cargada: {0} ({1} puntos)', archivo.name, t.freq.length));
+  } catch (e) { referencia = null; estado(e.message, true); }
+  if (ultimo) { redibujar(); pintarReferencia(); }
+}
+
 // Resonancia eléctrica (X = 0) en el gráfico de ROE del modo Simple, si el usuario lo ha activado.
 function marcasXActivas() {
   if (unidad() !== 'roe' || !$('ver-x').checked || !ultimo) return [];
@@ -668,7 +713,9 @@ function marcasXActivas() {
 function redibujar() {
   if (!ultimo) return;
   const { medida, idx } = ultimo, fm = medida.freq[idx];
-  const previo = unidad() === 'roe' && ultimo.previo ? remuestrear(ultimo.previo.freq, ultimo.previo.vswr, medida.freq) : undefined;
+  const previo = unidad() !== 'roe' ? undefined
+    : referencia ? remuestrear(referencia.medida.freq, referencia.medida.vswr, medida.freq)
+    : ultimo.previo ? remuestrear(ultimo.previo.freq, ultimo.previo.vswr, medida.freq) : undefined;
   (unidad() === 'roe' ? dibujarROE : dibujar)($('grafico'), medida, ultimo.evaluacion, ultimo.umbral, { marcadorF: fm, marcasX: marcasXActivas(), previo });
   if (modo !== 'avanzado') return;
   dibujarSmith($('smith'), medida, { marcadorIdx: idx });
@@ -824,6 +871,8 @@ async function iniciar() {
   $('segmento').onchange = reanalizar; // se mide la banda entera, así que cambiar de segmento no obliga a medir otra vez
   $('fobj').onchange = reanalizar;
   $('umbral').onchange = () => { if (ultimo) ultimo.umbral = +$('umbral').value; reanalizar(); };
+  $('ref-archivo').onchange = async e => { const f = e.target.files[0]; if (f) await cargarReferencia(f); e.target.value = ''; };
+  $('ref-quitar').onclick = () => { referencia = null; if (ultimo) { redibujar(); pintarReferencia(); } };
   $('csv').onclick = () => {
     if (!ultimo) return;
     const m = ultimo.medida;
