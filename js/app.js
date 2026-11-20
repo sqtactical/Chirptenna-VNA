@@ -17,6 +17,7 @@ import { quitarCable } from './cable.js';
 import { leerTouchstone } from './touchstone.js';
 import { promediar, ruidoSistema, umbralProminencia } from './estadistica.js';
 import { compararConReferencia } from './diferencia.js';
+import { leerResultadoChirptenna, deducirEr } from './puente.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
@@ -684,8 +685,20 @@ function pintarReferencia() {
   const info = $('ref-resultado');
   info.replaceChildren();
   const linea = t => info.appendChild(Object.assign(document.createElement('p'), { textContent: t }));
-  $('ref-quitar').hidden = !referencia;
+  $('ref-quitar').hidden = !referencia && !simChirptenna;
   if (ultimo?.estad) linea(T('Promediado de {0} barridos: ruido típico del equipo ±{1} en |S11| (≈ ±{2} dB en un pozo de −20 dB).', ultimo.estad.n, ultimo.estad.sigma.toFixed(4), ultimo.estad.dbEn20.toFixed(2)));
+  if (simChirptenna && ultimo) {
+    // resonancia medida más cercana a la simulada
+    const fs = (ultimo.picos ?? []).map(p => ultimo.medida.freq[p.i]);
+    const fMed = fs.sort((a, b) => Math.abs(a - simChirptenna.fRes) - Math.abs(b - simChirptenna.fRes))[0];
+    if (!fMed) linea(T('La medida no tiene ninguna resonancia para comparar con la simulada.'));
+    else {
+      const er = +$('puente-er').value || 4.5, r = deducirEr(simChirptenna.fRes, fMed, er);
+      linea(T('Chirptenna simuló {0} ({1}) con εr {2}; la medida resuena a {3} ({4} %).', fmtF(simChirptenna.fRes), simChirptenna.tipo || '—', er, fmtF(fMed), (r.desplazamiento >= 0 ? '+' : '−') + Math.abs(r.desplazamiento * 100).toFixed(1)));
+      linea(T('Si todo el desplazamiento fuera del sustrato, su εr real sería ≈ {0} (valor orientativo: el entorno, el conector y la tolerancia del cobre también desplazan).', r.erMedida.toFixed(2)));
+      if (!simChirptenna.fiable) linea(T('Ojo: esa simulación salió «sensible» a la malla, así que su frecuencia es poco fiable.'));
+    }
+  }
   if (!referencia) return;
   const d = compararConReferencia(ultimo.crudo, referencia.crudo);
   if (!d) return linea(T('La referencia «{0}» no se solapa en frecuencia con esta medida.', referencia.nombre));
@@ -697,7 +710,14 @@ function pintarReferencia() {
     if (Math.abs(pc) > 1) linea(pc < 0 ? T('La medida resuena más baja que la referencia: la antena real es eléctricamente más larga (o el entorno la carga).') : T('La medida resuena más alta que la referencia: la antena real es eléctricamente más corta.'));
   }
 }
+let simChirptenna = null; // resultado.json de una simulación de Chirptenna
 async function cargarReferencia(archivo) {
+  if (/\.json$/i.test(archivo.name)) {
+    try { simChirptenna = leerResultadoChirptenna(await archivo.text()); estado(T('Simulación de Chirptenna cargada: {0}', archivo.name)); }
+    catch (e) { simChirptenna = null; estado(e.message, true); }
+    if (ultimo) pintarReferencia();
+    return;
+  }
   try {
     const t = leerTouchstone(await archivo.text(), archivo.name);
     const crudo = { freq: t.freq, re: t.re, im: t.im };
@@ -885,7 +905,17 @@ async function iniciar() {
   $('fobj').onchange = reanalizar;
   $('umbral').onchange = () => { if (ultimo) ultimo.umbral = +$('umbral').value; reanalizar(); };
   $('ref-archivo').onchange = async e => { const f = e.target.files[0]; if (f) await cargarReferencia(f); e.target.value = ''; };
-  $('ref-quitar').onclick = () => { referencia = null; if (ultimo) { redibujar(); pintarReferencia(); } };
+  $('leer').onclick = () => {
+    if (!('speechSynthesis' in window)) return estado(T('Tu navegador no sabe leer en voz alta.'), true);
+    speechSynthesis.cancel();
+    if (!ultimo) return;
+    const partes = ultimo.reco ? [ultimo.reco.titulo, ...ultimo.reco.lineas.slice(0, 2)] : [veredicto(ultimo.picos, ultimo.evaluacion, ultimo.umbral, unidad(), { medida: ultimo.medida, obj: ultimo.obj }).titulo];
+    const u = new SpeechSynthesisUtterance(partes.join('. '));
+    u.lang = { es: 'es-ES', en: 'en-GB', fr: 'fr-FR', de: 'de-DE' }[idiomaActual()] ?? 'es-ES';
+    speechSynthesis.speak(u);
+  };
+  $('puente-er').onchange = () => { if (ultimo) pintarReferencia(); };
+  $('ref-quitar').onclick = () => { referencia = null; simChirptenna = null; if (ultimo) { redibujar(); pintarReferencia(); } };
   $('csv').onclick = () => {
     if (!ultimo) return;
     const m = ultimo.medida;

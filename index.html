@@ -242,9 +242,10 @@
 
     <section class="tarjeta solo-avanzado" id="tarjeta-ref">
       <h2 data-t>Comparar con un archivo Touchstone</h2>
-      <p data-t class="leyenda">Carga un .s1p (o .s2p) de una simulación, del fabricante o de otra medida y se superpone en gris al gráfico de ROE, con la diferencia punto a punto. Útil para ver cuánto se desvía la antena real de la simulada.</p>
+      <p data-t class="leyenda">Carga un .s1p (o .s2p) de una simulación, del fabricante o de otra medida y se superpone en gris al gráfico de ROE, con la diferencia punto a punto. Útil para ver cuánto se desvía la antena real de la simulada. También acepta el resultado.json de una simulación de Chirptenna (el generador de antenas): compara la resonancia simulada con la medida y estima la εr real del sustrato.</p>
       <div class="botones">
-        <label class="boton-archivo"><span data-t>Elegir archivo…</span><input id="ref-archivo" type="file" accept=".s1p,.s2p,.txt" hidden></label>
+        <label class="boton-archivo"><span data-t>Elegir archivo…</span><input id="ref-archivo" type="file" accept=".s1p,.s2p,.txt,.json" hidden></label>
+        <label class="solo-avanzado"><span data-t>εr con la que se simuló (FR4 de JLC: 4,5)</span><input id="puente-er" type="number" value="4.5" min="1" max="20" step="0.05"></label>
         <button data-t id="ref-quitar" hidden>Quitar referencia</button>
       </div>
       <div id="ref-resultado" class="leyenda"></div>
@@ -266,6 +267,7 @@
       <h2 data-t>Descargar</h2>
       <div class="botones">
         <button data-t id="pdf" class="primario">Informe PDF</button>
+        <button data-t id="leer" title="Lee en voz alta el veredicto, útil con las manos en la antena" data-t-attr="title">Leer en voz alta</button>
         <button data-t id="png">Imagen PNG</button>
         <button data-t id="enlace">Copiar enlace</button>
         <button data-t id="csv" class="solo-avanzado">CSV</button>

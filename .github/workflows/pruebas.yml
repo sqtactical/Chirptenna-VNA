@@ -10,5 +10,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test pruebas/vna.test.mjs pruebas/real.test.mjs pruebas/i18n.test.mjs pruebas/ham.test.mjs pruebas/expertos.test.mjs
+      - run: node --test pruebas/vna.test.mjs pruebas/real.test.mjs pruebas/i18n.test.mjs pruebas/ham.test.mjs pruebas/expertos.test.mjs pruebas/expertos2.test.mjs
       - run: node herramientas/i18n.mjs faltan
