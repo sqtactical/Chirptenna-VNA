@@ -17,6 +17,7 @@ import { quitarCable } from './cable.js';
 import { leerTouchstone } from './touchstone.js';
 import { promediar, ruidoSistema, umbralProminencia } from './estadistica.js';
 import { compararConReferencia } from './diferencia.js';
+import { ajustarRLC } from './ajusterlc.js';
 import { PATRONES_IDEALES, IDS_PATRONES, patronesDeCampos, camposDePatrones, cargarPatrones, guardarPatrones } from './patrones.js';
 import { leerResultadoChirptenna, deducirEr, leerObjetivoUrl } from './puente.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
@@ -652,8 +653,8 @@ function mostrar() {
 
 function tablas() {
   const tp = $('picos');
-  tp.innerHTML = `<tr><th>${T('Mínimo de ROE')}</th><th>${T('Pérdida de retorno')}</th><th>VSWR</th><th title="${T('Frecuencia donde la reactancia X cruza por cero: la resonancia eléctrica. No siempre coincide con el mínimo de ROE.')}">${T('Reactancia cero (X = 0)')}</th><th>${T('Ancho de banda')}</th></tr>`;
-  if (!ultimo.picos.length) tp.innerHTML += `<tr><td colspan="5">${T('No se detectan resonancias claras en el rango medido.')}</td></tr>`;
+  tp.innerHTML = `<tr><th>${T('Mínimo de ROE')}</th><th>${T('Pérdida de retorno')}</th><th>VSWR</th><th title="${T('Frecuencia donde la reactancia X cruza por cero: la resonancia eléctrica. No siempre coincide con el mínimo de ROE.')}">${T('Reactancia cero (X = 0)')}</th><th>${T('Ancho de banda')}</th><th title="${T('Circuito RLC que mejor reproduce la impedancia cerca de la resonancia y su factor de calidad Q. Orientativo: una antena real no es un RLC ideal.')}">${T('Equivalente RLC')}</th></tr>`;
+  if (!ultimo.picos.length) tp.innerHTML += `<tr><td colspan="6">${T('No se detectan resonancias claras en el rango medido.')}</td></tr>`;
   // X = 0 cerca de cada mínimo; ⚠ si se aleja más de un 2,5 % (el porcentaje de longitud puede no ser fiable)
   const celdaX = p => {
     const rx = reactanciaCero(ultimo.medida, p.f);
@@ -662,12 +663,21 @@ function tablas() {
     if (rx.tipo === 'paralelo') return T('{0} ({1}, en paralelo)', fmtF(rx.fX), d);
     return Math.abs(rx.desv) > DESV_REACTANCIA ? T('⚠ {0} ({1}): no coincide', fmtF(rx.fX), d) : `${fmtF(rx.fX)} (${d})`;
   };
+  // RLC equivalente (ajuste por mínimos cuadrados cerca de la resonancia; indicativo)
+  const fmtL = h => h >= 1e-6 ? `${(h * 1e6).toFixed(2)} µH` : `${(h * 1e9).toFixed(1)} nH`;
+  const fmtC = c => c >= 1e-9 ? `${(c * 1e9).toFixed(2)} nF` : `${(c * 1e12).toFixed(2)} pF`;
+  const celdaRLC = p => {
+    const rx = reactanciaCero(ultimo.medida, p.f), r = ajustarRLC(ultimo.medida, rx ? rx.fX : p.f);
+    if (!r) return '—';
+    const aviso = r.error > 0.15 ? ` <span title="${T('El circuito equivalente no reproduce bien la curva: no es una resonancia sencilla.')}">⚠</span>` : '';
+    return `${r.tipo === 'serie' ? T('serie') : T('paralelo')}: R ${r.R < 1000 ? r.R.toFixed(1) : (r.R / 1000).toFixed(1) + ' k'} Ω · L ${fmtL(r.L)} · C ${fmtC(r.C)} · <b>Q ${r.q.toFixed(r.q < 10 ? 1 : 0)}</b>${aviso}`;
+  };
   for (const p of ultimo.picos.slice(0, 8)) {
     const bw = p.fLo != null ? `${fmtF(p.fHi - p.fLo)} (${fmtF(p.fLo)} – ${fmtF(p.fHi)})` : T('no alcanza {0} dB', ultimo.umbral);
-    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>${celdaX(p)}</td><td>${bw}</td></tr>`;
+    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>${celdaX(p)}</td><td>${bw}</td><td>${celdaRLC(p)}</td></tr>`;
   }
   for (const p of ultimo.dudosos ?? []) {
-    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">${T('posiblemente falsa')}</span></td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>—</td><td>${p.motivo}</td></tr>`;
+    tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">${T('posiblemente falsa')}</span></td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>—</td><td>${p.motivo}</td><td>—</td></tr>`;
   }
   const tb = $('bandas');
   tb.innerHTML = `<tr><th></th><th>${T('Banda')}</th><th>${T('Rango')}</th><th>${T('Resultado')}</th><th>${T('Mejor punto')}</th></tr>`;

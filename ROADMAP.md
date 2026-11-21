@@ -109,7 +109,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       de prominencia (hoy fijo en 3 dB). **S**
 - [x] 🔴 **Importar y comparar Touchstone** (20-11: `.s1p`/`.s2p` en RI/MA/DB, superpuesto en gris con diferencia y desplazamiento de la resonancia; el S21 de un `.s2p` se lee pero aún no se dibuja): superponer `.s1p`/`.s2p` de otras herramientas, de simulación (openEMS, NEC,
       CST) o del fabricante; diferencia punto a punto. **S**
-- [ ] 🔴 **Ajuste de modelos**: RLC serie/paralelo equivalente alrededor de la resonancia, Q cargada/descargada, eficiencia
+- [~] 🔴 **Ajuste de modelos** (21-11: RLC serie/paralelo y Q por mínimos cuadrados, columna «Equivalente RLC» en la tabla de resonancias, `js/ajusterlc.js`; falta Q cargada/descargada y eficiencia): RLC serie/paralelo equivalente alrededor de la resonancia, Q cargada/descargada, eficiencia
       estimada con el método de Wheeler (cap) midiendo con y sin campana. **M**
 - [ ] 🔴 **Incertidumbre**: barras de error a partir de la calidad de la calibración (directividad y adaptación de fuente
       residuales tras verificar con la carga). **M**
