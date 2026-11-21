@@ -111,7 +111,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
       CST) o del fabricante; diferencia punto a punto. **S**
 - [~] 🔴 **Ajuste de modelos** (21-11: RLC serie/paralelo y Q por mínimos cuadrados, columna «Equivalente RLC» en la tabla de resonancias, `js/ajusterlc.js`; falta Q cargada/descargada y eficiencia): RLC serie/paralelo equivalente alrededor de la resonancia, Q cargada/descargada, eficiencia
       estimada con el método de Wheeler (cap) midiendo con y sin campana. **M**
-- [ ] 🔴 **Incertidumbre**: barras de error a partir de la calidad de la calibración (directividad y adaptación de fuente
+- [~] 🔴 **Incertidumbre** (21-11: rango de la pérdida de retorno en cada mínimo según la repetibilidad de la verificación, `js/incertidumbre.js`; cota orientativa, no estadística; falta barras de error en el gráfico y usar los patrones del kit): barras de error a partir de la calidad de la calibración (directividad y adaptación de fuente
       residuales tras verificar con la carga). **M**
 - [~] 🔴 **Scripting / API** (20-11: `window.chirptenna.medir()/resultado()/referencia()` en la consola; falta URL con parámetros y registro de comandos): consola JS o URL con parámetros para automatizar barridos y exportar JSON; registro de los
       comandos enviados al equipo (depuración). **S**

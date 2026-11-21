@@ -173,7 +173,7 @@ const redondear = a => Array.from(a, x => Number(x.toPrecision(9)));
 
 export function tramoAJSON(s) {
   return {
-    fecha: s.fecha, equipo: s.equipo ?? '', freq: Array.from(s.freq), ...(s.patrones && !esIdeal(s.patrones) ? { patrones: s.patrones } : {}),
+    fecha: s.fecha, equipo: s.equipo ?? '', ...(Number.isFinite(s.repetDb) ? { repetDb: s.repetDb } : {}), freq: Array.from(s.freq),...(s.patrones && !esIdeal(s.patrones) ? { patrones: s.patrones } : {}),
     ed: { re: redondear(s.ed.re), im: redondear(s.ed.im) },
     es: { re: redondear(s.es.re), im: redondear(s.es.im) },
     er: { re: redondear(s.er.re), im: redondear(s.er.im) },
@@ -182,7 +182,7 @@ export function tramoAJSON(s) {
 
 export function tramoDeJSON(j) {
   const f = a => Float64Array.from(a);
-  return { fecha: j.fecha, equipo: j.equipo ?? '', ...(j.patrones ? { patrones: j.patrones } : {}), freq: f(j.freq), ed: { re: f(j.ed.re), im: f(j.ed.im) }, es: { re: f(j.es.re), im: f(j.es.im) }, er: { re: f(j.er.re), im: f(j.er.im) } };
+  return { fecha: j.fecha, equipo: j.equipo ?? '', ...(Number.isFinite(j.repetDb) ? { repetDb: j.repetDb } : {}), ...(j.patrones ? { patrones: j.patrones } : {}), freq: f(j.freq), ed: { re: f(j.ed.re), im: f(j.ed.im) }, es: { re: f(j.es.re), im: f(j.es.im) }, er: { re: f(j.er.re), im: f(j.er.im) } };
 }
 
 export function juegoAJSON(j) { return { id: j.id, nombre: j.nombre, fecha: j.fecha, segmentos: j.segmentos.map(tramoAJSON) }; }

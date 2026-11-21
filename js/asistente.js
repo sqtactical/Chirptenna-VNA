@@ -162,6 +162,7 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
       if (paso.id === 'verif') {
         const db = repetibilidadDb(S.seg, crudo);
         const bien = db <= -20;
+        S.seg.repetDb = db; // alimenta la incertidumbre orientativa de las medidas
         S.msg = T('Con la carga reconectada, |Γ| medio = {0} dB. {1}', db.toFixed(1), bien ? T('La calibración se repite bien.') : T('Es poco: revisa conectores, apriétalos y repite la calibración de este tramo.'));
         S.msgError = !bien; S.ocupado = false; S.verifHecha = bien;
         return bien ? guardarTramo() : render();

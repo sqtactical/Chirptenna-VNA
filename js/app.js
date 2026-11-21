@@ -18,6 +18,7 @@ import { leerTouchstone } from './touchstone.js';
 import { promediar, ruidoSistema, umbralProminencia } from './estadistica.js';
 import { compararConReferencia } from './diferencia.js';
 import { ajustarRLC } from './ajusterlc.js';
+import { parametrosIncertidumbre, rangoAdaptacion } from './incertidumbre.js';
 import { PATRONES_IDEALES, IDS_PATRONES, patronesDeCampos, camposDePatrones, cargarPatrones, guardarPatrones } from './patrones.js';
 import { leerResultadoChirptenna, deducirEr, leerObjetivoUrl } from './puente.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
@@ -400,7 +401,7 @@ async function medir() {
     if (previo) previo.fRes = ultimoRes;
     const previoMulti = ultimo?.multi ? resumenPorBanda(ultimo.multi) : null;
     ultimo = {
-      crudo, medida, ...res, umbral, fecha: new Date(), afinado, calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null,
+      crudo, medida, ...res, umbral, fecha: new Date(), afinado, inc: parametrosIncertidumbre(juegoCal), calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null,
       idx: res.picos[0]?.i ?? indiceMasCercano(medida.freq, centro), clave, previo, previoMulti, estad,
     };
     pitido(1320, 250);
@@ -442,7 +443,7 @@ async function alternarEnVivo() {
       $('envivo-roe').textContent = fmtROE(medida.vswr[imin]);
       $('envivo-f').textContent = `@ ${fmtF(medida.freq[imin])}`;
       $('envivo-centro').textContent = fmtROE(medida.vswr[ic]);
-      ultimo = { crudo, medida, ...evaluarTodo(medida, umbral), umbral, fecha: new Date(), afinado: false, calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null, idx: imin, clave: null, previo: null };
+      ultimo = { crudo, medida, ...evaluarTodo(medida, umbral), umbral, fecha: new Date(), afinado: false, inc: parametrosIncertidumbre(juegoCal), calNombre: juegoCal ? `app «${juegoCal.nombre}»` : null, idx: imin, clave: null, previo: null };
       mostrar();
     }
   } catch (e) {
@@ -672,9 +673,18 @@ function tablas() {
     const aviso = r.error > 0.15 ? ` <span title="${T('El circuito equivalente no reproduce bien la curva: no es una resonancia sencilla.')}">⚠</span>` : '';
     return `${r.tipo === 'serie' ? T('serie') : T('paralelo')}: R ${r.R < 1000 ? r.R.toFixed(1) : (r.R / 1000).toFixed(1) + ' k'} Ω · L ${fmtL(r.L)} · C ${fmtC(r.C)} · <b>Q ${r.q.toFixed(r.q < 10 ? 1 : 0)}</b>${aviso}`;
   };
+  // Incertidumbre orientativa de la calibración: rango posible de la pérdida de retorno en el mínimo
+  const celdaRL = p => {
+    const base = `${p.rl.toFixed(1)} dB`;
+    if (!ultimo.inc) return base;
+    const r = rangoAdaptacion(10 ** (-p.rl / 20), ultimo.inc);
+    const rango = r.indistinguible ? T('{0} dB o más', r.rlMin.toFixed(0)) : T('{0} a {1} dB', r.rlMin.toFixed(0), r.rlMax.toFixed(0));
+    const nota = ultimo.inc.verificada ? T('Según la verificación de la calibración.') : T('Calibración sin verificar: margen típico, no medido. Usa el paso de verificación del asistente.');
+    return `${base} <small class="leyenda" title="${nota}">(± ${rango})</small>`;
+  };
   for (const p of ultimo.picos.slice(0, 8)) {
     const bw = p.fLo != null ? `${fmtF(p.fHi - p.fLo)} (${fmtF(p.fLo)} – ${fmtF(p.fHi)})` : T('no alcanza {0} dB', ultimo.umbral);
-    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>${celdaX(p)}</td><td>${bw}</td><td>${celdaRLC(p)}</td></tr>`;
+    tp.innerHTML += `<tr><td>${fmtF(p.f)}</td><td>${celdaRL(p)}</td><td>${fmtROE(p.vswr)}</td><td>${celdaX(p)}</td><td>${bw}</td><td>${celdaRLC(p)}</td></tr>`;
   }
   for (const p of ultimo.dudosos ?? []) {
     tp.innerHTML += `<tr class="dudosa"><td>${fmtF(p.f)} <span class="etiqueta-dudosa">${T('posiblemente falsa')}</span></td><td>${p.rl.toFixed(1)} dB</td><td>${fmtROE(p.vswr)}</td><td>—</td><td>${p.motivo}</td><td>—</td></tr>`;
