@@ -104,6 +104,7 @@ pruebas/           node:test, Emulator und echte Daten
   du dich darauf verlässt (Regulierung, Leistung und Kanäle sind separate Themen).
 - Höchstens 101 Punkte pro `scan` des Geräts; lange Sweeps werden verkettet und dauern.
 - Die Gruppenlaufzeit ist verrauscht (Ableitung der Phase).
+- **Die Unsicherheiten sind nur Richtwerte.** Der Bereich der Rückflussdämpfung stammt aus der Kalibrierprüfung und angenommenen typischen Spielräumen; die tatsächliche Unsicherheit kann größer sein. Für die Metrologie ohne kalibrierte, rückführbare Normale ungeeignet.
 
 ## Fahrplan
 

@@ -105,6 +105,7 @@ pruebas/           node:test, emulator and real data
   them (regulation, power limits and channels are separate matters).
 - At most 101 points per device `scan`; long sweeps are chained and take time.
 - Group delay is noisy (derivative of the phase).
+- **The uncertainties are indicative only.** The return-loss range comes from the calibration check and assumed typical margins; the real uncertainty may be larger. Not suitable for metrology without calibrated, traceable standards.
 
 ## Roadmap
 

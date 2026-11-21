@@ -101,6 +101,7 @@ pruebas/           node:test, emulador y datos reales
   antes de depender de ellos (regulación, potencias y canales aparte).
 - Máximo 101 puntos por `scan` del equipo; los barridos largos se encadenan y tardan.
 - El retardo de grupo sale ruidoso (derivada de la fase).
+- **Las incertidumbres son solo orientativas.** El rango de la pérdida de retorno sale de la verificación de la calibración y de márgenes típicos supuestos; la incertidumbre real puede ser mayor. No sirve para metrología sin patrones calibrados y trazables.
 
 ## Hoja de ruta
 

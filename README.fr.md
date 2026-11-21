@@ -105,6 +105,7 @@ pruebas/           node:test, émulateur et données réelles
   avant de t'y fier (réglementation, puissances et canaux sont à part).
 - 101 points maximum par `scan` de l'appareil ; les longs balayages sont enchaînés et prennent du temps.
 - Le temps de groupe est bruité (dérivée de la phase).
+- **Les incertitudes sont uniquement indicatives.** La plage de la perte de retour vient de la vérification de l'étalonnage et de marges typiques supposées ; l'incertitude réelle peut être plus grande. Inadapté à la métrologie sans étalons calibrés et traçables.
 
 ## Feuille de route
 

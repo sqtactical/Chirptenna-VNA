@@ -678,9 +678,10 @@ function tablas() {
     const base = `${p.rl.toFixed(1)} dB`;
     if (!ultimo.inc) return base;
     const r = rangoAdaptacion(10 ** (-p.rl / 20), ultimo.inc);
-    const rango = r.indistinguible ? T('{0} dB o más', r.rlMin.toFixed(0)) : T('{0} a {1} dB', r.rlMin.toFixed(0), r.rlMax.toFixed(0));
+    const rango = r.indistinguible ? T('orientativo: {0} dB o más', r.rlMin.toFixed(0)) : T('orientativo: {0} a {1} dB', r.rlMin.toFixed(0), r.rlMax.toFixed(0));
     const nota = ultimo.inc.verificada ? T('Según la verificación de la calibración.') : T('Calibración sin verificar: margen típico, no medido. Usa el paso de verificación del asistente.');
-    return `${base} <small class="leyenda" title="${nota}">(± ${rango})</small>`;
+    const aviso = T('Dato solo orientativo: puede haber más incertidumbre. No sirve para metrología sin patrones calibrados y trazables.');
+    return `${base} <small class="leyenda" title="${aviso} ${nota}">(${rango})</small>`;
   };
   for (const p of ultimo.picos.slice(0, 8)) {
     const bw = p.fLo != null ? `${fmtF(p.fHi - p.fLo)} (${fmtF(p.fLo)} – ${fmtF(p.fHi)})` : T('no alcanza {0} dB', ultimo.umbral);
