@@ -1,6 +1,7 @@
 // Asistente de calibracion guiado (OPEN, SHORT, LOAD) por tramos de frecuencia.
 // Cada tramo se calibra por separado y se guarda en el navegador, asi se puede completar mas tarde.
 import { T, idiomaActual } from './i18n.js';
+import { cargarPatrones } from './patrones.js';
 import {
   calcularTramo, comprobarPatron, resumenTramo, repetibilidadDb, planificarTramos, faltante,
   cargarJuegos, guardarJuegos,
@@ -174,7 +175,7 @@ export function crearAsistente({ contenedor, getDriver, getRangoPlan, onCambio, 
       S.msg = chk.mensaje; S.msgError = false;
       S.paso++;
       if (paso.id === 'load') {
-        S.seg = calcularTramo(S.freq, S.m.open, S.m.short, S.m.load, { equipo: drv.nombre + (drv.version ? ' ' + drv.version : '') });
+        S.seg = calcularTramo(S.freq, S.m.open, S.m.short, S.m.load, { equipo: drv.nombre + (drv.version ? ' ' + drv.version : ''), patrones: cargarPatrones() });
         const r = resumenTramo(S.seg);
         S.msg = T('Calibración calculada. Directividad |Ed| media {0}, adaptación de fuente |Es| media {1}. Ahora una verificación rápida (puedes omitirla).', r.ed.toFixed(3), r.es.toFixed(3));
       }

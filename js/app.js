@@ -17,6 +17,7 @@ import { quitarCable } from './cable.js';
 import { leerTouchstone } from './touchstone.js';
 import { promediar, ruidoSistema, umbralProminencia } from './estadistica.js';
 import { compararConReferencia } from './diferencia.js';
+import { PATRONES_IDEALES, IDS_PATRONES, patronesDeCampos, camposDePatrones, cargarPatrones, guardarPatrones } from './patrones.js';
 import { leerResultadoChirptenna, deducirEr, leerObjetivoUrl } from './puente.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
@@ -957,6 +958,11 @@ async function iniciar() {
     onCambio: id => poblarCal(id),
   });
   poblarCal();
+  // Modelo de patrones del kit: se guarda al cambiar y lo usa la calibracion que se haga desde entonces
+  const pintarPatrones = p => { const c = camposDePatrones(p); for (const id of IDS_PATRONES) $(id).value = c[id]; };
+  pintarPatrones(cargarPatrones());
+  for (const id of IDS_PATRONES) $(id).onchange = () => guardarPatrones(patronesDeCampos(k => $(k).value));
+  $('pat-ideales').onclick = () => { pintarPatrones(PATRONES_IDEALES); guardarPatrones(PATRONES_IDEALES); };
   $('cal-fuente').onchange = resumenCal;
   $('cal-abrir').onclick = () => asistente.abrir(calSeleccionada()?.id ?? null);
   $('cal-exportar').onclick = () => {

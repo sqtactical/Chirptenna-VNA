@@ -98,7 +98,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
 
 - [ ] 🔴 **Más equipos**: NanoVNA V2 / V2 Plus4 (protocolo binario), NanoVNA-F V3, LiteVNA (hasta 6 GHz); detección
       automática del modelo y del firmware (DiSlord, Hugen). Las bandas hasta 6 GHz ya están en `bandas.json`. **L**
-- [ ] 🔴 **Modelo de patrones de calibración**: retardo y pérdida del offset, C0–C3 del OPEN, L0–L3 del SHORT, carga no ideal;
+- [~] 🔴 **Modelo de patrones de calibración** (21-11: `js/patrones.js`, formulario «Modelo de los patrones del kit» en Avanzado, resuelve Ed/Es/Er con los Γ reales; falta una biblioteca de kits comunes con valores medidos y aplicar el modelo a calibraciones ya hechas): retardo y pérdida del offset, C0–C3 del OPEN, L0–L3 del SHORT, carga no ideal;
       kits predefinidos y editor. Mejora la precisión por encima de ~1 GHz. **M**
 - [ ] 🔴 **Dos puertos (S21)**: calibración respuesta + aislamiento y luego SOLT/enhanced response; filtros, amplificadores,
       atenuadores, ganancia relativa entre dos antenas (medida de **ganancia comparativa** en campo), aislamiento entre

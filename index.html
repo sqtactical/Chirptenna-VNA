@@ -74,6 +74,29 @@
       <button data-t id="cal-importar-btn">Importar…</button>
       <input id="cal-importar" type="file" accept=".json,application/json" hidden>
     </div>
+    <details class="solo-avanzado" id="patrones">
+      <summary data-t>Modelo de los patrones del kit (para expertos)</summary>
+      <p class="leyenda" data-t>Si tu kit no es ideal (capacidad del OPEN, inductancia del SHORT, retardo del conector), pon aquí sus valores: la calibración nueva los tendrá en cuenta y mejora por encima de ~1 GHz. Con todo a cero (y la carga de 50 Ω) se usan patrones ideales.</p>
+      <div class="campos campos-patrones">
+        <label><span data-t>OPEN C0 (fF)</span><input id="pat-oc0" type="number" step="any" value="0"></label>
+        <label><span>C1 (1e-27 F/Hz)</span><input id="pat-oc1" type="number" step="any" value="0"></label>
+        <label><span>C2 (1e-36 F/Hz²)</span><input id="pat-oc2" type="number" step="any" value="0"></label>
+        <label><span>C3 (1e-45 F/Hz³)</span><input id="pat-oc3" type="number" step="any" value="0"></label>
+        <label><span data-t>OPEN retardo (ps)</span><input id="pat-or" type="number" step="any" value="0"></label>
+        <label><span data-t>OPEN pérdida (dB a 1 GHz)</span><input id="pat-op" type="number" step="any" value="0"></label>
+        <label><span data-t>SHORT L0 (pH)</span><input id="pat-sl0" type="number" step="any" value="0"></label>
+        <label><span>L1 (1e-24 H/Hz)</span><input id="pat-sl1" type="number" step="any" value="0"></label>
+        <label><span>L2 (1e-33 H/Hz²)</span><input id="pat-sl2" type="number" step="any" value="0"></label>
+        <label><span>L3 (1e-42 H/Hz³)</span><input id="pat-sl3" type="number" step="any" value="0"></label>
+        <label><span data-t>SHORT retardo (ps)</span><input id="pat-sr" type="number" step="any" value="0"></label>
+        <label><span data-t>SHORT pérdida (dB a 1 GHz)</span><input id="pat-sp" type="number" step="any" value="0"></label>
+        <label><span data-t>LOAD R (Ω)</span><input id="pat-lr" type="number" step="any" value="50" min="1"></label>
+        <label><span data-t>LOAD L serie (pH)</span><input id="pat-ll" type="number" step="any" value="0"></label>
+        <label><span data-t>LOAD retardo (ps)</span><input id="pat-lt" type="number" step="any" value="0"></label>
+        <label><span data-t>LOAD pérdida (dB a 1 GHz)</span><input id="pat-lp" type="number" step="any" value="0"></label>
+      </div>
+      <div class="botones"><button data-t id="pat-ideales">Restablecer a ideales</button></div>
+    </details>
     <div id="asistente" class="asistente" hidden></div>
   </section>
 

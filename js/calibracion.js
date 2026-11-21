@@ -1,4 +1,5 @@
 import { T } from './i18n.js';
+import { esIdeal, gammaPatron, resolverTerminos, PATRONES_IDEALES } from './patrones.js';
 // Calibracion de un puerto (SOL, 3 terminos) con patrones ideales: OPEN = +1, SHORT = -1, LOAD = 0.
 // Mismo modelo y formulas que vna/calibracion.py de Chirptenna:
 //   Ed = L;  Es = (a + b) / (a - b);  Er = -2ab / (a - b)   con a = O - L, b = S - L
@@ -19,9 +20,17 @@ export class ErrorCalibracion extends Error {
 }
 
 // o, s, l: { re, im } medidos SIN corregir sobre la rejilla `freq`. Devuelve un tramo listo para guardar.
+// meta.patrones (opcional): modelo de los patrones (js/patrones.js); sin él (o ideal) se usa la formula cerrada.
 export function calcularTramo(freq, o, s, l, meta = {}) {
   const n = freq.length, ed = nuevo(n), es = nuevo(n), er = nuevo(n);
+  const modelo = meta.patrones && !esIdeal(meta.patrones) ? { ...PATRONES_IDEALES, ...meta.patrones } : null;
   for (let i = 0; i < n; i++) {
+    if (modelo) {
+      const t = resolverTerminos(par(o, i), par(s, i), par(l, i),
+        gammaPatron('open', modelo.open, freq[i]), gammaPatron('short', modelo.short, freq[i]), gammaPatron('load', modelo.load, freq[i]));
+      [ed.re[i], ed.im[i]] = t.ed; [es.re[i], es.im[i]] = t.es; [er.re[i], er.im[i]] = t.er;
+      continue;
+    }
     const L = par(l, i), a = csub(par(o, i), L), b = csub(par(s, i), L), den = csub(a, b);
     const ES = cdiv(cadd(a, b), den);
     const ER = cmul(cdiv(cmul(a, b), den), [-2, 0]);
@@ -164,7 +173,7 @@ const redondear = a => Array.from(a, x => Number(x.toPrecision(9)));
 
 export function tramoAJSON(s) {
   return {
-    fecha: s.fecha, equipo: s.equipo ?? '', freq: Array.from(s.freq),
+    fecha: s.fecha, equipo: s.equipo ?? '', freq: Array.from(s.freq), ...(s.patrones && !esIdeal(s.patrones) ? { patrones: s.patrones } : {}),
     ed: { re: redondear(s.ed.re), im: redondear(s.ed.im) },
     es: { re: redondear(s.es.re), im: redondear(s.es.im) },
     er: { re: redondear(s.er.re), im: redondear(s.er.im) },
@@ -173,7 +182,7 @@ export function tramoAJSON(s) {
 
 export function tramoDeJSON(j) {
   const f = a => Float64Array.from(a);
-  return { fecha: j.fecha, equipo: j.equipo ?? '', freq: f(j.freq), ed: { re: f(j.ed.re), im: f(j.ed.im) }, es: { re: f(j.es.re), im: f(j.es.im) }, er: { re: f(j.er.re), im: f(j.er.im) } };
+  return { fecha: j.fecha, equipo: j.equipo ?? '', ...(j.patrones ? { patrones: j.patrones } : {}), freq: f(j.freq), ed: { re: f(j.ed.re), im: f(j.ed.im) }, es: { re: f(j.es.re), im: f(j.es.im) }, er: { re: f(j.er.re), im: f(j.er.im) } };
 }
 
 export function juegoAJSON(j) { return { id: j.id, nombre: j.nombre, fecha: j.fecha, segmentos: j.segmentos.map(tramoAJSON) }; }
