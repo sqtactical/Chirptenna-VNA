@@ -21,6 +21,7 @@ import { ajustarRLC } from './ajusterlc.js';
 import { parametrosIncertidumbre, rangoAdaptacion } from './incertidumbre.js';
 import { PATRONES_IDEALES, IDS_PATRONES, patronesDeCampos, camposDePatrones, cargarPatrones, guardarPatrones } from './patrones.js';
 import { leerResultadoChirptenna, deducirEr, leerObjetivoUrl } from './puente.js';
+import { iniciarMateriales } from './materiales.js';
 import { veredictosPorBanda, resumenPorBanda, avisosArrastre } from './multibanda.js';
 import { codificar, decodificar, registroParaEnlace, validarRegistro, medidaDeRegistro, enlaceDe, codigoDeHash } from './compartir.js';
 
@@ -921,6 +922,7 @@ async function iniciar() {
   };
   $('envivo').onclick = alternarEnVivo;
   herramientas = iniciarHerramientas({ getUltimo: () => ultimo });
+  iniciarMateriales({ getUltimo: () => ultimo });
   $('region').onchange = () => { soltarCompartida(); poblarObjetivo(); reanalizar(); };
   $('objetivo').onchange = () => { soltarCompartida(); $('campo-fobj').hidden = $('objetivo').value !== 'custom'; $('campo-mesh').hidden = $('objetivo').value !== 'meshtastic'; actualizarMesh(); poblarSegmentos(); reanalizar(); };
   $('segmento').onchange = reanalizar; // se mide la banda entera, así que cambiar de segmento no obliga a medir otra vez

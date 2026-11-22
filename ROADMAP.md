@@ -120,6 +120,7 @@ Sin esto nada de lo de abajo es fiable: hasta hoy solo hay emulador y datos real
 
 - [~] **Puente con Chirptenna** (20-11: carga el `resultado.json`, compara la resonancia y estima la εr; 20-11: Chirptenna guarda `s11_simulado.s1p`, que se carga como referencia, y abre la web con `?f=&banda=&nombre=` (`leerObjetivoUrl`); falta abrir el `diseno.json` y una εr con la pendiente simulada de cada placa en vez de (εr+1)/2): abrir el `diseno.json` y el `resultado.json` de una antena de Chirptenna y superponer
       simulado frente a medido (lo que hace `herramientas/comparar_medida.py`), con la εr del FR4 deducida del desplazamiento. **M**
+- [~] **Asistente de materiales (cupón C)** (21-11: εr del FR4 y εr/tanδ de un plástico desde el S21 de un anillo, js/plastico.js + js/materiales.js; stubs abiertos medidos en S11, también con NanoVNA normales de 900 MHz; falta probar con el cupón C real): mide el material de tu carcasa y lo lleva a la simulación de Chirptenna. **M**
 - [ ] **Versión de escritorio** (Python/NiceGUI): para quien no use Chrome, con la misma lógica; reutiliza `vna/*.py`. **L**
 - [ ] **Base de datos comunitaria de antenas** (opcional y anónima): curvas de antenas comerciales de Meshtastic/LoRa medidas
       por usuarios, para comparar la tuya con la media. Necesita servidor y moderación: decidir antes si merece la pena. **L**

@@ -244,6 +244,52 @@
       </details>
     </section>
 
+    <section class="tarjeta solo-avanzado" id="tarjeta-materiales">
+      <h2 data-t>Asistente de materiales (cupón C)</h2>
+      <p data-t class="leyenda">Mide la εr del FR4 de tu cupón o la εr (y, aproximada, la tanδ) de un plástico (una carcasa, un radomo) con los stubs abiertos del cupón C de Chirptenna. Solo hace falta S11: lo mide cualquier NanoVNA, también los normales de 900 MHz. Usa la última medida de esta página, sube un .s1p o escribe los datos.</p>
+      <div class="campos">
+        <label><span data-t>Qué medir</span><select id="mat-modo"><option data-t value="plastico">Un plástico</option><option data-t value="fr4">El FR4 del cupón</option></select></label>
+        <label><span data-t>Stub</span><select id="mat-stub"><option data-t value="S43">S43 (43 mm, ~870 MHz)</option><option data-t value="S59">S59 (59 mm, ~645 MHz)</option><option data-t value="S86">S86 (86 mm, ~450 MHz)</option></select></label>
+        <label><span data-t>Resonancia</span><select id="mat-n"><option data-t value="1">Modo 1: λ/4 (el más bajo)</option><option data-t value="2">Modo 2: 3λ/4 (3× la frecuencia)</option><option data-t value="3">Modo 3: 5λ/4 (5× la frecuencia)</option></select></label>
+      </div>
+      <div data-t class="leyenda" id="mat-aviso"></div>
+      <p data-t class="leyenda">1. Calibra el NanoVNA (OSL) en el conector del cupón y mide S11 de UN stub cada vez. 2. Mide el stub sin muestra. 3. Para un plástico: pon una tira plana, de grosor conocido y sin rendijas (los tornillos de nailon M3 por sus cuatro taladros la centran y la sujetan), y vuelve a medir. Un NanoVNA normal llega a 900 MHz (modo 1: 450, 645 y 870 MHz); los de 1,5 o 2,7 GHz miden también los armónicos.</p>
+      <p data-t class="leyenda">Para precisión: mide sin y con muestra SIN recalibrar ni mover el cable (si recalibras entre medio, el error de la εr se triplica) y, si tu NanoVNA llega, usa el modo 2 o 3 (el error baja a un tercio). Barre unos ±10 % alrededor de la resonancia con el máximo de puntos.</p>
+      <div id="mat-bloque-plastico">
+        <h3 data-t>Sin muestra</h3>
+        <div class="campos">
+          <button data-t id="mat-ult-0" type="button">Usar la última medida</button>
+          <label><span data-t>S11 (.s1p)</span><input id="mat-arch-0" type="file" accept=".s1p,.S1P"></label>
+          <label><span data-t>Frecuencia de la resonancia (MHz)</span><input id="mat-f-0" type="number" step="any" min="0.01"></label>
+          <label><span data-t>R en la resonancia (Ω)</span><input id="mat-r-0" type="number" step="any"></label>
+        </div>
+        <h3 data-t>Con la muestra</h3>
+        <div class="campos">
+          <label><span data-t>Grosor de la muestra (mm)</span><input id="mat-t" type="number" step="0.01" min="0.2" value="3"></label>
+          <label><span data-t>Rendija de aire estimada (mm)</span><input id="mat-gap" type="number" step="0.01" min="0" value="0.05"></label>
+          <button data-t id="mat-ult-1" type="button">Usar la última medida</button>
+          <label><span data-t>S11 (.s1p)</span><input id="mat-arch-1" type="file" accept=".s1p,.S1P"></label>
+          <label><span data-t>Frecuencia de la resonancia (MHz)</span><input id="mat-f-1" type="number" step="any" min="0.01"></label>
+          <label><span data-t>R en la resonancia (Ω)</span><input id="mat-r-1" type="number" step="any"></label>
+          <label><span data-t>εr del FR4 de tu placa</span><input id="mat-er-fr4" type="number" step="0.01" min="2" max="8" value="4.5"></label>
+        </div>
+      </div>
+      <div id="mat-bloque-fr4" hidden>
+        <p data-t class="leyenda">Para el FR4 hacen falta al menos dos stubs distintos: sube o escribe la resonancia del modo elegido de cada uno.</p>
+        <div class="campos">
+          <label><span data-t>S11 de S43</span><input id="mat-arch-S43" type="file" accept=".s1p,.S1P"></label>
+          <label><span data-t>Frecuencia de S43 (MHz)</span><input id="mat-fr4-S43" type="number" step="any" min="0.01"></label>
+          <label><span data-t>S11 de S59</span><input id="mat-arch-S59" type="file" accept=".s1p,.S1P"></label>
+          <label><span data-t>Frecuencia de S59 (MHz)</span><input id="mat-fr4-S59" type="number" step="any" min="0.01"></label>
+          <label><span data-t>S11 de S86</span><input id="mat-arch-S86" type="file" accept=".s1p,.S1P"></label>
+          <label><span data-t>Frecuencia de S86 (MHz)</span><input id="mat-fr4-S86" type="number" step="any" min="0.01"></label>
+        </div>
+      </div>
+      <div data-t class="leyenda" id="mat-esperada"></div>
+      <div class="campos"><button data-t id="mat-calcular" type="button">Calcular</button></div>
+      <div class="tabla-scroll"><table id="mat-tabla"></table></div>
+      <div data-t class="leyenda" id="mat-nota"></div>
+    </section>
     <div class="columnas columnas-2 solo-avanzado">
       <section class="tarjeta"><h2 data-t>Carta de Smith</h2><canvas id="smith" class="cuadrado"></canvas></section>
       <section class="tarjeta"><h2 data-t>Impedancia</h2><canvas id="g-z"></canvas><div data-t class="leyenda">R (resistencia) y X (reactancia) en ohmios.</div></section>
