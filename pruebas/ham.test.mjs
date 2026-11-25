@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calcular } from '../js/analisis.js';
 import { redesL, gammaConRed, e24, roePrevista } from '../js/adaptacion.js';
-import { medirLinea, largoStub, C0 } from '../js/coaxial.js';
+import { medirLinea, largoStub, paraWire, C0 } from '../js/coaxial.js';
 
 test('e24: elige el valor normalizado más cercano', () => {
   assert.equal(e24(4.6e-12), 4.7e-12);
@@ -53,6 +53,17 @@ test('coaxial: factor de velocidad y pérdida de una línea abierta', () => {
   assert.ok(r.valido && !r.ambigua);
   assert.ok(Math.abs(r.vf - 0.66) < 0.01, `vf ${r.vf}`);
   assert.ok(Math.abs(r.perdidaIdaDb - 1.0) < 0.05, `pérdida ${r.perdidaIdaDb}`);
+});
+
+test('coaxial: paraWire da el VF y la pérdida en el formato de Chirptenna Wire, y nada sin largo o con medida mala', () => {
+  const m = lineaAbierta(2.0, 0.66, 0.5, 10e6, 60e6, 401);
+  const r = medirLinea(m, 2.0, 30e6);
+  const j = paraWire(r, { largoM: 2.0, extremo: 'abierto', nombre: 'RG-58 azul', fecha: new Date('2026-11-25T12:00:00Z') });
+  assert.equal(j.formato, 'chirptenna-cable');
+  assert.ok(Math.abs(j.vf - 0.66) < 0.01 && Math.abs(j.perdida_db_100m - 50) < 3, JSON.stringify(j));
+  assert.equal(j.fecha, '2026-11-25');
+  assert.equal(paraWire(medirLinea(m, 0, 30e6), { largoM: 0 }), null);
+  assert.equal(paraWire(null, { largoM: 2 }), null);
 });
 
 test('coaxial: avisa si el paso de frecuencia es demasiado grande para el largo', () => {

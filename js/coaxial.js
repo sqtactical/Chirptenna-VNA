@@ -30,6 +30,18 @@ export function medirLinea(medida, largoM, f) {
   return res;
 }
 
+// Resultado de `medirLinea` en el formato que lee Chirptenna Wire (`--cable-medido`): solo el VF y la pérdida, con su origen.
+// Devuelve null si no hay largo físico (sin él no hay VF) o la medida no es válida.
+export function paraWire(r, { largoM, extremo = 'abierto', nombre = '', fecha = new Date() } = {}) {
+  if (!r || !r.valido || r.ambigua || !(largoM > 0) || !(r.vf > 0.3 && r.vf <= 1)) return null;
+  return {
+    formato: 'chirptenna-cable', version: 1, nombre,
+    vf: +r.vf.toFixed(4), largo_m: +largoM.toFixed(4), extremo,
+    perdida_db_100m: +r.perdidaPor100m.toFixed(2), f_perdida_MHz: +(r.fPerdida / 1e6).toFixed(3),
+    fecha: fecha.toISOString().slice(0, 10), origen: 'Chirptenna VNA, retardo de grupo de S11',
+  };
+}
+
 // Largo físico de un stub de λ/4 o λ/2 a la frecuencia f con ese factor de velocidad (m)
 export function largoStub(fraccion, f, vf) { return fraccion * vf * C0 / f; }
 

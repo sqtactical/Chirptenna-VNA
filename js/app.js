@@ -921,7 +921,7 @@ async function iniciar() {
     referencia: async texto => cargarReferencia({ name: 'consola.s1p', text: async () => texto }),
   };
   $('envivo').onclick = alternarEnVivo;
-  herramientas = iniciarHerramientas({ getUltimo: () => ultimo });
+  herramientas = iniciarHerramientas({ getUltimo: () => ultimo, descargar });
   iniciarMateriales({ getUltimo: () => ultimo });
   $('region').onchange = () => { soltarCompartida(); poblarObjetivo(); reanalizar(); };
   $('objetivo').onchange = () => { soltarCompartida(); $('campo-fobj').hidden = $('objetivo').value !== 'custom'; $('campo-mesh').hidden = $('objetivo').value !== 'meshtastic'; actualizarMesh(); poblarSegmentos(); reanalizar(); };

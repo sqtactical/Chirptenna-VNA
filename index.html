@@ -222,8 +222,10 @@
           <label><span data-t>Extremo lejano</span><select id="coax-extremo"><option data-t value="abierto">Abierto</option><option data-t value="corto">En corto</option></select></label>
           <label><span data-t>Pérdida a (MHz)</span><input id="coax-f" type="number" step="any" min="0.01"></label>
           <label><span data-t>Stub para (MHz)</span><input id="stub-f" type="number" step="any" min="0.01"></label>
+          <label><span data-t>Nombre del cable (opcional)</span><input id="coax-nombre" type="text" maxlength="40" placeholder="RG-58 del rollo azul"></label>
         </div>
         <div class="tabla-scroll"><table id="coax-tabla"></table></div>
+        <button id="coax-wire" type="button" hidden data-t>Descargar el VF para Chirptenna Wire</button>
         <div data-t class="leyenda" id="coax-nota"></div>
       </details>
       <details id="ham-trampa">
