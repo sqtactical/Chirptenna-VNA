@@ -4,6 +4,7 @@ import { T } from './i18n.js';
 import { indiceMasCercano, fmtROE } from './analisis.js';
 import { redesL, nombreValor } from './adaptacion.js';
 import { analizarResonador } from './resonador.js';
+import { analizarChoke, consejoChoke } from './choke.js';
 import { medirLinea, largoStub, descripcionStub, paraWire } from './coaxial.js';
 
 const $ = id => document.getElementById(id);
@@ -82,6 +83,26 @@ export function iniciarHerramientas({ getUltimo, descargar }) {
     nota.textContent = r.profundidadDb > 6 ? T('El acoplo es fuerte: la Q cargada sale por debajo de la propia. Aleja el lazo para que el pozo baje menos de 6 dB.') : T('Con el pozo así de somero la Q propia y la cargada casi coinciden.');
   };
 
+  const choke = () => {
+    const u = getUltimo(), tabla = $('choke-tabla'), nota = $('choke-nota');
+    tabla.replaceChildren(); nota.textContent = '';
+    if (!u) return;
+    const filas = analizarChoke(u.medida);
+    if (!filas.length) { nota.textContent = T('La medida no cubre ninguna banda de HF (1,8 a 29,7 MHz).'); return; }
+    const texto = { bien: T('bien'), justo: T('justo'), corto: T('corto') };
+    let h = fila([T('Banda'), T('|Z| mínima'), T('|Z| máxima'), T('Veredicto')], true);
+    for (const f of filas) h += fila([f.nombre, `${Math.round(f.zMin)} Ω`, `${Math.round(f.zMax)} Ω${f.dudoso ? ' *' : ''}`, texto[f.veredicto]]);
+    tabla.innerHTML = h;
+    const consejos = {
+      bien: T('El choke corta bien en todas las bandas medidas.'),
+      justo: T('Aceptable para poca potencia; para más, añade vueltas o un segundo núcleo.'),
+      faltan_vueltas: T('Corto en las bandas bajas: añade vueltas (más inductancia) o un núcleo mayor.'),
+      menos_capacidad: T('Corto en las bandas altas: la capacidad entre vueltas deja pasar la corriente; separa las vueltas o usa menos.'),
+      general: T('Corto en varias bandas: prueba otro núcleo (mezcla 43 o 31) o dos chokes en serie.'),
+    };
+    nota.textContent = consejos[consejoChoke(filas)] + (filas.some(f => f.dudoso) ? ' ' + T('* Por encima de 3 kΩ un NanoVNA ya no mide bien: el valor es solo orientativo.') : '');
+  };
+
   $('adapt-cursor').onclick = () => { const u = getUltimo(); if (u) { $('adapt-f').value = fMHz(u.medida.freq[u.idx]); adaptar(); } };
   for (const id of ['adapt-f']) $(id).oninput = adaptar;
   for (const id of ['coax-largo', 'coax-extremo', 'coax-f', 'stub-f', 'coax-nombre']) $(id).oninput = coaxial;
@@ -92,7 +113,7 @@ export function iniciarHerramientas({ getUltimo, descargar }) {
       const u = getUltimo();
       if (!u) return;
       if (!$('adapt-f').value) $('adapt-f').value = fMHz(u.medida.freq[u.idx]);
-      adaptar(); coaxial(); trampa();
+      adaptar(); coaxial(); trampa(); choke();
     },
   };
 }

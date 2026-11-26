@@ -40,7 +40,7 @@ chart, impedance, SWR, phase, group delay). It works for **any antenna**; it was
   antenna there.
 - **Compare antennas**: save several measurements with a name and compare them in a table and a chart.
 - **Ham radio tools** (Advanced mode): L matching network with E24 values, coax and stub measurement, removing the cable
-  from the measurement, Q of traps and resonators, a "Live" mode to tune a tuner, and a per-band verdict for multiband antennas.
+  from the measurement, Q of traps and resonators, a check of a 1:1 choke or balun, a "Live" mode to tune a tuner, and a per-band verdict for multiband antennas.
 - **Expert tools**: compare with a Touchstone file (`.s1p`/`.s2p`) or with the `resultado.json` of a Chirptenna simulation
   (estimates the real εr), sweep averaging with estimated noise, and a console API (`window.chirptenna`).
 - **Read the verdict aloud**.

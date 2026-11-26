@@ -79,15 +79,15 @@
       <p class="leyenda" data-t>Si tu kit no es ideal (capacidad del OPEN, inductancia del SHORT, retardo del conector), pon aquí sus valores: la calibración nueva los tendrá en cuenta y mejora por encima de ~1 GHz. Con todo a cero (y la carga de 50 Ω) se usan patrones ideales.</p>
       <div class="campos campos-patrones">
         <label><span data-t>OPEN C0 (fF)</span><input id="pat-oc0" type="number" step="any" value="0"></label>
-        <label><span>C1 (1e-27 F/Hz)</span><input id="pat-oc1" type="number" step="any" value="0"></label>
-        <label><span>C2 (1e-36 F/Hz²)</span><input id="pat-oc2" type="number" step="any" value="0"></label>
-        <label><span>C3 (1e-45 F/Hz³)</span><input id="pat-oc3" type="number" step="any" value="0"></label>
+        <label><span data-t>C1 (1e-27 F/Hz)</span><input id="pat-oc1" type="number" step="any" value="0"></label>
+        <label><span data-t>C2 (1e-36 F/Hz²)</span><input id="pat-oc2" type="number" step="any" value="0"></label>
+        <label><span data-t>C3 (1e-45 F/Hz³)</span><input id="pat-oc3" type="number" step="any" value="0"></label>
         <label><span data-t>OPEN retardo (ps)</span><input id="pat-or" type="number" step="any" value="0"></label>
         <label><span data-t>OPEN pérdida (dB a 1 GHz)</span><input id="pat-op" type="number" step="any" value="0"></label>
         <label><span data-t>SHORT L0 (pH)</span><input id="pat-sl0" type="number" step="any" value="0"></label>
-        <label><span>L1 (1e-24 H/Hz)</span><input id="pat-sl1" type="number" step="any" value="0"></label>
-        <label><span>L2 (1e-33 H/Hz²)</span><input id="pat-sl2" type="number" step="any" value="0"></label>
-        <label><span>L3 (1e-42 H/Hz³)</span><input id="pat-sl3" type="number" step="any" value="0"></label>
+        <label><span data-t>L1 (1e-24 H/Hz)</span><input id="pat-sl1" type="number" step="any" value="0"></label>
+        <label><span data-t>L2 (1e-33 H/Hz²)</span><input id="pat-sl2" type="number" step="any" value="0"></label>
+        <label><span data-t>L3 (1e-42 H/Hz³)</span><input id="pat-sl3" type="number" step="any" value="0"></label>
         <label><span data-t>SHORT retardo (ps)</span><input id="pat-sr" type="number" step="any" value="0"></label>
         <label><span data-t>SHORT pérdida (dB a 1 GHz)</span><input id="pat-sp" type="number" step="any" value="0"></label>
         <label><span data-t>LOAD R (Ω)</span><input id="pat-lr" type="number" step="any" value="50" min="1"></label>
@@ -222,7 +222,7 @@
           <label><span data-t>Extremo lejano</span><select id="coax-extremo"><option data-t value="abierto">Abierto</option><option data-t value="corto">En corto</option></select></label>
           <label><span data-t>Pérdida a (MHz)</span><input id="coax-f" type="number" step="any" min="0.01"></label>
           <label><span data-t>Stub para (MHz)</span><input id="stub-f" type="number" step="any" min="0.01"></label>
-          <label><span data-t>Nombre del cable (opcional)</span><input id="coax-nombre" type="text" maxlength="40" placeholder="RG-58 del rollo azul"></label>
+          <label><span data-t>Nombre del cable (opcional)</span><input data-t-attr="placeholder" id="coax-nombre" type="text" maxlength="40" placeholder="RG-58 del rollo azul"></label>
         </div>
         <div class="tabla-scroll"><table id="coax-tabla"></table></div>
         <button id="coax-wire" type="button" hidden data-t>Descargar el VF para Chirptenna Wire</button>
@@ -233,6 +233,12 @@
         <p data-t class="leyenda">Acopla el circuito con un lazo o una sonda de un par de vueltas, lo más flojo que puedas (el pozo de la curva debe ser poco profundo), y barre alrededor de su resonancia. Da la frecuencia, el ancho a media potencia y la Q.</p>
         <div class="tabla-scroll"><table id="trampa-tabla"></table></div>
         <div data-t class="leyenda" id="trampa-nota"></div>
+      </details>
+      <details id="ham-choke">
+        <summary data-t>Choke o balun 1:1 (corrientes por fuera del coaxial)</summary>
+        <p data-t class="leyenda">Con el choke ya montado, junta el vivo y la malla en un extremo del coaxial, calibra y mide por el otro de 1,5 a 30 MHz: lo que ves es la impedancia por fuera de la malla. Más de 1 kΩ en una banda es buena señal; menos de 500 Ω, el cable acabará radiando. Un NanoVNA mide mal las impedancias muy altas: úsalo como orientación.</p>
+        <div class="tabla-scroll"><table id="choke-tabla"></table></div>
+        <div data-t class="leyenda" id="choke-nota"></div>
       </details>
       <details id="ham-cable">
         <summary data-t>Quitar el cable (medir en la antena)</summary>
