@@ -67,6 +67,21 @@ de medida realistas para probar la calibración.
 Abre **[diagnostico.html](diagnostico.html)** con el equipo conectado: comprueba el protocolo, el límite de puntos, los tiempos y que la
 medida en bruto restaura la calibración, y genera un informe de texto para pegar en una incidencia. Nunca envía `save`.
 
+## Llevar y traer antenas (Chirptenna Wire y Chirptenna)
+
+Las antenas viajan en archivos normales; no hay que configurar nada. Con **Chirptenna Wire** (antenas de alambre, NEC2):
+
+| Qué | Cómo |
+|---|---|
+| **Traer lo simulado** (`.s1p`) | En Wire: `python -m wire s1p <tipo> <MHz> --salida sim.s1p` o el botón *Descargar S11 simulado* (pestaña Simulación). Aquí, modo **Avanzado** → **Comparar con un archivo Touchstone** → elige el `.s1p`: sale en gris sobre el gráfico de ROE, con la diferencia punto a punto y cuánto se desvía la resonancia |
+| **Llevar tu medida** (`.s1p`) | Mide, y en modo Avanzado pulsa **Touchstone (.s1p)**. En Wire, pestaña *Medir* → *Abrir .s1p medido*: lo compara con la simulación y el diseño pasa a «Medido» si la desviación es ≤ 2 % |
+| **Llevar el factor de velocidad de un cable** | En **Coaxial y stubs**, **Descargar el VF para Chirptenna Wire** (`cable_*.json`). En Wire: *Abrir cable medido* (pestaña Diseño) o `--cable-medido` |
+
+Con **Chirptenna** (antenas impresas en PCB) vale lo mismo para la comparación: el mismo cuadro **Comparar con un archivo Touchstone**
+acepta también el `resultado.json` de una simulación de Chirptenna (compara la resonancia simulada con la medida y estima la εr real
+del sustrato). Lo simulado es espacio libre y sin cable: es una referencia, no una medida. Para comparar varias antenas medidas entre
+sí usa **Comparar antenas**.
+
 ## Pruebas
 
 ```powershell

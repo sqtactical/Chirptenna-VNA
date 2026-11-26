@@ -71,6 +71,21 @@ des erreurs de mesure réalistes pour essayer l'étalonnage.
 Ouvre **[diagnostico.html](diagnostico.html)** avec l'appareil connecté : il vérifie le protocole, la limite de points, les
 temps et que la mesure brute restaure l'étalonnage, et génère un rapport texte à coller dans un ticket. Il n'envoie jamais `save`.
 
+## Aller-retour des antennes (Chirptenna Wire et Chirptenna)
+
+Les antennes voyagent dans des fichiers ordinaires ; rien à configurer. Avec **Chirptenna Wire** (antennes filaires, NEC2) :
+
+| Quoi | Comment |
+|---|---|
+| **Récupérer la simulation** (`.s1p`) | Dans Wire : `python -m wire s1p <type> <MHz> --salida sim.s1p` ou le bouton *Télécharger le S11 simulé* (onglet Simulation). Ici, mode **Avancé** → **Comparer avec un fichier Touchstone** → choisis le `.s1p` : il s'affiche en gris sur le graphique du ROS, avec la différence point à point et l'écart de la résonance |
+| **Emporter ta mesure** (`.s1p`) | Mesure, puis en mode Avancé appuie sur **Touchstone (.s1p)**. Dans Wire, onglet *Medir* → *Abrir .s1p medido* : il la compare à la simulation et le design passe à « Mesuré » si l'écart est ≤ 2 % |
+| **Emporter le facteur de vitesse d'un câble** | Dans **Coaxial et stubs**, **Télécharger le VF pour Chirptenna Wire** (`cable_*.json`). Dans Wire : *Abrir cable medido* (onglet Diseño) ou `--cable-medido` |
+
+Avec **Chirptenna** (antennes imprimées sur PCB), la comparaison marche pareil : la même case **Comparer avec un fichier Touchstone**
+accepte aussi le `resultado.json` d'une simulation de Chirptenna (elle compare la résonance simulée à la mesurée et estime l'εr réelle
+du substrat). La simulation est en espace libre, sans câble : une référence, pas une mesure. Pour comparer plusieurs antennes mesurées
+entre elles, utilise **Comparer des antennes**.
+
 ## Tests
 
 ```powershell

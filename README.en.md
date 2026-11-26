@@ -71,6 +71,21 @@ realistic measurement errors to try the calibration.
 Open **[diagnostico.html](diagnostico.html)** with the device connected: it checks the protocol, the point limit, the
 timings and that the raw measurement restores the calibration, and generates a text report to paste into an issue. It never sends `save`.
 
+## Moving antennas in and out (Chirptenna Wire and Chirptenna)
+
+Antennas travel as ordinary files; nothing to configure. With **Chirptenna Wire** (wire antennas, NEC2):
+
+| What | How |
+|---|---|
+| **Bring in the simulation** (`.s1p`) | In Wire: `python -m wire s1p <type> <MHz> --salida sim.s1p` or the *Download simulated S11* button (Simulation tab). Here, **Advanced** mode → **Compare with a Touchstone file** → pick the `.s1p`: it shows in grey over the SWR chart, with the point-by-point difference and how far the resonance is off |
+| **Take your measurement out** (`.s1p`) | Measure, then in Advanced mode press **Touchstone (.s1p)**. In Wire, *Medir* tab → *Abrir .s1p medido*: it compares against the simulation and the design becomes "Measured" if the deviation is ≤ 2 % |
+| **Take a cable's velocity factor out** | In **Coax and stubs**, **Download the VF for Chirptenna Wire** (`cable_*.json`). In Wire: *Abrir cable medido* (Design tab) or `--cable-medido` |
+
+With **Chirptenna** (PCB-printed antennas) the comparison works the same way: the same **Compare with a Touchstone file** box also
+accepts the `resultado.json` of a Chirptenna simulation (it compares the simulated resonance with the measured one and estimates the
+real εr of the substrate). The simulation is free space with no cable: a reference, not a measurement. To compare several measured
+antennas with each other use **Compare antennas**.
+
 ## Tests
 
 ```powershell

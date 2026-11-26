@@ -70,6 +70,21 @@ realistischen Messfehlern zum Ausprobieren der Kalibrierung.
 Öffne **[diagnostico.html](diagnostico.html)** bei angeschlossenem Gerät: Es prüft das Protokoll, das Punktelimit, die Zeiten
 und ob die Rohmessung die Kalibrierung wiederherstellt, und erzeugt einen Textbericht zum Einfügen in ein Issue. Es sendet nie `save`.
 
+## Antennen hin und zurück (Chirptenna Wire und Chirptenna)
+
+Antennen reisen in gewöhnlichen Dateien; es ist nichts einzustellen. Mit **Chirptenna Wire** (Drahtantennen, NEC2):
+
+| Was | Wie |
+|---|---|
+| **Die Simulation herholen** (`.s1p`) | In Wire: `python -m wire s1p <Typ> <MHz> --salida sim.s1p` oder die Schaltfläche *Simuliertes S11 herunterladen* (Reiter Simulation). Hier im Modus **Erweitert** → **Mit einer Touchstone-Datei vergleichen** → die `.s1p` wählen: sie erscheint grau über dem SWR-Diagramm, mit der Punkt-für-Punkt-Differenz und der Abweichung der Resonanz |
+| **Deine Messung mitnehmen** (`.s1p`) | Messen, dann im Modus Erweitert **Touchstone (.s1p)** drücken. In Wire, Reiter *Medir* → *Abrir .s1p medido*: Wire vergleicht sie mit der Simulation, und der Entwurf wird «Gemessen», wenn die Abweichung ≤ 2 % beträgt |
+| **Den Verkürzungsfaktor eines Kabels mitnehmen** | Unter **Koax und Stubs** **VF für Chirptenna Wire herunterladen** (`cable_*.json`). In Wire: *Abrir cable medido* (Reiter Diseño) oder `--cable-medido` |
+
+Mit **Chirptenna** (auf Leiterplatten gedruckte Antennen) funktioniert der Vergleich genauso: Dasselbe Feld **Mit einer Touchstone-Datei
+vergleichen** nimmt auch die `resultado.json` einer Chirptenna-Simulation an (sie vergleicht die simulierte mit der gemessenen Resonanz
+und schätzt die reale εr des Substrats). Die Simulation gilt im freien Raum ohne Kabel: eine Referenz, keine Messung. Um mehrere
+gemessene Antennen miteinander zu vergleichen, nutze **Antennen vergleichen**.
+
 ## Tests
 
 ```powershell
