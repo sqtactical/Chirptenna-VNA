@@ -40,7 +40,7 @@ Smith, impédance, ROS, phase, temps de groupe). Il convient à **n'importe quel
   l'antenne à cet endroit.
 - **Comparer des antennes** : enregistre plusieurs mesures avec un nom et compare-les dans un tableau et un graphique.
 - **Outils radioamateur** (mode Avancé) : réseau d'adaptation en L avec valeurs E24, mesure de coaxial et de stubs, retrait
-  du câble de la mesure, Q des trappes et résonateurs, contrôle d'un choke ou balun 1:1, mode « En direct » pour régler un coupleur et verdict par bande pour les antennes multibandes.
+  du câble de la mesure, Q des trappes et résonateurs, contrôle d'un choke ou balun 1:1 et du transformateur d'une EFHW (9:1, 49:1, 64:1), mode « En direct » pour régler un coupleur et verdict par bande pour les antennes multibandes.
 - **Outils d'expert** : comparer avec un fichier Touchstone (`.s1p`/`.s2p`) ou avec le `resultado.json` d'une simulation
   Chirptenna (estime l'εr réelle), moyenne de balayages avec bruit estimé et une API de console (`window.chirptenna`).
 - **Lecture à voix haute** du verdict.

@@ -39,7 +39,7 @@ dort resoniert, wo du es willst, ob du sie **verlängern oder kürzen musst und 
 - **Mein Meshtastic-Knoten**: Region und Preset wählen; die App berechnet die echte Frequenz deines Kanals und beurteilt die Antenne dort.
 - **Antennen vergleichen**: mehrere Messungen mit Namen speichern und in Tabelle und Diagramm vergleichen.
 - **Amateurfunk-Werkzeuge** (erweiterter Modus): L-Anpassnetzwerk mit E24-Werten, Messung von Koaxkabel und Stubs, Kabel aus
-  der Messung herausrechnen, Güte von Sperrkreisen und Resonatoren, Prüfung einer Mantelwellensperre oder eines 1:1-Baluns, „Live“-Modus zum Einstellen eines Tuners und Urteil pro Band für Multiband-Antennen.
+  der Messung herausrechnen, Güte von Sperrkreisen und Resonatoren, Prüfung einer Mantelwellensperre oder eines 1:1-Baluns und des EFHW-Übertragers (9:1, 49:1, 64:1), „Live“-Modus zum Einstellen eines Tuners und Urteil pro Band für Multiband-Antennen.
 - **Expertenwerkzeuge**: Vergleich mit einer Touchstone-Datei (`.s1p`/`.s2p`) oder mit der `resultado.json` einer
   Chirptenna-Simulation (schätzt die reale εr), Mitteln von Sweeps mit geschätztem Rauschen und eine Konsolen-API (`window.chirptenna`).
 - **Urteil vorlesen**.

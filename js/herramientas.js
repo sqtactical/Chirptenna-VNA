@@ -5,6 +5,7 @@ import { indiceMasCercano, fmtROE } from './analisis.js';
 import { redesL, nombreValor } from './adaptacion.js';
 import { analizarResonador } from './resonador.js';
 import { analizarChoke, consejoChoke } from './choke.js';
+import { analizarTransformador, consejoTransformador, cargaNominal } from './transformador.js';
 import { medirLinea, largoStub, descripcionStub, paraWire } from './coaxial.js';
 
 const $ = id => document.getElementById(id);
@@ -103,6 +104,29 @@ export function iniciarHerramientas({ getUltimo, descargar }) {
     nota.textContent = consejos[consejoChoke(filas)] + (filas.some(f => f.dudoso) ? ' ' + T('* Por encima de 3 kΩ un NanoVNA ya no mide bien: el valor es solo orientativo.') : '');
   };
 
+  const trafo = () => {
+    const u = getUltimo(), tabla = $('trafo-tabla'), nota = $('trafo-nota'), carga = $('trafo-carga');
+    tabla.replaceChildren(); nota.textContent = '';
+    const c = cargaNominal(+$('trafo-relacion').value);
+    carga.textContent = T('Resistencia de prueba: {0} Ω (la más cercana de la serie E24: {1} Ω).', c.ideal, c.comercial);
+    if (!u) return;
+    const filas = analizarTransformador(u.medida);
+    if (!filas.length) { nota.textContent = T('La medida no cubre ninguna banda de HF (1,8 a 29,7 MHz).'); return; }
+    const texto = { bien: T('bien'), justo: T('justo'), mal: T('mal') };
+    let h = fila([T('Banda'), T('ROE mínima'), T('ROE máxima'), T('Veredicto')], true);
+    for (const f of filas) h += fila([f.nombre, f.roeMin.toFixed(2), Number.isFinite(f.roeMax) ? f.roeMax.toFixed(2) : '∞', texto[f.veredicto]]);
+    tabla.innerHTML = h;
+    const consejos = {
+      bien: T('El transformador adapta bien en todas las bandas medidas.'),
+      justo: T('Aceptable: la ROE llega a 2 en alguna banda.'),
+      faltan_vueltas: T('Mal en las bandas bajas: faltan vueltas en el primario o el núcleo es pequeño.'),
+      menos_fugas: T('Mal en las bandas altas: hay fugas y capacidad entre vueltas; acorta los cables y separa las vueltas.'),
+      general: T('Mal en varias bandas: prueba otro núcleo (mezcla 43 o 31) o revisa las conexiones.'),
+    };
+    nota.textContent = consejos[consejoTransformador(filas)];
+  };
+
+  $('trafo-relacion').oninput = trafo;
   $('adapt-cursor').onclick = () => { const u = getUltimo(); if (u) { $('adapt-f').value = fMHz(u.medida.freq[u.idx]); adaptar(); } };
   for (const id of ['adapt-f']) $(id).oninput = adaptar;
   for (const id of ['coax-largo', 'coax-extremo', 'coax-f', 'stub-f', 'coax-nombre']) $(id).oninput = coaxial;
@@ -113,7 +137,7 @@ export function iniciarHerramientas({ getUltimo, descargar }) {
       const u = getUltimo();
       if (!u) return;
       if (!$('adapt-f').value) $('adapt-f').value = fMHz(u.medida.freq[u.idx]);
-      adaptar(); coaxial(); trampa(); choke();
+      adaptar(); coaxial(); trampa(); choke(); trafo();
     },
   };
 }

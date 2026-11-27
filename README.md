@@ -37,7 +37,7 @@ de grupo). Sirve para **cualquier antena**; nació dentro del proyecto [Chirpten
   la banda que mejor la enseña.
 - **Mi nodo Meshtastic**: eliges región y preset y la app calcula la frecuencia real de tu canal y juzga la antena ahí.
 - **Comparar antenas**: guarda varias medidas con nombre y compáralas en una tabla y un gráfico.
-- **Herramientas de radioaficionado** (modo Avanzado): red de adaptación en L con valores E24, medida de coaxial y stubs, quitar el cable de la medida, Q de trampas y resonadores, comprobación de un choke o balun 1:1, modo «En vivo» para ajustar un acoplador y veredicto por banda en antenas multibanda.
+- **Herramientas de radioaficionado** (modo Avanzado): red de adaptación en L con valores E24, medida de coaxial y stubs, quitar el cable de la medida, Q de trampas y resonadores, comprobación de un choke o balun 1:1 y del transformador de una EFHW (9:1, 49:1, 64:1), modo «En vivo» para ajustar un acoplador y veredicto por banda en antenas multibanda.
 - **Herramientas de experto**: comparar con un archivo Touchstone (.s1p/.s2p) o con el esultado.json de una simulación de Chirptenna (estima la εr real), promediar barridos con ruido estimado y una API de consola (window.chirptenna).
 - **Leer en voz alta** el veredicto.
 - **Regiones**: Europa (R1), América (R2) y Asia-Pacífico (R3, con bandas ITU sin contrastar por país).
